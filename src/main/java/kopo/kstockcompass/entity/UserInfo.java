@@ -4,29 +4,27 @@ import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
-
+import org.hibernate.annotations.CreationTimestamp; // 추가
 import java.time.LocalDateTime;
 
 @Entity
 @Table(name = "USER_INFO")
-@Getter
-@Setter
-@NoArgsConstructor
+@Getter @Setter @NoArgsConstructor
 public class UserInfo {
-
     @Id
-    @Column(name = "USER_EMAIL", length = 100, nullable = false)
+    @Column(name = "USER_EMAIL", length = 100)
     private String userEmail;
 
-    @Column(name = "USER_PWD", length = 255, nullable = false)
+    @Column(name = "USER_PWD", nullable = false, length = 255)
     private String userPwd;
 
-    @Column(name = "USER_NAME", length = 50, nullable = false)
+    @Column(name = "USER_NAME", nullable = false, length = 50)
     private String userName;
 
-    @Column(name = "USER_PNUM", length = 20, nullable = false, unique = true)
+    @Column(name = "USER_PNUM", nullable = false, unique = true, length = 20)
     private String userPnum;
 
-    @Column(name = "REG_DT", nullable = false)
+    @CreationTimestamp // 자동으로 현재 시간 입력
+    @Column(name = "REG_DT", nullable = false, updatable = false) // 수정 방지
     private LocalDateTime regDt;
 }
