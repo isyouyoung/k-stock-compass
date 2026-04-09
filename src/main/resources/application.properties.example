@@ -1,0 +1,10 @@
+spring.application.name=k-stock-compass
+
+spring.datasource.url=jdbc:mariadb://IP주소:3306/k_stock_compass
+spring.datasource.username=spring
+spring.datasource.password=
+spring.datasource.driver-class-name=org.mariadb.jdbc.Driver
+
+spring.jpa.hibernate.ddl-auto=update
+spring.jpa.show-sql=true
+spring.jpa.properties.hibernate.format_sql=true
