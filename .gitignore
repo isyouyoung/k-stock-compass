@@ -35,3 +35,8 @@ out/
 
 ### VS Code ###
 .vscode/
+
+### DB & Personal Info ###
+/src/main/resources/application.properties
+### 현재 yml은 없지만 미리 넣어둠 ###
+/src/main/resources/application.yml
