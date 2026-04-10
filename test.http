@@ -1,0 +1,9 @@
+POST http://localhost:8080/api/user/signup
+Content-Type: application/json
+
+{
+  "userEmail": "test123@naver.com",
+  "userPwd": "password123!",
+  "userName": "유영상",
+  "userPnum": "01012345678"
+}
