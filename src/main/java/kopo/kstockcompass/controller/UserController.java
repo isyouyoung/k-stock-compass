@@ -38,11 +38,10 @@ public class UserController {
         return ResponseEntity.ok(isDuplicate);
     }
 
-    // 이메일 인증번호 발송 API (임시 - 콘솔 출력)
+    // 이메일 인증번호 발송 API (실제 이메일 발송)
     @PostMapping("/send-code")
     public ResponseEntity<String> sendCode(@RequestParam String email) {
-        String code = emailVerifyService.generateCode(email);
-        System.out.println("인증번호 [" + email + "] : " + code); // 임시 콘솔 출력
+        emailVerifyService.sendCode(email);
         return ResponseEntity.ok("인증번호가 발송되었습니다.");
     }
 
