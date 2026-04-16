@@ -1,5 +1,6 @@
 package kopo.kstockcompass.controller;
 
+import kopo.kstockcompass.dto.LoginRequestDTO;
 import kopo.kstockcompass.dto.SignUpRequestDTO;
 import kopo.kstockcompass.service.UserService;
 import jakarta.validation.Valid;
@@ -20,4 +21,12 @@ public class UserController {
         userService.signUp(dto);
         return ResponseEntity.ok("회원가입이 완료되었습니다.");
     }
+
+    // 로그인 API
+    @PostMapping("/login")
+    public ResponseEntity<String> login(@Valid @RequestBody LoginRequestDTO dto) {
+        String result = userService.login(dto);
+        return ResponseEntity.ok(result);
+    }
+
 }
