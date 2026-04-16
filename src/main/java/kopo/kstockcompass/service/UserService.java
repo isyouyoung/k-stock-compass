@@ -1,5 +1,6 @@
 package kopo.kstockcompass.service;
 
+import kopo.kstockcompass.config.JwtProvider;
 import kopo.kstockcompass.dto.LoginRequestDTO;
 import kopo.kstockcompass.dto.SignUpRequestDTO;
 import kopo.kstockcompass.entity.UserInfo;
@@ -13,41 +14,41 @@ import org.springframework.stereotype.Service;
 public class UserService {
 
     private final UserInfoRepository userInfoRepository;
-    private final PasswordEncoder passwordEncoder; // 인터페이스로 주입!
+    private final PasswordEncoder passwordEncoder;
+    private final JwtProvider jwtProvider; // JWT 추가!
 
     // 회원가입
     public void signUp(SignUpRequestDTO dto) {
 
-        // 이메일 중복 체크
         if (userInfoRepository.existsByUserEmail(dto.getUserEmail())) {
             throw new RuntimeException("이미 사용중인 이메일입니다.");
         }
 
-        // Entity 생성 + 비밀번호 암호화
         UserInfo user = new UserInfo();
         user.setUserEmail(dto.getUserEmail());
         user.setUserPwd(passwordEncoder.encode(dto.getUserPwd()));
         user.setUserName(dto.getUserName());
         user.setUserPnum(dto.getUserPnum());
 
-        // DB 저장
         userInfoRepository.save(user);
     }
 
-    // 로그인
+    // 로그인 → JWT 토큰 반환
     public String login(LoginRequestDTO dto) {
 
-        // 이메일로 DB 조회
         UserInfo user = userInfoRepository.findByUserEmail(dto.getUserEmail())
                 .orElseThrow(() -> new RuntimeException("이메일이 존재하지 않습니다."));
 
-        // 비밀번호 비교
         if (!passwordEncoder.matches(dto.getUserPwd(), user.getUserPwd())) {
             throw new RuntimeException("비밀번호가 일치하지 않습니다.");
         }
 
-        // 성공
-        return "로그인 성공! 이메일: " + user.getUserEmail();
+        // 로그인 성공 → JWT 토큰 발급!
+        return jwtProvider.createToken(user.getUserEmail());
     }
 
+    // 이메일 중복 체크
+    public boolean checkEmail(String email) {
+        return userInfoRepository.existsByUserEmail(email);
+    }
 }
