@@ -51,4 +51,20 @@ public class UserService {
     public boolean checkEmail(String email) {
         return userInfoRepository.existsByUserEmail(email);
     }
+
+    // 아이디 찾기
+    public String findEmail(String userName, String userPnum) {
+
+        UserInfo user = userInfoRepository.findByUserNameAndUserPnum(userName, userPnum)
+                .orElseThrow(() -> new RuntimeException("일치하는 회원 정보가 없습니다."));
+
+        String email = user.getUserEmail();
+        int atIndex = email.indexOf("@");
+        String prefix = email.substring(0, Math.min(2, atIndex));
+        String masked = prefix + "**" + email.substring(atIndex);
+
+        return masked;
+    }
+
+
 }
