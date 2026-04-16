@@ -1,5 +1,6 @@
 package kopo.kstockcompass.service;
 
+import kopo.kstockcompass.dto.LoginRequestDTO;
 import kopo.kstockcompass.dto.SignUpRequestDTO;
 import kopo.kstockcompass.entity.UserInfo;
 import kopo.kstockcompass.repository.UserInfoRepository;
@@ -32,4 +33,21 @@ public class UserService {
         // DB 저장
         userInfoRepository.save(user);
     }
+
+    // 로그인
+    public String login(LoginRequestDTO dto) {
+
+        // 이메일로 DB 조회
+        UserInfo user = userInfoRepository.findByUserEmail(dto.getUserEmail())
+                .orElseThrow(() -> new RuntimeException("이메일이 존재하지 않습니다."));
+
+        // 비밀번호 비교
+        if (!passwordEncoder.matches(dto.getUserPwd(), user.getUserPwd())) {
+            throw new RuntimeException("비밀번호가 일치하지 않습니다.");
+        }
+
+        // 성공
+        return "로그인 성공! 이메일: " + user.getUserEmail();
+    }
+
 }
