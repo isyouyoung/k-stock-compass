@@ -58,4 +58,22 @@ public class UserController {
         }
     }
 
+    // 아이디 찾기 API
+    @GetMapping("/find-email")
+    public ResponseEntity<String> findEmail(
+            @RequestParam String userName,
+            @RequestParam String userPnum) {
+        String maskedEmail = userService.findEmail(userName, userPnum);
+        return ResponseEntity.ok(maskedEmail);
+    }
+
+    // 비밀번호 변경 API (임시 비밀번호 발송)
+    @PostMapping("/reset-password")
+    public ResponseEntity<String> resetPassword(
+            @RequestParam String userName,
+            @RequestParam String userEmail) {
+        userService.resetPassword(userName, userEmail);
+        return ResponseEntity.ok("임시 비밀번호가 이메일로 발송되었습니다.");
+    }
+
 }
