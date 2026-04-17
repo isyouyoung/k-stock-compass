@@ -8,6 +8,9 @@ import kopo.kstockcompass.repository.UserInfoRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
+import org.springframework.mail.SimpleMailMessage;
+import org.springframework.mail.javamail.JavaMailSender;
+import java.util.UUID;
 
 @Service
 @RequiredArgsConstructor
@@ -16,6 +19,7 @@ public class UserService {
     private final UserInfoRepository userInfoRepository;
     private final PasswordEncoder passwordEncoder;
     private final JwtProvider jwtProvider; // JWT 추가!
+    private final JavaMailSender mailSender;
 
     // 회원가입
     public void signUp(SignUpRequestDTO dto) {
@@ -64,6 +68,28 @@ public class UserService {
         String masked = prefix + "**" + email.substring(atIndex);
 
         return masked;
+    }
+
+    // 비밀번호 변경 (임시 비밀번호 발송)
+    public void resetPassword(String userName, String userEmail) {
+
+        UserInfo user = userInfoRepository.findByUserEmail(userEmail)
+                .filter(u -> u.getUserName().equals(userName))
+                .orElseThrow(() -> new RuntimeException("입력하신 회원 정보가 일치하지 않습니다."));
+
+        // 임시 비밀번호 생성 (하이픈 제거 8자리)
+        String tempPassword = UUID.randomUUID().toString().replace("-", "").substring(0, 8);
+
+        // 암호화 후 DB 저장
+        user.setUserPwd(passwordEncoder.encode(tempPassword));
+        userInfoRepository.save(user);
+
+        // 이메일 발송
+        SimpleMailMessage message = new SimpleMailMessage();
+        message.setTo(userEmail);
+        message.setSubject("[K-Stock Compass] 임시 비밀번호 발급");
+        message.setText("안녕하세요 " + userName + "님,\n\n임시 비밀번호: " + tempPassword + "\n\n로그인 후 반드시 비밀번호를 변경해주세요.");
+        mailSender.send(message);
     }
 
 
