@@ -7,6 +7,14 @@ package kopo.kstockcompass.repository;
 
 import kopo.kstockcompass.entity.Stock;
 import org.springframework.data.jpa.repository.JpaRepository;
+import java.util.List;
 
 public interface StockRepository extends JpaRepository<Stock, String> {
+
+    // 종목명 검색 메서드
+    // 역할: 사용자가 검색창에 "삼성"을 입력하면, 종목명에 "삼성"이 포함된 모든 종목을 찾아줍니다.
+    // 특징: JPA가 메서드 이름만 보고 자동으로 SQL을 만들어줍니다.
+    //       → SELECT * FROM STOCK WHERE STOCK_NM LIKE '%삼성%'
+    // 사용: 종목 검색 API에서 호출합니다.
+    List<Stock> findByStockNmContaining(String stockNm);
 }
