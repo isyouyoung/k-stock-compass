@@ -7,6 +7,7 @@ import kopo.kstockcompass.dto.StockSearchDTO;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
 import org.springframework.web.util.UriComponentsBuilder;
@@ -15,6 +16,7 @@ import kopo.kstockcompass.repository.StockRepository;
 import org.springframework.transaction.annotation.Transactional;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.TimeUnit;
 
 @Slf4j
 @Service
@@ -27,19 +29,30 @@ public class StockService {
     private final RestTemplate restTemplate;
     private final ObjectMapper objectMapper;
     private final StockRepository stockRepository;
+    private final StringRedisTemplate redisTemplate;
 
+    /**
+     * 주식 시세 조회 메서드 (Redis 캐싱 적용)
+     * 역할: 종목코드 + 기준일자로 해당 종목의 시세를 조회합니다.
+     * 흐름: Redis 확인 → 있으면 바로 반환 / 없으면 API 호출 → Redis 저장 → 반환
+     * 특징: TTL 900초(15분) 캐싱으로 API 호출 횟수를 최소화합니다.
+     */
     public StockItemDTO getStockPrice(String stockCode, String baseDate) {
-        try {
-            String url = UriComponentsBuilder
-                    .fromHttpUrl("https://apis.data.go.kr/1160100/service/GetStockSecuritiesInfoService/getStockPriceInfo")
-                    .queryParam("serviceKey", apiKey)
-                    .queryParam("numOfRows", 1000)
-                    .queryParam("pageNo", 1)
-                    .queryParam("resultType", "json")
-                    .queryParam("basDt", baseDate)
-                    .build(true)
-                    .toUriString();
 
+        String cacheKey = "stock:price:" + stockCode;
+
+        try {
+            // 1. Redis 캐시 확인 (Cache Hit)
+            String cached = redisTemplate.opsForValue().get(cacheKey);
+            if (cached != null) {
+                log.info("✅ Cache Hit! Redis에서 반환: {}", stockCode);
+                return objectMapper.readValue(cached, StockItemDTO.class);
+            }
+
+            log.info("❌ Cache Miss! API 호출: {}", stockCode);
+
+            // 2. 공공데이터 API 호출
+            String url = buildStockApiUrl(1, baseDate, 1000);
             String response = restTemplate.getForObject(url, String.class);
             JsonNode root = objectMapper.readTree(response);
 
@@ -52,7 +65,6 @@ public class StockService {
 
             JsonNode itemNode = root.path("response").path("body").path("items").path("item");
 
-            // 데이터 유무 확인
             if (!itemNode.isArray() || itemNode.isEmpty()) {
                 throw new RuntimeException("해당 날짜(" + baseDate + ")에 데이터가 없습니다.");
             }
@@ -61,14 +73,25 @@ public class StockService {
             for (JsonNode node : itemNode) {
                 String currentSrtnCd = node.path("srtnCd").asText();
                 if (stockCode != null && stockCode.equals(currentSrtnCd)) {
-                    log.debug("종목 매칭 성공: {} ({})", node.path("itmsNm").asText(), stockCode);
-                    return StockItemDTO.builder()
+
+                    StockItemDTO result = StockItemDTO.builder()
                             .srtnCd(currentSrtnCd)
                             .itmsNm(node.path("itmsNm").asText())
                             .clpr(node.path("clpr").asText())
                             .fltRt(node.path("fltRt").asText())
                             .vs(node.path("vs").asText())
                             .build();
+
+                    // 3. Redis에 저장 (TTL 900초)
+                    redisTemplate.opsForValue().set(
+                            cacheKey,
+                            objectMapper.writeValueAsString(result),
+                            900,
+                            TimeUnit.SECONDS
+                    );
+                    log.info("💾 Redis 저장 완료: {} (TTL 900초)", stockCode);
+
+                    return result;
                 }
             }
 
@@ -104,15 +127,7 @@ public class StockService {
             String baseDate = "20260422";
 
             while (true) {
-                String url = UriComponentsBuilder
-                        .fromHttpUrl("https://apis.data.go.kr/1160100/service/GetStockSecuritiesInfoService/getStockPriceInfo")
-                        .queryParam("serviceKey", apiKey)
-                        .queryParam("numOfRows", 1000)
-                        .queryParam("pageNo", pageNo)
-                        .queryParam("resultType", "json")
-                        .queryParam("basDt", baseDate)
-                        .build(true)
-                        .toUriString();
+                String url = buildStockApiUrl(pageNo, baseDate, 1000);
 
                 String response = restTemplate.getForObject(url, String.class);
                 JsonNode root = objectMapper.readTree(response);
@@ -169,6 +184,23 @@ public class StockService {
                         stock.getStockNm()
                 ))
                 .toList();
+    }
+
+    /**
+     * [공통] 공공데이터 API URL 빌더
+     * 역할: URL 생성 로직을 공통화하여 유지보수성을 높입니다.
+     * 특징: 한 곳에서 URL을 관리하므로 API 주소가 바뀌면 여기만 수정하면 됩니다.
+     */
+    private String buildStockApiUrl(int pageNo, String baseDate, int numOfRows) {
+        return UriComponentsBuilder
+                .fromHttpUrl("https://apis.data.go.kr/1160100/service/GetStockSecuritiesInfoService/getStockPriceInfo")
+                .queryParam("serviceKey", apiKey)
+                .queryParam("numOfRows", numOfRows)
+                .queryParam("pageNo", pageNo)
+                .queryParam("resultType", "json")
+                .queryParam("basDt", baseDate)
+                .build(true)
+                .toUriString();
     }
 
 }
