@@ -9,7 +9,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.stereotype.Service;
-import org.springframework.web.client.RestTemplate;
+import org.springframework.web.reactive.function.client.WebClient;
 import org.springframework.web.util.UriComponentsBuilder;
 import kopo.kstockcompass.entity.Stock;
 import kopo.kstockcompass.repository.StockRepository;
@@ -26,7 +26,7 @@ public class StockService {
     @Value("${public.api.stock.key}")
     private String apiKey;
 
-    private final RestTemplate restTemplate;
+    private final WebClient webClient;
     private final ObjectMapper objectMapper;
     private final StockRepository stockRepository;
     private final StringRedisTemplate redisTemplate;
@@ -53,7 +53,11 @@ public class StockService {
 
             // 2. 공공데이터 API 호출
             String url = buildStockApiUrl(1, baseDate, 1000);
-            String response = restTemplate.getForObject(url, String.class);
+            String response = webClient.get()
+                    .uri(url)
+                    .retrieve()
+                    .bodyToMono(String.class)
+                    .block();
             JsonNode root = objectMapper.readTree(response);
 
             // API 응답 코드 검증
@@ -129,7 +133,11 @@ public class StockService {
             while (true) {
                 String url = buildStockApiUrl(pageNo, baseDate, 1000);
 
-                String response = restTemplate.getForObject(url, String.class);
+                String response = webClient.get()
+                        .uri(url)
+                        .retrieve()
+                        .bodyToMono(String.class)
+                        .block();
                 JsonNode root = objectMapper.readTree(response);
                 JsonNode items = root.path("response").path("body").path("items").path("item");
 
