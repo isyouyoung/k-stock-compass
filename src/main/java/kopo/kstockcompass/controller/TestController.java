@@ -8,6 +8,6 @@ public class TestController {
 
     @GetMapping("/test")
     public String test() {
-        return "K-Stock Compass 서버가 정상적으로 응답하고 있습니다! (4/5)";
+        return "K-Stock Compass 서버가 정상적으로 응답하고 있습니다! ";
     }
 }

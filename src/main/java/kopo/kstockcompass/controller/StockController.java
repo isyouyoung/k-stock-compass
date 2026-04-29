@@ -3,24 +3,27 @@ package kopo.kstockcompass.controller;
 import kopo.kstockcompass.dto.MarketIndexDTO;
 import kopo.kstockcompass.dto.StockItemDTO;
 import kopo.kstockcompass.dto.StockSearchDTO;
-import kopo.kstockcompass.service.StockService;
+import kopo.kstockcompass.service.IStockService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 
+// 이 컨트롤러는 주식 정보를 가져오고 검색하는 안내데스크
+// 교수님께서 강조하신 대로 모든 반환 값은 엔티티가 아니라 'DTO'로 전송
 @RestController
 @RequiredArgsConstructor
 @RequestMapping("/api/stock")
 public class StockController {
 
-    private final StockService stockService;
+    private final IStockService stockService;
 
     /**
-     * 주식 시세 조회 API
-     * 역할: 종목코드 + 기준일자로 해당 종목의 시세를 조회합니다.
-     * 사용: GET /api/stock/price?stockCode=005930&baseDate=20260422
+     * [주식 시세 조회]
+     * 종목코드랑 날짜를 받아서 그날의 가격 정보를 가져오는 곳
+     * 여기서 반환하는 'StockItemDTO' 안에는 시가, 종가, 거래량 같은 정보가 들어있음
+     * DB(엔티티) 구조를 그대로 보여주는 게 아니라 화면에 필요한 것만 골라 담은 DTO를 반환
      */
     @GetMapping("/price")
     public ResponseEntity<StockItemDTO> getStockPrice(
@@ -31,9 +34,10 @@ public class StockController {
     }
 
     /**
-     * 전체 종목 초기화 및 수집 API
-     * 역할: 기존 종목 데이터를 삭제하고 공공데이터 API에서 전체 종목을 새로 저장합니다.
-     * 사용: 서버 최초 실행 시 또는 종목 데이터 갱신이 필요할 때 한 번만 호출합니다.
+     * [종목 초기화 및 수집]
+     * 이건 우리 DB를 최신 종목 리스트로 꽉 채움
+     * 공공데이터 API에서 2,800개가 넘는 종목을 긁어오기 때문에 처음에 한 번만 실행
+     * 이 안에서 돌아가는 로직은 RestTemplate 말고 WebClient를 쓰고 있음 <= 교수님 지시사항
      */
     @PostMapping("/init")
     public ResponseEntity<String> initStocks() {
@@ -42,15 +46,20 @@ public class StockController {
     }
 
     /**
-     * 종목 검색 API
-     * 역할: 키워드로 종목명을 검색합니다.
-     * 사용: GET /api/stock/search?keyword=삼성
+     * [종목 검색]
+     * 사용자가 검색창에 '삼성'이라고 치면 DB에서 종목들을 찾아주는 기능
+     * 검색 결과도 StockSearchDTO 리스트로 보내줌으로써 DB 보안을 유지
      */
     @GetMapping("/search")
     public ResponseEntity<List<StockSearchDTO>> searchStocks(@RequestParam String keyword) {
         return ResponseEntity.ok(stockService.searchStocks(keyword));
     }
 
+    /**
+     * [지수 정보 조회]
+     * 코스피(KOSPI)나 코스닥(KOSDAQ) 같은 시장 지수 정보를 가져옴
+     * 역시 MarketIndexDTO라는 전용 가방을 써서 데이터만 전달
+     */
     @GetMapping("/index")
     public ResponseEntity<MarketIndexDTO> getMarketIndex(
             @RequestParam String idxNm,
@@ -58,3 +67,9 @@ public class StockController {
         return ResponseEntity.ok(stockService.getMarketIndex(idxNm, baseDate));
     }
 }
+
+// DTO로 한 번 더 감싼 이유
+// 데이터베이스의 엔티티 구조는 핵심 보안 사항이라
+// 이를 외부에 직접 노출하면 DB 구조가 유출될수도 있고
+// 나중에 DB 설계가 바뀌면 프론트엔드 코드까지 다 고쳐야 하는 의존성 문제가 생길수 있어
+// 유지보수와 보안을 위하여 DTO를 사용

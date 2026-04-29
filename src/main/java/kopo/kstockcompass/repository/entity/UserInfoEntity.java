@@ -1,4 +1,4 @@
-package kopo.kstockcompass.entity;
+package kopo.kstockcompass.repository.entity;
 
 import jakarta.persistence.*;
 import lombok.Getter;
@@ -10,7 +10,7 @@ import java.time.LocalDateTime;
 @Entity
 @Table(name = "USER_INFO")
 @Getter @Setter @NoArgsConstructor
-public class UserInfo {
+public class UserInfoEntity {
     @Id
     @Column(name = "USER_EMAIL", length = 100)
     private String userEmail;

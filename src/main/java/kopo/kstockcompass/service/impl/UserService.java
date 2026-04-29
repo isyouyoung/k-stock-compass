@@ -1,11 +1,12 @@
-package kopo.kstockcompass.service;
+package kopo.kstockcompass.service.impl;
 
 import kopo.kstockcompass.config.JwtProvider;
 import kopo.kstockcompass.dto.ChangePasswordRequestDTO;
 import kopo.kstockcompass.dto.LoginRequestDTO;
 import kopo.kstockcompass.dto.SignUpRequestDTO;
-import kopo.kstockcompass.entity.UserInfo;
+import kopo.kstockcompass.repository.entity.UserInfoEntity;
 import kopo.kstockcompass.repository.UserInfoRepository;
+import kopo.kstockcompass.service.IUserService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
@@ -15,7 +16,7 @@ import java.util.UUID;
 
 @Service
 @RequiredArgsConstructor
-public class UserService {
+public class UserService implements IUserService {
 
     private final UserInfoRepository userInfoRepository;
     private final PasswordEncoder passwordEncoder;
@@ -23,13 +24,14 @@ public class UserService {
     private final JavaMailSender mailSender;
 
     // 회원가입
+    @Override
     public void signUp(SignUpRequestDTO dto) {
 
         if (userInfoRepository.existsByUserEmail(dto.getUserEmail())) {
             throw new RuntimeException("이미 사용중인 이메일입니다.");
         }
 
-        UserInfo user = new UserInfo();
+        UserInfoEntity user = new UserInfoEntity();
         user.setUserEmail(dto.getUserEmail());
         user.setUserPwd(passwordEncoder.encode(dto.getUserPwd()));
         user.setUserName(dto.getUserName());
@@ -39,9 +41,10 @@ public class UserService {
     }
 
     // 로그인 → JWT 토큰 반환
+    @Override
     public String login(LoginRequestDTO dto) {
 
-        UserInfo user = userInfoRepository.findByUserEmail(dto.getUserEmail())
+        UserInfoEntity user = userInfoRepository.findByUserEmail(dto.getUserEmail())
                 .orElseThrow(() -> new RuntimeException("이메일이 존재하지 않습니다."));
 
         if (!passwordEncoder.matches(dto.getUserPwd(), user.getUserPwd())) {
@@ -53,14 +56,16 @@ public class UserService {
     }
 
     // 이메일 중복 체크
+    @Override
     public boolean checkEmail(String email) {
         return userInfoRepository.existsByUserEmail(email);
     }
 
     // 아이디 찾기
+    @Override
     public String findEmail(String userName, String userPnum) {
 
-        UserInfo user = userInfoRepository.findByUserNameAndUserPnum(userName, userPnum)
+        UserInfoEntity user = userInfoRepository.findByUserNameAndUserPnum(userName, userPnum)
                 .orElseThrow(() -> new RuntimeException("일치하는 회원 정보가 없습니다."));
 
         String email = user.getUserEmail();
@@ -72,9 +77,10 @@ public class UserService {
     }
 
     // 비밀번호 변경 (임시 비밀번호 발송)
+    @Override
     public void resetPassword(String userName, String userEmail) {
 
-        UserInfo user = userInfoRepository.findByUserEmail(userEmail)
+        UserInfoEntity user = userInfoRepository.findByUserEmail(userEmail)
                 .filter(u -> u.getUserName().equals(userName))
                 .orElseThrow(() -> new RuntimeException("입력하신 회원 정보가 일치하지 않습니다."));
 
@@ -93,8 +99,9 @@ public class UserService {
         mailSender.send(message);
     }
 
+    @Override
     public void changePassword(String email, ChangePasswordRequestDTO dto) {
-        UserInfo user = userInfoRepository.findByUserEmail(email)
+        UserInfoEntity user = userInfoRepository.findByUserEmail(email)
                 .orElseThrow(() -> new RuntimeException("사용자를 찾을 수 없습니다."));
 
         if (!passwordEncoder.matches(dto.getCurrentPwd(), user.getUserPwd())) {

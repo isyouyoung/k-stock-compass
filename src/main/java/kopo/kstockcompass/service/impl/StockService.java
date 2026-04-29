@@ -1,10 +1,11 @@
-package kopo.kstockcompass.service;
+package kopo.kstockcompass.service.impl;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import kopo.kstockcompass.dto.MarketIndexDTO;
 import kopo.kstockcompass.dto.StockItemDTO;
 import kopo.kstockcompass.dto.StockSearchDTO;
+import kopo.kstockcompass.service.IStockService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
@@ -12,7 +13,7 @@ import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.web.reactive.function.client.WebClient;
 import org.springframework.web.util.UriComponentsBuilder;
-import kopo.kstockcompass.entity.Stock;
+import kopo.kstockcompass.repository.entity.StockEntity;
 import kopo.kstockcompass.repository.StockRepository;
 import org.springframework.transaction.annotation.Transactional;
 import java.util.ArrayList;
@@ -22,7 +23,7 @@ import java.util.concurrent.TimeUnit;
 @Slf4j
 @Service
 @RequiredArgsConstructor
-public class StockService {
+public class StockService implements IStockService {
 
     @Value("${public.api.stock.key}")
     private String apiKey;
@@ -38,6 +39,7 @@ public class StockService {
      * 흐름: Redis 확인 → 있으면 바로 반환 / 없으면 API 호출 → Redis 저장 → 반환
      * 특징: TTL 900초(15분) 캐싱으로 API 호출 횟수를 최소화합니다.
      */
+    @Override
     public StockItemDTO getStockPrice(String stockCode, String baseDate) {
 
         String cacheKey = "stock:price:" + stockCode;
@@ -112,6 +114,7 @@ public class StockService {
      * [STEP 1] 초기화 전용 메서드
      * 역할: 기존 데이터를 싹 비우고 전체 수집을 시작합니다.
      */
+    @Override
     @Transactional
     public void initStocks() {
         log.info("기존 종목 데이터를 삭제하고 초기화를 시작합니다.");
@@ -124,6 +127,7 @@ public class StockService {
      * 역할: 공공데이터 API에서 전체 종목을 받아와서 STOCK 테이블에 저장합니다.
      * 특징: saveAll()로 묶음 저장해서 성능을 높였습니다.
      */
+    @Override
     public void saveAllStocks() {
         log.info("🔥 saveAllStocks 시작!"); // 로그 추가했음
         try {
@@ -148,9 +152,9 @@ public class StockService {
                 }
 
                 // 묶음 저장 (성능 최적화)
-                List<Stock> stockList = new ArrayList<>();
+                List<StockEntity> stockList = new ArrayList<>();
                 for (JsonNode node : items) {
-                    Stock stock = new Stock();
+                    StockEntity stock = new StockEntity();
                     stock.setStockCd(node.path("srtnCd").asText());
                     stock.setStockNm(node.path("itmsNm").asText());
                     stock.setMktType(node.path("mrktCtg").asText());
@@ -175,6 +179,7 @@ public class StockService {
      * 특징: DTO로 변환해서 필요한 필드만 반환합니다. (종목코드, 종목명)
      * 방어: null/공백 키워드 입력 시 빈 리스트 반환합니다.
      */
+    @Override
     public List<StockSearchDTO> searchStocks(String keyword) {
 
         // 방어 코드: 키워드가 null이거나 공백이면 빈 리스트 반환
@@ -212,6 +217,7 @@ public class StockService {
                 .toUriString();
     }
 
+    @Override
     public MarketIndexDTO getMarketIndex(String idxNm, String baseDate) {
         String url = UriComponentsBuilder
                 .fromHttpUrl("https://apis.data.go.kr/1160100/service/GetMarketIndexInfoService/getStockMarketIndex")

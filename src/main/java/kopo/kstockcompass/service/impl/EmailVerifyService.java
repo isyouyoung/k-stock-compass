@@ -1,5 +1,6 @@
-package kopo.kstockcompass.service;
+package kopo.kstockcompass.service.impl;
 
+import kopo.kstockcompass.service.IEmailVerifyService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.mail.SimpleMailMessage;
@@ -11,12 +12,13 @@ import java.util.concurrent.TimeUnit;
 
 @Service
 @RequiredArgsConstructor
-public class EmailVerifyService {
+public class EmailVerifyService implements IEmailVerifyService {
 
     private final StringRedisTemplate redisTemplate;
     private final JavaMailSender mailSender;
 
     // 인증번호 생성 + Redis 저장 + 이메일 발송
+    @Override
     public void sendCode(String email) {
 
         // 6자리 랜덤 숫자 생성
@@ -39,6 +41,7 @@ public class EmailVerifyService {
     }
 
     // 인증번호 검증
+    @Override
     public boolean verifyCode(String email, String code) {
 
         String savedCode = redisTemplate.opsForValue().get("verify:" + email);

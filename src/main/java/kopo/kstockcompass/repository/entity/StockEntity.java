@@ -1,4 +1,4 @@
-package kopo.kstockcompass.entity;
+package kopo.kstockcompass.repository.entity;
 
 import jakarta.persistence.*;
 import lombok.Getter;
@@ -12,7 +12,7 @@ import java.time.LocalDateTime;
 @Getter
 @Setter
 @NoArgsConstructor
-public class Stock {
+public class StockEntity {
 
     @Id
     @Column(name = "STOCK_CD", length = 10, nullable = false)
