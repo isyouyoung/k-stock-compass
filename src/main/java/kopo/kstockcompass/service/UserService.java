@@ -1,6 +1,7 @@
 package kopo.kstockcompass.service;
 
 import kopo.kstockcompass.config.JwtProvider;
+import kopo.kstockcompass.dto.ChangePasswordRequestDTO;
 import kopo.kstockcompass.dto.LoginRequestDTO;
 import kopo.kstockcompass.dto.SignUpRequestDTO;
 import kopo.kstockcompass.entity.UserInfo;
@@ -90,6 +91,18 @@ public class UserService {
         message.setSubject("[K-Stock Compass] 임시 비밀번호 발급");
         message.setText("안녕하세요 " + userName + "님,\n\n임시 비밀번호: " + tempPassword + "\n\n로그인 후 반드시 비밀번호를 변경해주세요.");
         mailSender.send(message);
+    }
+
+    public void changePassword(String email, ChangePasswordRequestDTO dto) {
+        UserInfo user = userInfoRepository.findByUserEmail(email)
+                .orElseThrow(() -> new RuntimeException("사용자를 찾을 수 없습니다."));
+
+        if (!passwordEncoder.matches(dto.getCurrentPwd(), user.getUserPwd())) {
+            throw new RuntimeException("현재 비밀번호가 일치하지 않습니다.");
+        }
+
+        user.setUserPwd(passwordEncoder.encode(dto.getNewPwd()));
+        userInfoRepository.save(user);
     }
 
 

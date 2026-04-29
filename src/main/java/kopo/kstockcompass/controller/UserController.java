@@ -1,7 +1,7 @@
 package kopo.kstockcompass.controller;
 
-import kopo.kstockcompass.dto.LoginRequestDTO;
-import kopo.kstockcompass.dto.SignUpRequestDTO;
+import kopo.kstockcompass.config.JwtProvider;
+import kopo.kstockcompass.dto.*;
 import kopo.kstockcompass.service.EmailVerifyService;
 import kopo.kstockcompass.service.UserService;
 import jakarta.validation.Valid;
@@ -16,6 +16,7 @@ public class UserController {
 
     private final UserService userService;
     private final EmailVerifyService emailVerifyService;
+    private final JwtProvider jwtProvider;
 
     // 회원가입 API
     @PostMapping("/signup")
@@ -31,26 +32,21 @@ public class UserController {
         return ResponseEntity.ok(result);
     }
 
-    // 이메일 중복 체크 API
     @GetMapping("/check-email")
-    public ResponseEntity<Boolean> checkEmail(@RequestParam String email) {
-        boolean isDuplicate = userService.checkEmail(email);
+    public ResponseEntity<Boolean> checkEmail(@RequestParam String userEmail) {
+        boolean isDuplicate = userService.checkEmail(userEmail);
         return ResponseEntity.ok(isDuplicate);
     }
 
-    // 이메일 인증번호 발송 API (실제 이메일 발송)
     @PostMapping("/send-code")
-    public ResponseEntity<String> sendCode(@RequestParam String email) {
-        emailVerifyService.sendCode(email);
+    public ResponseEntity<String> sendCode(@RequestBody EmailRequestDTO dto) {
+        emailVerifyService.sendCode(dto.getUserEmail());
         return ResponseEntity.ok("인증번호가 발송되었습니다.");
     }
 
-    // 인증번호 확인 API
     @PostMapping("/verify-code")
-    public ResponseEntity<String> verifyCode(
-            @RequestParam String email,
-            @RequestParam String code) {
-        boolean result = emailVerifyService.verifyCode(email, code);
+    public ResponseEntity<String> verifyCode(@RequestBody VerifyCodeRequestDTO dto) {
+        boolean result = emailVerifyService.verifyCode(dto.getUserEmail(), dto.getVerifyCode());
         if (result) {
             return ResponseEntity.ok("인증이 완료되었습니다.");
         } else {
@@ -74,6 +70,15 @@ public class UserController {
             @RequestParam String userEmail) {
         userService.resetPassword(userName, userEmail);
         return ResponseEntity.ok("임시 비밀번호가 이메일로 발송되었습니다.");
+    }
+
+    @PostMapping("/change-password")
+    public ResponseEntity<String> changePassword(
+            @RequestHeader("Authorization") String token,
+            @RequestBody ChangePasswordRequestDTO dto) {
+        String email = jwtProvider.getEmail(token.replace("Bearer ", ""));
+        userService.changePassword(email, dto);
+        return ResponseEntity.ok("비밀번호가 변경되었습니다.");
     }
 
 }
