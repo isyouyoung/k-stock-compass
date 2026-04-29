@@ -1,15 +1,16 @@
 package kopo.kstockcompass.repository.entity;
 
 import jakarta.persistence.*;
-import lombok.Getter;
-import lombok.NoArgsConstructor;
-import lombok.Setter;
+import lombok.*;
 import org.hibernate.annotations.CreationTimestamp; // 추가
 import java.time.LocalDateTime;
 
 @Entity
 @Table(name = "USER_INFO")
+// 교수님 PPT6장 9페이지 참고
 @Getter @Setter @NoArgsConstructor
+@AllArgsConstructor
+@Builder // 교수님 PPT6장 8페이지 참고
 public class UserInfoEntity {
     @Id
     @Column(name = "USER_EMAIL", length = 100)

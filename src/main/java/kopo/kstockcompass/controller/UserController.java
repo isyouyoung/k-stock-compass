@@ -123,6 +123,7 @@ public class UserController {
 
         // 토큰 위변조 검사 및 사용자 식별 (JWT의 강점)
         String pureToken = token.replace("Bearer ", "");
+        // 헤더에서 토큰을 꺼내서 이메일을 추출
         String email = jwtProvider.getEmail(pureToken);
 
         userService.changePassword(email, dto);

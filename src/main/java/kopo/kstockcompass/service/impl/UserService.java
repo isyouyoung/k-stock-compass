@@ -31,11 +31,17 @@ public class UserService implements IUserService {
             throw new RuntimeException("이미 사용중인 이메일입니다.");
         }
 
-        UserInfoEntity user = new UserInfoEntity();
-        user.setUserEmail(dto.getUserEmail());
-        user.setUserPwd(passwordEncoder.encode(dto.getUserPwd()));
-        user.setUserName(dto.getUserName());
-        user.setUserPnum(dto.getUserPnum());
+        // 3차 평가 반영 예정: AES-128 CBC 식별정보 암호화
+        // 현재는 평문 저장 중이며, 3차 평가 전까지 이메일·전화번호에
+        // AES-128 CBC 양방향 암호화를 적용할 예정임
+        // 이메일(식별정보)과 전화번호(식별정보)는 복호화가 필요하므로
+        // 단방향인 BCrypt가 아닌 양방향 AES 암호화를 사용해야 함
+        UserInfoEntity user = UserInfoEntity.builder()
+                .userEmail(dto.getUserEmail())
+                .userPwd(passwordEncoder.encode(dto.getUserPwd()))
+                .userName(dto.getUserName())
+                .userPnum(dto.getUserPnum())
+                .build();
 
         userInfoRepository.save(user);
     }
@@ -108,6 +114,9 @@ public class UserService implements IUserService {
             throw new RuntimeException("현재 비밀번호가 일치하지 않습니다.");
         }
 
+        // [비밀번호 단방향 암호화 - BCrypt]
+        // BCrypt는 단방향 해시 암호화로 복호화가 불가능함
+        // passwordEncoder.encode() : 평문 비밀번호를 BCrypt로 암호화하여 DB에 저장
         user.setUserPwd(passwordEncoder.encode(dto.getNewPwd()));
         userInfoRepository.save(user);
     }
