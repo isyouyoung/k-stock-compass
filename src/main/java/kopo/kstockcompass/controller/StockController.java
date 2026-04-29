@@ -1,5 +1,6 @@
 package kopo.kstockcompass.controller;
 
+import kopo.kstockcompass.dto.MarketIndexDTO;
 import kopo.kstockcompass.dto.StockItemDTO;
 import kopo.kstockcompass.dto.StockSearchDTO;
 import kopo.kstockcompass.service.StockService;
@@ -48,5 +49,12 @@ public class StockController {
     @GetMapping("/search")
     public ResponseEntity<List<StockSearchDTO>> searchStocks(@RequestParam String keyword) {
         return ResponseEntity.ok(stockService.searchStocks(keyword));
+    }
+
+    @GetMapping("/index")
+    public ResponseEntity<MarketIndexDTO> getMarketIndex(
+            @RequestParam String idxNm,
+            @RequestParam String baseDate) {
+        return ResponseEntity.ok(stockService.getMarketIndex(idxNm, baseDate));
     }
 }

@@ -1,196 +1,196 @@
 <!DOCTYPE html>
 <html lang="ko">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=1920">
-<title>K-Stock Compass</title>
-<style>
-@import url('https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;600;700;900&family=Inter:wght@400;500;600;700&display=swap');
-:root {
-  --navy:#1F4E79; --blue:#2E75B6; --light-blue:#DEEAF1;
-  --bg:#F4F7FB; --white:#fff; --dark:#1E1E2E; --gray:#6B7B8D;
-  --light-gray:#E8ECF0; --border:#D1D5DB; --input-bg:#F9FAFB;
-  --red-up:#E52929; --blue-dn:#174AE4; --green:#10875B;
-  --red-err:#DC2626; --amber:#F59E0B;
-}
-*{margin:0;padding:0;box-sizing:border-box;}
-body{font-family:'Noto Sans KR',sans-serif;background:var(--bg);color:var(--dark);min-height:100vh;}
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=1920">
+  <title>K-Stock Compass</title>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;600;700;900&family=Inter:wght@400;500;600;700&display=swap');
+    :root {
+      --navy:#1F4E79; --blue:#2E75B6; --light-blue:#DEEAF1;
+      --bg:#F4F7FB; --white:#fff; --dark:#1E1E2E; --gray:#6B7B8D;
+      --light-gray:#E8ECF0; --border:#D1D5DB; --input-bg:#F9FAFB;
+      --red-up:#E52929; --blue-dn:#174AE4; --green:#10875B;
+      --red-err:#DC2626; --amber:#F59E0B;
+    }
+    *{margin:0;padding:0;box-sizing:border-box;}
+    body{font-family:'Noto Sans KR',sans-serif;background:var(--bg);color:var(--dark);min-height:100vh;}
 
-/* ── 전체 레이아웃 ── */
-.app{display:flex;height:100vh;overflow:hidden;}
-.sidebar{width:270px;min-width:270px;background:var(--white);border-right:1px solid var(--border);display:flex;flex-direction:column;z-index:10;}
-.sidebar .logo{padding:28px 22px 20px;border-bottom:1px solid var(--light-gray);}
-.logo-mark{font-size:18px;font-weight:900;color:var(--navy);letter-spacing:-0.5px;line-height:1.2;}
-.logo-sub{font-size:11px;color:var(--gray);margin-top:4px;}
-.nav-section{padding:12px 0;flex:1;}
-.nav-item{display:flex;align-items:center;gap:12px;padding:12px 22px;font-size:13px;color:var(--gray);cursor:pointer;transition:all .15s;border-left:3px solid transparent;}
-.nav-item:hover{background:var(--bg);color:var(--navy);}
-.nav-item.active{background:var(--light-blue);color:var(--navy);font-weight:600;border-left-color:var(--blue);}
-.nav-item.locked{color:var(--light-gray);cursor:default;}
-.nav-item.locked:hover{background:none;color:var(--light-gray);}
-.nav-icon{font-size:16px;width:20px;text-align:center;}
-.sidebar-footer{padding:16px 22px;border-top:1px solid var(--light-gray);}
-.user-info{display:flex;align-items:center;gap:10px;}
-.user-avatar{width:32px;height:32px;border-radius:50%;background:var(--blue);display:flex;align-items:center;justify-content:center;font-size:14px;color:white;}
-.user-name{font-size:12px;font-weight:600;color:var(--dark);}
-.user-email{font-size:10px;color:var(--gray);}
+    /* ── 전체 레이아웃 ── */
+    .app{display:flex;height:100vh;overflow:hidden;}
+    .sidebar{width:270px;min-width:270px;background:var(--white);border-right:1px solid var(--border);display:flex;flex-direction:column;z-index:10;}
+    .sidebar .logo{padding:28px 22px 20px;border-bottom:1px solid var(--light-gray);}
+    .logo-mark{font-size:18px;font-weight:900;color:var(--navy);letter-spacing:-0.5px;line-height:1.2;}
+    .logo-sub{font-size:11px;color:var(--gray);margin-top:4px;}
+    .nav-section{padding:12px 0;flex:1;}
+    .nav-item{display:flex;align-items:center;gap:12px;padding:12px 22px;font-size:13px;color:var(--gray);cursor:pointer;transition:all .15s;border-left:3px solid transparent;}
+    .nav-item:hover{background:var(--bg);color:var(--navy);}
+    .nav-item.active{background:var(--light-blue);color:var(--navy);font-weight:600;border-left-color:var(--blue);}
+    .nav-item.locked{color:var(--light-gray);cursor:default;}
+    .nav-item.locked:hover{background:none;color:var(--light-gray);}
+    .nav-icon{font-size:16px;width:20px;text-align:center;}
+    .sidebar-footer{padding:16px 22px;border-top:1px solid var(--light-gray);}
+    .user-info{display:flex;align-items:center;gap:10px;}
+    .user-avatar{width:32px;height:32px;border-radius:50%;background:var(--blue);display:flex;align-items:center;justify-content:center;font-size:14px;color:white;}
+    .user-name{font-size:12px;font-weight:600;color:var(--dark);}
+    .user-email{font-size:10px;color:var(--gray);}
 
-/* ── 메인 콘텐츠 ── */
-.content{flex:1;overflow-y:auto;background:var(--bg);}
-.page{display:none;min-height:100vh;}
-.page.active{display:block;}
+    /* ── 메인 콘텐츠 ── */
+    .content{flex:1;overflow-y:auto;background:var(--bg);}
+    .page{display:none;min-height:100vh;}
+    .page.active{display:block;}
 
-/* ── 공통 컴포넌트 ── */
-.page-wrap{padding:32px;}
-.page-header{margin-bottom:28px;}
-.page-title{font-size:22px;font-weight:700;color:var(--navy);}
-.page-sub{font-size:13px;color:var(--gray);margin-top:4px;}
-.card{background:var(--white);border:1px solid var(--border);border-radius:10px;padding:24px;}
-.section-title{font-size:14px;font-weight:700;color:var(--navy);margin-bottom:14px;}
-.label{font-size:12px;font-weight:600;color:var(--dark);margin-bottom:6px;}
-.label .req{color:var(--red-err);}
-.form-group{margin-bottom:16px;}
-.input{width:100%;padding:11px 14px;border:1px solid var(--border);border-radius:7px;font-size:13px;font-family:'Noto Sans KR',sans-serif;background:var(--input-bg);color:var(--dark);transition:border .15s;outline:none;}
-.input:focus{border-color:var(--blue);}
-.input.error{border-color:var(--red-err);background:#FFF5F5;}
-.input.disabled{background:var(--light-gray);color:var(--gray);cursor:not-allowed;}
-.error-msg{font-size:11px;color:var(--red-err);margin-top:4px;}
-.btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;padding:11px 20px;border:none;border-radius:7px;font-size:13px;font-weight:600;cursor:pointer;font-family:'Noto Sans KR',sans-serif;transition:all .15s;text-decoration:none;}
-.btn-primary{background:var(--navy);color:white;} .btn-primary:hover{background:#163d5e;}
-.btn-blue{background:var(--blue);color:white;} .btn-blue:hover{background:#245e99;}
-.btn-secondary{background:white;color:var(--dark);border:1px solid var(--border);} .btn-secondary:hover{background:var(--bg);}
-.btn-danger{background:var(--red-err);color:white;} .btn-danger:hover{background:#b91c1c;}
-.btn-outline{background:white;color:var(--blue);border:1px solid var(--blue);}
-.btn-ghost{background:transparent;color:var(--gray);border:1px solid var(--border);}
-.btn-disabled{background:var(--light-gray);color:var(--gray);cursor:not-allowed;}
-.btn-full{width:100%;}
-.btn-sm{padding:7px 14px;font-size:12px;}
-.up{color:var(--red-up);font-weight:600;} .down{color:var(--blue-dn);font-weight:600;}
-.badge{display:inline-block;padding:2px 8px;border-radius:4px;font-size:11px;font-weight:600;}
-.badge-kospi{background:#EFF6FF;color:var(--navy);}
-.badge-kosdaq{background:#F0FDF4;color:var(--green);}
-.notice{background:#EFF6FF;border:1px solid var(--blue);border-radius:7px;padding:12px 16px;font-size:12px;color:var(--blue);}
-.warning{background:#FFF5F5;border:1px solid var(--red-err);border-radius:7px;padding:12px 16px;font-size:12px;color:var(--red-err);}
-.success-bar{background:#F0FDF4;border:1px solid var(--green);border-radius:7px;padding:12px 16px;font-size:12px;color:var(--green);}
-.divider{height:1px;background:var(--light-gray);margin:20px 0;}
-.flex{display:flex;} .flex-center{align-items:center;} .flex-between{justify-content:space-between;} .gap8{gap:8px;} .gap12{gap:12px;} .gap16{gap:16px;}
-.grid2{display:grid;grid-template-columns:1fr 1fr;gap:16px;}
-.grid3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:14px;}
-.mt8{margin-top:8px;} .mt12{margin-top:12px;} .mt16{margin-top:16px;} .mt20{margin-top:20px;} .mt24{margin-top:24px;}
-.mb8{margin-bottom:8px;} .mb12{margin-bottom:12px;} .mb16{margin-bottom:16px;}
-.text-center{text-align:center;}
-.text-gray{color:var(--gray);}
-.text-navy{color:var(--navy);}
+    /* ── 공통 컴포넌트 ── */
+    .page-wrap{padding:32px;}
+    .page-header{margin-bottom:28px;}
+    .page-title{font-size:22px;font-weight:700;color:var(--navy);}
+    .page-sub{font-size:13px;color:var(--gray);margin-top:4px;}
+    .card{background:var(--white);border:1px solid var(--border);border-radius:10px;padding:24px;}
+    .section-title{font-size:14px;font-weight:700;color:var(--navy);margin-bottom:14px;}
+    .label{font-size:12px;font-weight:600;color:var(--dark);margin-bottom:6px;}
+    .label .req{color:var(--red-err);}
+    .form-group{margin-bottom:16px;}
+    .input{width:100%;padding:11px 14px;border:1px solid var(--border);border-radius:7px;font-size:13px;font-family:'Noto Sans KR',sans-serif;background:var(--input-bg);color:var(--dark);transition:border .15s;outline:none;}
+    .input:focus{border-color:var(--blue);}
+    .input.error{border-color:var(--red-err);background:#FFF5F5;}
+    .input.disabled{background:var(--light-gray);color:var(--gray);cursor:not-allowed;}
+    .error-msg{font-size:11px;color:var(--red-err);margin-top:4px;}
+    .btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;padding:11px 20px;border:none;border-radius:7px;font-size:13px;font-weight:600;cursor:pointer;font-family:'Noto Sans KR',sans-serif;transition:all .15s;text-decoration:none;}
+    .btn-primary{background:var(--navy);color:white;} .btn-primary:hover{background:#163d5e;}
+    .btn-blue{background:var(--blue);color:white;} .btn-blue:hover{background:#245e99;}
+    .btn-secondary{background:white;color:var(--dark);border:1px solid var(--border);} .btn-secondary:hover{background:var(--bg);}
+    .btn-danger{background:var(--red-err);color:white;} .btn-danger:hover{background:#b91c1c;}
+    .btn-outline{background:white;color:var(--blue);border:1px solid var(--blue);}
+    .btn-ghost{background:transparent;color:var(--gray);border:1px solid var(--border);}
+    .btn-disabled{background:var(--light-gray);color:var(--gray);cursor:not-allowed;}
+    .btn-full{width:100%;}
+    .btn-sm{padding:7px 14px;font-size:12px;}
+    .up{color:var(--red-up);font-weight:600;} .down{color:var(--blue-dn);font-weight:600;}
+    .badge{display:inline-block;padding:2px 8px;border-radius:4px;font-size:11px;font-weight:600;}
+    .badge-kospi{background:#EFF6FF;color:var(--navy);}
+    .badge-kosdaq{background:#F0FDF4;color:var(--green);}
+    .notice{background:#EFF6FF;border:1px solid var(--blue);border-radius:7px;padding:12px 16px;font-size:12px;color:var(--blue);}
+    .warning{background:#FFF5F5;border:1px solid var(--red-err);border-radius:7px;padding:12px 16px;font-size:12px;color:var(--red-err);}
+    .success-bar{background:#F0FDF4;border:1px solid var(--green);border-radius:7px;padding:12px 16px;font-size:12px;color:var(--green);}
+    .divider{height:1px;background:var(--light-gray);margin:20px 0;}
+    .flex{display:flex;} .flex-center{align-items:center;} .flex-between{justify-content:space-between;} .gap8{gap:8px;} .gap12{gap:12px;} .gap16{gap:16px;}
+    .grid2{display:grid;grid-template-columns:1fr 1fr;gap:16px;}
+    .grid3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:14px;}
+    .mt8{margin-top:8px;} .mt12{margin-top:12px;} .mt16{margin-top:16px;} .mt20{margin-top:20px;} .mt24{margin-top:24px;}
+    .mb8{margin-bottom:8px;} .mb12{margin-bottom:12px;} .mb16{margin-bottom:16px;}
+    .text-center{text-align:center;}
+    .text-gray{color:var(--gray);}
+    .text-navy{color:var(--navy);}
 
-/* ── 모달 ── */
-.modal-backdrop{display:none;position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:1000;align-items:center;justify-content:center;}
-.modal-backdrop.open{display:flex;}
-.modal{background:white;border-radius:12px;overflow:hidden;width:460px;box-shadow:0 24px 64px rgba(0,0,0,.25);animation:modalIn .2s ease;}
-@keyframes modalIn{from{transform:scale(.95);opacity:0}to{transform:scale(1);opacity:1}}
-.modal-header{padding:18px 24px;font-size:15px;font-weight:700;color:white;}
-.modal-body{padding:28px 28px 20px;text-align:center;}
-.modal-icon{font-size:56px;margin-bottom:16px;}
-.modal-title{font-size:18px;font-weight:700;color:var(--dark);margin-bottom:8px;}
-.modal-desc{font-size:13px;color:var(--gray);line-height:1.6;}
-.modal-footer{display:flex;gap:10px;padding:8px 24px 24px;}
-.modal-footer .btn{flex:1;}
+    /* ── 모달 ── */
+    .modal-backdrop{display:none;position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:1000;align-items:center;justify-content:center;}
+    .modal-backdrop.open{display:flex;}
+    .modal{background:white;border-radius:12px;overflow:hidden;width:460px;box-shadow:0 24px 64px rgba(0,0,0,.25);animation:modalIn .2s ease;}
+    @keyframes modalIn{from{transform:scale(.95);opacity:0}to{transform:scale(1);opacity:1}}
+    .modal-header{padding:18px 24px;font-size:15px;font-weight:700;color:white;}
+    .modal-body{padding:28px 28px 20px;text-align:center;}
+    .modal-icon{font-size:56px;margin-bottom:16px;}
+    .modal-title{font-size:18px;font-weight:700;color:var(--dark);margin-bottom:8px;}
+    .modal-desc{font-size:13px;color:var(--gray);line-height:1.6;}
+    .modal-footer{display:flex;gap:10px;padding:8px 24px 24px;}
+    .modal-footer .btn{flex:1;}
 
-/* ── 인너 탭 ── */
-.inner-tabs{display:flex;border-bottom:2px solid var(--border);background:white;padding:0 24px;}
-.inner-tab{padding:14px 24px;font-size:13px;font-weight:500;color:var(--gray);cursor:pointer;border-bottom:2px solid transparent;margin-bottom:-2px;transition:all .15s;}
-.inner-tab:hover{color:var(--navy);}
-.inner-tab.active{color:var(--navy);font-weight:700;border-bottom-color:var(--navy);}
+    /* ── 인너 탭 ── */
+    .inner-tabs{display:flex;border-bottom:2px solid var(--border);background:white;padding:0 24px;}
+    .inner-tab{padding:14px 24px;font-size:13px;font-weight:500;color:var(--gray);cursor:pointer;border-bottom:2px solid transparent;margin-bottom:-2px;transition:all .15s;}
+    .inner-tab:hover{color:var(--navy);}
+    .inner-tab.active{color:var(--navy);font-weight:700;border-bottom-color:var(--navy);}
 
-/* ── 신호등 ── */
-.signal-wrap{display:flex;align-items:flex-end;gap:20px;padding:24px;background:var(--bg);border-radius:10px;}
-.signal-dot{border-radius:50%;display:flex;flex-direction:column;align-items:center;justify-content:center;color:white;font-weight:700;cursor:default;}
-.signal-dot.big{width:92px;height:92px;font-size:22px;}
-.signal-dot.small{width:60px;height:60px;font-size:14px;opacity:.4;}
-.signal-label{font-size:11px;text-align:center;margin-top:8px;}
+    /* ── 신호등 ── */
+    .signal-wrap{display:flex;align-items:flex-end;gap:20px;padding:24px;background:var(--bg);border-radius:10px;}
+    .signal-dot{border-radius:50%;display:flex;flex-direction:column;align-items:center;justify-content:center;color:white;font-weight:700;cursor:default;}
+    .signal-dot.big{width:92px;height:92px;font-size:22px;}
+    .signal-dot.small{width:60px;height:60px;font-size:14px;opacity:.4;}
+    .signal-label{font-size:11px;text-align:center;margin-top:8px;}
 
-/* ── 주가 행 ── */
-.stock-row{display:flex;align-items:center;padding:16px 18px;border:1px solid var(--border);border-radius:8px;background:white;cursor:pointer;transition:all .15s;margin-bottom:8px;}
-.stock-row:hover{border-color:var(--blue);box-shadow:0 2px 8px rgba(46,117,182,.1);}
-.sn{font-size:15px;font-weight:600;color:var(--dark);min-width:130px;}
-.sc{font-size:12px;color:var(--gray);min-width:70px;}
-.sp{font-size:16px;font-weight:700;margin-left:auto;}
-.sch{font-size:12px;min-width:130px;text-align:right;}
+    /* ── 주가 행 ── */
+    .stock-row{display:flex;align-items:center;padding:16px 18px;border:1px solid var(--border);border-radius:8px;background:white;cursor:pointer;transition:all .15s;margin-bottom:8px;}
+    .stock-row:hover{border-color:var(--blue);box-shadow:0 2px 8px rgba(46,117,182,.1);}
+    .sn{font-size:15px;font-weight:600;color:var(--dark);min-width:130px;}
+    .sc{font-size:12px;color:var(--gray);min-width:70px;}
+    .sp{font-size:16px;font-weight:700;margin-left:auto;}
+    .sch{font-size:12px;min-width:130px;text-align:right;}
 
-/* ── 관심/알림 행 ── */
-.fav-row{background:white;border:1px solid var(--border);border-radius:8px;padding:18px 20px;margin-bottom:10px;display:flex;align-items:center;gap:14px;}
-.alert-cfg{background:white;border:1px solid var(--border);border-radius:8px;padding:18px 20px;margin-bottom:10px;}
-.alert-log-row{border:1px solid var(--border);border-radius:8px;padding:16px 18px;margin-bottom:8px;}
-.alert-log-row.unread{background:#EFF6FF;border-color:var(--blue);}
-.unread-dot{width:8px;height:8px;border-radius:50%;background:var(--blue);display:inline-block;margin-right:6px;}
+    /* ── 관심/알림 행 ── */
+    .fav-row{background:white;border:1px solid var(--border);border-radius:8px;padding:18px 20px;margin-bottom:10px;display:flex;align-items:center;gap:14px;}
+    .alert-cfg{background:white;border:1px solid var(--border);border-radius:8px;padding:18px 20px;margin-bottom:10px;}
+    .alert-log-row{border:1px solid var(--border);border-radius:8px;padding:16px 18px;margin-bottom:8px;}
+    .alert-log-row.unread{background:#EFF6FF;border-color:var(--blue);}
+    .unread-dot{width:8px;height:8px;border-radius:50%;background:var(--blue);display:inline-block;margin-right:6px;}
 
-/* ── 재무 카드 ── */
-.fin-card{border:1px solid var(--border);border-radius:8px;padding:18px;overflow:hidden;position:relative;}
-.fin-bar{position:absolute;top:0;left:0;right:0;height:4px;}
-.fin-label{font-size:11px;color:var(--gray);margin-bottom:6px;}
-.fin-val{font-size:22px;font-weight:700;}
-.fin-sub{font-size:11px;color:var(--gray);margin-top:4px;}
+    /* ── 재무 카드 ── */
+    .fin-card{border:1px solid var(--border);border-radius:8px;padding:18px;overflow:hidden;position:relative;}
+    .fin-bar{position:absolute;top:0;left:0;right:0;height:4px;}
+    .fin-label{font-size:11px;color:var(--gray);margin-bottom:6px;}
+    .fin-val{font-size:22px;font-weight:700;}
+    .fin-sub{font-size:11px;color:var(--gray);margin-top:4px;}
 
-/* ── 빈 상태 ── */
-.empty{text-align:center;padding:80px 40px;}
-.empty-icon{font-size:64px;opacity:.25;margin-bottom:20px;}
-.empty-title{font-size:20px;font-weight:600;color:var(--gray);margin-bottom:10px;}
-.empty-sub{font-size:13px;color:var(--gray);margin-bottom:28px;}
+    /* ── 빈 상태 ── */
+    .empty{text-align:center;padding:80px 40px;}
+    .empty-icon{font-size:64px;opacity:.25;margin-bottom:20px;}
+    .empty-title{font-size:20px;font-weight:600;color:var(--gray);margin-bottom:10px;}
+    .empty-sub{font-size:13px;color:var(--gray);margin-bottom:28px;}
 
-/* ── 성공 화면 ── */
-.success-wrap{display:flex;align-items:center;justify-content:center;min-height:80vh;}
-.success-card{text-align:center;padding:60px 56px;max-width:480px;}
-.success-circle{width:96px;height:96px;border-radius:50%;background:var(--green);display:flex;align-items:center;justify-content:center;font-size:42px;color:white;margin:0 auto 28px;}
+    /* ── 성공 화면 ── */
+    .success-wrap{display:flex;align-items:center;justify-content:center;min-height:80vh;}
+    .success-card{text-align:center;padding:60px 56px;max-width:480px;}
+    .success-circle{width:96px;height:96px;border-radius:50%;background:var(--green);display:flex;align-items:center;justify-content:center;font-size:42px;color:white;margin:0 auto 28px;}
 
-/* ── 인증 레이아웃 ── */
-.auth-layout{display:flex;min-height:100vh;}
-.auth-form-wrap{width:500px;min-width:500px;padding:60px 60px;background:white;overflow-y:auto;display:flex;flex-direction:column;justify-content:center;position:relative;}
-.auth-logo-fixed{position:absolute;top:28px;left:40px;}
-.auth-brand{flex:1;background:var(--navy);display:flex;flex-direction:column;align-items:center;justify-content:center;padding:40px;}
-.auth-brand-title{font-size:48px;font-weight:900;color:white;letter-spacing:-2px;line-height:1.1;text-align:center;}
-.auth-brand-sub{font-size:16px;color:#B0C4DE;margin-top:16px;text-align:center;line-height:1.7;}
-.auth-title{font-size:28px;font-weight:700;color:var(--navy);margin-bottom:8px;}
-.auth-sub{font-size:13px;color:var(--gray);margin-bottom:32px;}
+    /* ── 인증 레이아웃 ── */
+    .auth-layout{display:flex;min-height:100vh;}
+    .auth-form-wrap{width:500px;min-width:500px;padding:60px 60px;background:white;overflow-y:auto;display:flex;flex-direction:column;justify-content:center;position:relative;}
+    .auth-logo-fixed{position:absolute;top:28px;left:40px;}
+    .auth-brand{flex:1;background:var(--navy);display:flex;flex-direction:column;align-items:center;justify-content:center;padding:40px;}
+    .auth-brand-title{font-size:48px;font-weight:900;color:white;letter-spacing:-2px;line-height:1.1;text-align:center;}
+    .auth-brand-sub{font-size:16px;color:#B0C4DE;margin-top:16px;text-align:center;line-height:1.7;}
+    .auth-title{font-size:28px;font-weight:700;color:var(--navy);margin-bottom:8px;}
+    .auth-sub{font-size:13px;color:var(--gray);margin-bottom:32px;}
 
-/* ── 검색바 ── */
-.search-bar{display:flex;border:1px solid var(--border);border-radius:8px;overflow:hidden;transition:border .15s;}
-.search-bar:focus-within{border-color:var(--blue);}
-.search-bar input{flex:1;padding:12px 16px;border:none;font-size:14px;font-family:'Noto Sans KR',sans-serif;background:var(--input-bg);outline:none;color:var(--dark);}
-.search-bar button{padding:12px 20px;background:var(--navy);color:white;border:none;font-size:13px;font-weight:600;cursor:pointer;white-space:nowrap;}
+    /* ── 검색바 ── */
+    .search-bar{display:flex;border:1px solid var(--border);border-radius:8px;overflow:hidden;transition:border .15s;}
+    .search-bar:focus-within{border-color:var(--blue);}
+    .search-bar input{flex:1;padding:12px 16px;border:none;font-size:14px;font-family:'Noto Sans KR',sans-serif;background:var(--input-bg);outline:none;color:var(--dark);}
+    .search-bar button{padding:12px 20px;background:var(--navy);color:white;border:none;font-size:13px;font-weight:600;cursor:pointer;white-space:nowrap;}
 
-/* ── 종목 상세 헤더 ── */
-.detail-header{background:var(--navy);padding:24px 32px;display:flex;align-items:flex-end;gap:20px;}
-.detail-name{font-size:26px;font-weight:700;color:white;}
-.detail-meta{font-size:13px;color:#B0C4DE;margin-top:4px;}
-.detail-price{margin-left:auto;text-align:right;}
-.detail-price .price{font-size:36px;font-weight:900;color:white;}
-.detail-price .change{font-size:14px;margin-top:4px;}
+    /* ── 종목 상세 헤더 ── */
+    .detail-header{background:var(--navy);padding:24px 32px;display:flex;align-items:flex-end;gap:20px;}
+    .detail-name{font-size:26px;font-weight:700;color:white;}
+    .detail-meta{font-size:13px;color:#B0C4DE;margin-top:4px;}
+    .detail-price{margin-left:auto;text-align:right;}
+    .detail-price .price{font-size:36px;font-weight:900;color:white;}
+    .detail-price .change{font-size:14px;margin-top:4px;}
 
-/* ── 태그 ── */
-.tag{display:inline-block;padding:4px 10px;border-radius:20px;font-size:12px;cursor:pointer;border:1px solid var(--border);color:var(--navy);background:var(--bg);transition:all .15s;}
-.tag:hover{background:var(--light-blue);border-color:var(--blue);}
+    /* ── 태그 ── */
+    .tag{display:inline-block;padding:4px 10px;border-radius:20px;font-size:12px;cursor:pointer;border:1px solid var(--border);color:var(--navy);background:var(--bg);transition:all .15s;}
+    .tag:hover{background:var(--light-blue);border-color:var(--blue);}
 
-/* ── 에러 페이지 ── */
-.error-page{display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:100vh;background:var(--navy);}
-.error-num{font-size:160px;font-weight:900;color:rgba(255,255,255,.07);line-height:1;}
-.error-msg-main{font-size:28px;font-weight:700;color:white;margin-top:-30px;margin-bottom:12px;}
-.error-desc{font-size:14px;color:#B0C4DE;margin-bottom:36px;}
+    /* ── 에러 페이지 ── */
+    .error-page{display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:100vh;background:var(--navy);}
+    .error-num{font-size:160px;font-weight:900;color:rgba(255,255,255,.07);line-height:1;}
+    .error-msg-main{font-size:28px;font-weight:700;color:white;margin-top:-30px;margin-bottom:12px;}
+    .error-desc{font-size:14px;color:#B0C4DE;margin-bottom:36px;}
 
-/* ── 로딩 스켈레톤 ── */
-.skeleton{background:linear-gradient(90deg,#f0f0f0 25%,#e0e0e0 50%,#f0f0f0 75%);background-size:200% 100%;animation:shimmer 1.5s infinite;border-radius:6px;}
-@keyframes shimmer{0%{background-position:200% 0}100%{background-position:-200% 0}}
+    /* ── 로딩 스켈레톤 ── */
+    .skeleton{background:linear-gradient(90deg,#f0f0f0 25%,#e0e0e0 50%,#f0f0f0 75%);background-size:200% 100%;animation:shimmer 1.5s infinite;border-radius:6px;}
+    @keyframes shimmer{0%{background-position:200% 0}100%{background-position:-200% 0}}
 
-/* ── 토스트 ── */
-.toast{position:fixed;bottom:28px;right:28px;padding:14px 20px;background:var(--dark);color:white;border-radius:8px;font-size:13px;z-index:9999;display:none;animation:toastIn .3s ease;}
-@keyframes toastIn{from{transform:translateY(20px);opacity:0}to{transform:translateY(0);opacity:1}}
+    /* ── 토스트 ── */
+    .toast{position:fixed;bottom:28px;right:28px;padding:14px 20px;background:var(--dark);color:white;border-radius:8px;font-size:13px;z-index:9999;display:none;animation:toastIn .3s ease;}
+    @keyframes toastIn{from{transform:translateY(20px);opacity:0}to{transform:translateY(0);opacity:1}}
 
-/* ── 비밀번호 강도 ── */
-.pw-strength{display:flex;gap:6px;margin-bottom:16px;align-items:center;}
-.pw-bar{flex:1;height:5px;border-radius:3px;background:var(--light-gray);}
-.pw-bar.filled{background:var(--green);}
+    /* ── 비밀번호 강도 ── */
+    .pw-strength{display:flex;gap:6px;margin-bottom:16px;align-items:center;}
+    .pw-bar{flex:1;height:5px;border-radius:3px;background:var(--light-gray);}
+    .pw-bar.filled{background:var(--green);}
 
-/* 스크롤바 */
-::-webkit-scrollbar{width:6px;} ::-webkit-scrollbar-track{background:transparent;} ::-webkit-scrollbar-thumb{background:var(--border);border-radius:3px;}
-</style>
+    /* 스크롤바 */
+    ::-webkit-scrollbar{width:6px;} ::-webkit-scrollbar-track{background:transparent;} ::-webkit-scrollbar-thumb{background:var(--border);border-radius:3px;}
+  </style>
 </head>
 <body>
 
@@ -355,7 +355,7 @@ body{font-family:'Noto Sans KR',sans-serif;background:var(--bg);color:var(--dark
 </div>
 
 
-  <div class="modal-backdrop" id="modalLogout">
+<div class="modal-backdrop" id="modalLogout">
   <div class="modal">
     <div class="modal-header" style="background:var(--navy);">로그아웃</div>
     <div class="modal-body"><div class="modal-icon">👋</div><div class="modal-title">로그아웃 하시겠습니까?</div><div class="modal-desc">다음에 또 만나요!</div></div>
@@ -398,7 +398,7 @@ body{font-family:'Noto Sans KR',sans-serif;background:var(--bg);color:var(--dark
 <div class="app" id="app" style="display:none;">
   <!-- 사이드바 -->
   <div class="sidebar" id="sidebar">
-    <div class="logo" style="padding:0;background:white;border-bottom:1px solid var(--border);">
+    <div class="logo" style="padding:0;background:white;border-bottom:1px solid var(--border);cursor:pointer;" onclick="navigate('main')">
       <svg width="100%" viewBox="0 0 168 66" xmlns="http://www.w3.org/2000/svg">
         <rect width="168" height="66" fill="white" rx="10"/>
         <rect x="12" y="7" width="22" height="52" rx="5" fill="#1E3A5F"/>
@@ -430,1288 +430,1334 @@ body{font-family:'Noto Sans KR',sans-serif;background:var(--bg);color:var(--dark
 <div id="authArea"></div>
 
 <script>
-// ══════════════════════════════════════
-// 상태 관리
-// ══════════════════════════════════════
-const state = {
-  loggedIn: false,
-  user: null,
-  currentPage: 'login',
-  favorites: [
-    {code:'005930',name:'삼성전자',market:'KOSPI',price:61200,change:1200,pct:2.00},
-    {code:'000660',name:'SK하이닉스',market:'KOSPI',price:182500,change:-1500,pct:-0.81},
-    {code:'035420',name:'NAVER',market:'KOSPI',price:215000,change:3000,pct:1.41},
-    {code:'035720',name:'카카오',market:'KOSDAQ',price:45800,change:-200,pct:-0.43},
-  ],
-  alerts: [
-    {id:1,code:'005930',name:'삼성전자',target:70000,direction:'이상',current:61200},
-    {id:2,code:'000660',name:'SK하이닉스',target:200000,direction:'이상',current:182500},
-    {id:3,code:'035420',name:'NAVER',target:180000,direction:'이하',current:215000},
-  ],
-  alertLogs: [
-    {id:1,name:'삼성전자',msg:'목표가 70,000원 이상 도달!',time:'2026.03.24 14:32',read:false},
-    {id:2,name:'SK하이닉스',msg:'목표가 200,000원 이상 도달!',time:'2026.03.23 09:15',read:false},
-    {id:3,name:'NAVER',msg:'목표가 180,000원 이하 도달!',time:'2026.03.22 15:48',read:true},
-    {id:4,name:'카카오',msg:'목표가 50,000원 이상 도달!',time:'2026.03.21 11:20',read:true},
-  ],
-  currentStock: null,
-  editAlertId: null,
-  delFavCode: null,
-  delAlertId: null,
-};
-
-// ══════════════════════════════════════
-// 유틸
-// ══════════════════════════════════════
-function fmt(n){return Number(n).toLocaleString();}
-function updown(v){return v>=0?`<span class="up">▲ +${fmt(Math.abs(v))}</span>`:`<span class="down">▼ -${fmt(Math.abs(v))}</span>`;}
-function updownPct(v){return v>=0?`<span class="up">(+${Math.abs(v).toFixed(2)}%)</span>`:`<span class="down">(-${Math.abs(v).toFixed(2)}%)</span>`;}
-function showToast(msg,duration=2500){
-  const t=document.getElementById('toast');
-  t.textContent=msg; t.style.display='block';
-  setTimeout(()=>t.style.display='none',duration);
-}
-function openModal(id){document.getElementById(id).classList.add('open');}
-function closeModal(id){document.getElementById(id).classList.remove('open');}
-
-// ══════════════════════════════════════
-// 라우터
-// ══════════════════════════════════════
-function navigate(page, params={}){
-  state.currentPage=page;
-  Object.assign(state, params);
-  if(['login','signup','signup_done','find_id','find_pw','find_pw_reset'].includes(page)){
-    document.getElementById('app').style.display='none';
-    document.getElementById('authArea').style.display='block';
-    renderAuth(page);
-  } else {
-    document.getElementById('app').style.display='flex';
-    document.getElementById('authArea').style.display='none';
-    renderSidebar();
-    renderPage(page);
-  }
-  window.scrollTo(0,0);
-}
-
-// ══════════════════════════════════════
-// 사이드바
-// ══════════════════════════════════════
-function requireLogin(page){
-  if(!state.loggedIn){
-    openModal('modalNeedLogin');
-    state._pendingPage=page;
-    return true;
-  }
-  return false;
-}
-
-function renderSidebar(){
-  const navItems = [
-    {icon:'🏠',label:'메인',page:'main'},
-    {icon:'📊',label:'시장 지수',page:'stock_index'},
-    {icon:'🔍',label:'종목 검색',page:'stock_search'},
-    {icon:'⭐',label:'관심종목',page:'fav_list',auth:true},
-    {icon:'🔔',label:'알림',page:'alert_list',auth:true},
-    {icon:'👤',label:'마이페이지',page:'mypage',auth:true},
-  ];
-  document.getElementById('navSection').innerHTML = navItems.map(item=>`
-    <div class="nav-item ${state.currentPage===item.page?'active':''}"
-      onclick="${!state.loggedIn&&item.auth?`openModal('modalNeedLogin')`:`navigate('${item.page}')`}">
-      <span class="nav-icon">${item.icon}</span>${item.label}
-    </div>
-  `).join('') + (state.loggedIn?`
-    <div class="nav-item" onclick="openModal('modalLogout')" style="margin-top:8px;">
-      <span class="nav-icon">🚪</span>로그아웃
-    </div>`:'');
-  document.getElementById('userInfo').innerHTML = state.loggedIn
-    ? `<div class="user-avatar">👤</div><div><div class="user-name">${state.user.nickname}</div><div class="user-email">${state.user.email}</div></div>`
-    : `<button class="btn btn-primary btn-sm btn-full" onclick="navigate('login')">로그인</button>`;
-}
-
-// ══════════════════════════════════════
-// 인증 화면
-// ══════════════════════════════════════
-function renderAuth(page){
-  const area = document.getElementById('authArea');
-  const pages = {
-    login: renderLogin,
-    signup: renderSignup,
-    signup_done: renderSignupDone,
-    find_id: renderFindId,
-    find_pw: renderFindPw,
-    find_pw_reset: renderFindPwReset,
+  // ══════════════════════════════════════
+  // 상태 관리
+  // ══════════════════════════════════════
+  const state = {
+    loggedIn: false,
+    user: null,
+    currentPage: 'login',
+    favorites: [
+      {code:'005930',name:'삼성전자',market:'KOSPI',price:61200,change:1200,pct:2.00},
+      {code:'000660',name:'SK하이닉스',market:'KOSPI',price:182500,change:-1500,pct:-0.81},
+      {code:'035420',name:'NAVER',market:'KOSPI',price:215000,change:3000,pct:1.41},
+      {code:'035720',name:'카카오',market:'KOSDAQ',price:45800,change:-200,pct:-0.43},
+    ],
+    alerts: [
+      {id:1,code:'005930',name:'삼성전자',target:70000,direction:'이상',current:61200},
+      {id:2,code:'000660',name:'SK하이닉스',target:200000,direction:'이상',current:182500},
+      {id:3,code:'035420',name:'NAVER',target:180000,direction:'이하',current:215000},
+    ],
+    alertLogs: [
+      {id:1,name:'삼성전자',msg:'목표가 70,000원 이상 도달!',time:'2026.03.24 14:32',read:false},
+      {id:2,name:'SK하이닉스',msg:'목표가 200,000원 이상 도달!',time:'2026.03.23 09:15',read:false},
+      {id:3,name:'NAVER',msg:'목표가 180,000원 이하 도달!',time:'2026.03.22 15:48',read:true},
+      {id:4,name:'카카오',msg:'목표가 50,000원 이상 도달!',time:'2026.03.21 11:20',read:true},
+    ],
+    currentStock: null,
+    editAlertId: null,
+    delFavCode: null,
+    delAlertId: null,
   };
-  area.innerHTML = (pages[page]||renderLogin)();
-}
 
-const LOGO_SVG = `<div class="auth-logo-fixed"><svg width="180" viewBox="0 0 168 66" xmlns="http://www.w3.org/2000/svg">
-  <rect width="168" height="66" fill="white" rx="10"/>
-  <rect x="12" y="7" width="22" height="52" rx="5" fill="#1E3A5F"/>
-  <rect x="12" y="7" width="22" height="52" rx="5" fill="none" stroke="#2E75B6" stroke-width="0.7"/>
-  <rect x="14" y="4" width="18" height="5" rx="2.5" fill="#162D4A"/>
-  <rect x="15" y="10" width="16" height="44" rx="3" fill="#0F2340"/>
-  <circle cx="23" cy="21" r="5.5" fill="#7F1D1D"/><circle cx="23" cy="21" r="4" fill="#DC2626"/>
-  <circle cx="23" cy="35" r="5.5" fill="#713F12"/><circle cx="23" cy="35" r="4" fill="#CA8A04"/>
-  <circle cx="23" cy="49" r="7" fill="#22C55E" opacity="0.15"/>
-  <circle cx="23" cy="49" r="5.5" fill="#14532D"/><circle cx="23" cy="49" r="4" fill="#16A34A"/>
-  <circle cx="23" cy="49" r="4" fill="none" stroke="#4ADE80" stroke-width="0.8" opacity="0.7"/>
-  <circle cx="20" cy="46" r="1.5" fill="#BBF7D0" opacity="0.6"/>
-  <rect x="20" y="59" width="6" height="5" rx="1.5" fill="#1E3A5F"/>
-  <rect x="15" y="62" width="16" height="3" rx="1.5" fill="#1E3A5F"/>
-  <text x="42" y="28" font-family="'Noto Sans KR',Arial,sans-serif" font-size="22" font-weight="900" fill="#1F4E79" letter-spacing="-0.5">K-Stock</text>
-  <text x="42" y="52" font-family="'Noto Sans KR',Arial,sans-serif" font-size="22" font-weight="900" fill="#2E75B6" letter-spacing="-0.5">Compass</text>
-</svg></div>`;
+  // ══════════════════════════════════════
+  // 유틸
+  // ══════════════════════════════════════
+  function fmt(n){return Number(n).toLocaleString();}
+  function updown(v){return v>=0?`<span class="up">▲ +${fmt(Math.abs(v))}</span>`:`<span class="down">▼ -${fmt(Math.abs(v))}</span>`;}
+  function updownPct(v){return v>=0?`<span class="up">(+${Math.abs(v).toFixed(2)}%)</span>`:`<span class="down">(-${Math.abs(v).toFixed(2)}%)</span>`;}
+  function showToast(msg,duration=2500){
+    const t=document.getElementById('toast');
+    t.textContent=msg; t.style.display='block';
+    setTimeout(()=>t.style.display='none',duration);
+  }
+  function openModal(id){document.getElementById(id).classList.add('open');}
+  function closeModal(id){document.getElementById(id).classList.remove('open');}
 
-function authLayout(formHtml){
-  return `<div class="auth-layout">
-    <div class="auth-form-wrap">${LOGO_SVG}${formHtml}</div>
-    <div class="auth-brand">
-      <div class="auth-brand-title">K-Stock<br>Compass</div>
-      <div class="auth-brand-sub">재무 신호등으로<br>기업을 한눈에</div>
-    </div>
-  </div>`;
-}
+  // ══════════════════════════════════════
+  // 라우터
+  // ══════════════════════════════════════
+  function navigate(page, params={}){
+    state.currentPage=page;
+    Object.assign(state, params);
+    if(['login','signup','signup_done','find_id','find_pw','find_pw_reset'].includes(page)){
+      document.getElementById('app').style.display='none';
+      document.getElementById('authArea').style.display='block';
+      renderAuth(page);
+    } else {
+      document.getElementById('app').style.display='flex';
+      document.getElementById('authArea').style.display='none';
+      renderSidebar();
+      renderPage(page);
+    }
+    window.scrollTo(0,0);
+  }
 
-function renderLogin(){return authLayout(`
-  <div class="auth-title">로그인</div>
-  <div class="auth-sub">K-Stock Compass와 함께 주식을 분석하세요</div>
-  <div class="form-group"><div class="label">이메일 <span class="req">*</span></div>
-    <input class="input" id="loginEmail" placeholder="mail@example.com" oninput="clearErr('loginEmailErr')">
-    <div class="error-msg" id="loginEmailErr"></div></div>
-  <div class="form-group"><div class="label">비밀번호 <span class="req">*</span></div>
-    <input class="input" id="loginPw" type="password" placeholder="비밀번호" oninput="clearErr('loginPwErr')">
-    <div class="error-msg" id="loginPwErr"></div></div>
-  <div id="loginErr" class="warning mb12" style="display:none;"></div>
-  <button class="btn btn-primary btn-full mb8" onclick="doLogin()">로그인</button>
-  <button class="btn btn-secondary btn-full mb16" onclick="navigate('signup')">회원 가입</button>
-  <div style="display:flex;gap:16px;justify-content:center;">
-    <span class="auth-link" style="font-size:12px;color:var(--blue);cursor:pointer;" onclick="navigate('find_id')">아이디 찾기</span>
-    <span style="color:var(--border);">|</span>
-    <span class="auth-link" style="font-size:12px;color:var(--blue);cursor:pointer;" onclick="navigate('find_pw')">비밀번호 찾기</span>
-  </div>
-`);}
+  // ══════════════════════════════════════
+  // 사이드바
+  // ══════════════════════════════════════
+  function requireLogin(page){
+    if(!state.loggedIn){
+      openModal('modalNeedLogin');
+      state._pendingPage=page;
+      return true;
+    }
+    return false;
+  }
 
-function renderSignup(){return authLayout(`
-  <div class="auth-title">회원가입</div>
-  <div class="auth-sub">K-Stock Compass에 오신 것을 환영합니다</div>
-  <div class="form-group"><div class="label">이메일 <span class="req">*</span></div>
-    <div style="display:flex;gap:8px;">
-      <input class="input" id="regEmail" placeholder="mail@example.com" style="flex:1;">
-      <button class="btn btn-blue btn-sm" style="white-space:nowrap;" onclick="sendVerifyCode()">인증번호 발송</button>
-    </div>
-    <div class="error-msg" id="regEmailErr"></div>
-  </div>
-  <div class="form-group" id="verifyGroup" style="display:none;">
-    <div class="label">인증번호 <span class="req">*</span></div>
-    <div style="display:flex;gap:8px;">
-      <input class="input" id="regVerifyCode" placeholder="인증번호 6자리 입력" style="flex:1;">
-      <button class="btn btn-blue btn-sm" style="white-space:nowrap;" onclick="checkVerifyCode()">확인</button>
-    </div>
-    <div class="error-msg" id="regVerifyErr"></div>
-    <div id="regVerifyOk" style="font-size:11px;color:var(--green);margin-top:4px;display:none;">✓ 이메일 인증이 완료되었습니다.</div>
-  </div>
-  <div class="form-group"><div class="label">이름 <span class="req">*</span></div>
-    <input class="input" id="regNick" placeholder="이름을 입력하세요 (2~10자)">
-    <div class="error-msg" id="regNickErr"></div></div>
-  <div class="form-group"><div class="label">전화번호 <span class="req">*</span></div>
-    <input class="input" id="regPhone" placeholder="01012345678">
-    <div class="error-msg" id="regPhoneErr"></div>
-  </div>
-  <div class="form-group"><div class="label">비밀번호 <span class="req">*</span></div>
-    <input class="input" id="regPw" type="password" placeholder="8자 이상, 영문+숫자+특수문자">
-    <div class="error-msg" id="regPwErr"></div></div>
-  <div class="form-group"><div class="label">비밀번호 확인 <span class="req">*</span></div>
-    <input class="input" id="regPw2" type="password" placeholder="비밀번호를 다시 입력하세요">
-    <div class="error-msg" id="regPw2Err"></div></div>
-  <button class="btn btn-primary btn-full mb8" onclick="doSignup()">회원가입</button>
-  <div style="text-align:center;font-size:12px;color:var(--gray);margin-top:10px;">이미 계정이 있으신가요? <span style="color:var(--blue);cursor:pointer;" onclick="navigate('login')">로그인</span></div>
-`);}
+  function renderSidebar(){
+    const navItems = [
+      {icon:'🏠',label:'메인',page:'main'},
+      {icon:'📊',label:'시장 지수',page:'stock_index'},
+      {icon:'🔍',label:'종목 검색',page:'stock_search'},
+      {icon:'⭐',label:'관심종목',page:'fav_list',auth:true},
+      {icon:'🔔',label:'알림',page:'alert_list',auth:true},
+      {icon:'👤',label:'마이페이지',page:'mypage',auth:true},
+    ];
+    document.getElementById('navSection').innerHTML = navItems.map(item=>`
+        <div class="nav-item ${state.currentPage===item.page?'active':''}"
+        onclick="${!state.loggedIn&&item.auth?`openModal('modalNeedLogin')`:`navigate('${item.page}')`}">
+        <span class="nav-icon">${item.icon}</span>${item.label}
+        </div>
+        `).join('') + (state.loggedIn?`
+        <div class="nav-item" onclick="openModal('modalLogout')" style="margin-top:8px;">
+        <span class="nav-icon">🚪</span>로그아웃
+        </div>`:'');
+    document.getElementById('userInfo').innerHTML = state.loggedIn
+            ? `<div class="user-avatar">👤</div><div><div class="user-name">${state.user.nickname}</div><div class="user-email">${state.user.email}</div></div>`
+            : `<button class="btn btn-primary btn-sm btn-full" onclick="navigate('login')">로그인</button>`;
+  }
 
-function renderSignupDone(){return `
-  <div class="success-wrap" style="min-height:100vh;">
-    <div class="success-card">
-      <div class="success-circle">✓</div>
-      <div style="font-size:26px;font-weight:700;color:var(--navy);margin-bottom:10px;">회원가입이 완료되었습니다!</div>
-      <div style="font-size:14px;color:var(--gray);margin-bottom:32px;">K-Stock Compass의 모든 기능을 이용하실 수 있습니다.</div>
-      <button class="btn btn-primary btn-full mb8" onclick="navigate('login')">로그인 하러 가기</button>
-      <button class="btn btn-secondary btn-full" onclick="navigate('main')">메인으로</button>
-    </div>
-  </div>`;}
+  // ══════════════════════════════════════
+  // 인증 화면
+  // ══════════════════════════════════════
+  function renderAuth(page){
+    const area = document.getElementById('authArea');
+    const pages = {
+      login: renderLogin,
+      signup: renderSignup,
+      signup_done: renderSignupDone,
+      find_id: renderFindId,
+      find_pw: renderFindPw,
+      find_pw_reset: renderFindPwReset,
+    };
+    area.innerHTML = (pages[page]||renderLogin)();
+  }
 
-function renderFindId(){return authLayout(`
-  <div class="auth-title">아이디 찾기</div>
-  <div class="auth-sub" style="margin-bottom:28px;">가입 시 등록한 이름과 전화번호로 이메일을 찾을 수 있습니다.</div>
-  <div class="form-group"><div class="label">이름 <span class="req">*</span></div>
-    <input class="input" id="findName" placeholder="가입 시 등록한 이름 입력">
-    <div class="error-msg" id="findNameErr"></div></div>
-  <div class="form-group"><div class="label">전화번호 <span class="req">*</span></div>
-    <input class="input" id="findPhone" placeholder="01012345678">
-    <div class="error-msg" id="findPhoneErr"></div></div>
-  <button class="btn btn-primary btn-full mb8" onclick="doFindId()">아이디 찾기</button>
-  <div class="divider"></div>
-  <button class="btn btn-secondary btn-full mb8" onclick="navigate('login')">로그인 화면으로 돌아가기</button>
-  <button class="btn btn-outline btn-full" onclick="navigate('find_pw')">비밀번호 찾기</button>
-`);}
+  const LOGO_SVG = `<div class="auth-logo-fixed" onclick="navigate('main')" style="cursor:pointer;z-index:10;"><svg width="180" viewBox="0 0 168 66" xmlns="http://www.w3.org/2000/svg">
+        <rect width="168" height="66" fill="white" rx="10"/>
+        <rect x="12" y="7" width="22" height="52" rx="5" fill="#1E3A5F"/>
+        <rect x="12" y="7" width="22" height="52" rx="5" fill="none" stroke="#2E75B6" stroke-width="0.7"/>
+        <rect x="14" y="4" width="18" height="5" rx="2.5" fill="#162D4A"/>
+        <rect x="15" y="10" width="16" height="44" rx="3" fill="#0F2340"/>
+        <circle cx="23" cy="21" r="5.5" fill="#7F1D1D"/><circle cx="23" cy="21" r="4" fill="#DC2626"/>
+        <circle cx="23" cy="35" r="5.5" fill="#713F12"/><circle cx="23" cy="35" r="4" fill="#CA8A04"/>
+        <circle cx="23" cy="49" r="7" fill="#22C55E" opacity="0.15"/>
+        <circle cx="23" cy="49" r="5.5" fill="#14532D"/><circle cx="23" cy="49" r="4" fill="#16A34A"/>
+        <circle cx="23" cy="49" r="4" fill="none" stroke="#4ADE80" stroke-width="0.8" opacity="0.7"/>
+        <circle cx="20" cy="46" r="1.5" fill="#BBF7D0" opacity="0.6"/>
+        <rect x="20" y="59" width="6" height="5" rx="1.5" fill="#1E3A5F"/>
+        <rect x="15" y="62" width="16" height="3" rx="1.5" fill="#1E3A5F"/>
+        <text x="42" y="28" font-family="'Noto Sans KR',Arial,sans-serif" font-size="22" font-weight="900" fill="#1F4E79" letter-spacing="-0.5">K-Stock</text>
+        <text x="42" y="52" font-family="'Noto Sans KR',Arial,sans-serif" font-size="22" font-weight="900" fill="#2E75B6" letter-spacing="-0.5">Compass</text>
+        </svg></div>`;
 
-function renderFindPw(){return authLayout(`
-  <div class="auth-title">비밀번호 찾기</div>
-  <div class="auth-sub" style="margin-bottom:28px;">가입 시 등록한 이름과 이메일로 임시 비밀번호를 받을 수 있습니다.</div>
-  <div class="form-group"><div class="label">이름 <span class="req">*</span></div>
-    <input class="input" id="findPwName" placeholder="가입 시 등록한 이름 입력">
-    <div class="error-msg" id="findPwNameErr"></div></div>
-  <div class="form-group"><div class="label">이메일 <span class="req">*</span></div>
-    <input class="input" id="findEmail" placeholder="가입 시 사용한 이메일 입력">
-    <div class="error-msg" id="findEmailErr"></div></div>
-  <button class="btn btn-primary btn-full mb12" onclick="doSendReset()">임시 비밀번호 발송</button>
-  <button class="btn btn-secondary btn-full" onclick="navigate('login')">로그인 화면으로 돌아가기</button>
-`);}
+  function authLayout(formHtml){
+    return `<div class="auth-layout">
+        <div class="auth-form-wrap">${LOGO_SVG}${formHtml}</div>
+        <div class="auth-brand">
+        <div class="auth-brand-title">K-Stock<br>Compass</div>
+        <div class="auth-brand-sub">재무 신호등으로<br>기업을 한눈에</div>
+        </div>
+        </div>`;
+  }
 
-function renderFindPwReset(){return authLayout(`
-  <div class="auth-title">새 비밀번호 설정</div>
-  <div class="auth-sub" style="margin-bottom:28px;">이메일 링크를 통해 새 비밀번호를 설정합니다.</div>
-  <div class="form-group"><div class="label">새 비밀번호 <span class="req">*</span></div>
-    <input class="input" id="newPw" type="password" placeholder="8자 이상, 영문+숫자+특수문자" oninput="updatePwStrength()"></div>
-  <div class="pw-strength" id="pwStrength">
-    <div class="pw-bar" id="pb1"></div><div class="pw-bar" id="pb2"></div><div class="pw-bar" id="pb3"></div>
-    <span style="font-size:12px;color:var(--gray);" id="pwStrengthLabel">비밀번호 강도</span>
-  </div>
-  <div class="form-group"><div class="label">새 비밀번호 확인 <span class="req">*</span></div>
-    <input class="input" id="newPw2" type="password" placeholder="비밀번호를 다시 입력하세요"></div>
-  <button class="btn btn-primary btn-full" onclick="doPwReset()">비밀번호 변경 완료</button>
-`);}
+  function renderLogin(){return authLayout(`
+        <div class="auth-title">로그인</div>
+        <div class="auth-sub">K-Stock Compass와 함께 주식을 분석하세요</div>
+        <div class="form-group"><div class="label">이메일 <span class="req">*</span></div>
+        <input class="input" id="loginEmail" placeholder="mail@example.com" oninput="clearErr('loginEmailErr')">
+        <div class="error-msg" id="loginEmailErr"></div></div>
+        <div class="form-group"><div class="label">비밀번호 <span class="req">*</span></div>
+        <input class="input" id="loginPw" type="password" placeholder="비밀번호" oninput="clearErr('loginPwErr')">
+        <div class="error-msg" id="loginPwErr"></div></div>
+        <div id="loginErr" class="warning mb12" style="display:none;"></div>
+        <button class="btn btn-primary btn-full mb8" onclick="doLogin()">로그인</button>
+        <button class="btn btn-secondary btn-full mb16" onclick="navigate('signup')">회원 가입</button>
+        <div style="display:flex;gap:16px;justify-content:center;">
+        <span class="auth-link" style="font-size:12px;color:var(--blue);cursor:pointer;" onclick="navigate('find_id')">아이디 찾기</span>
+        <span style="color:var(--border);">|</span>
+        <span class="auth-link" style="font-size:12px;color:var(--blue);cursor:pointer;" onclick="navigate('find_pw')">비밀번호 찾기</span>
+        </div>
+        `);}
 
-// ══════════════════════════════════════
-// 메인 페이지들
-// ══════════════════════════════════════
-function renderPage(page){
-  const pages = {
-    main: pgMain, stock_index: pgStockIndex, stock_search: pgStockSearch,
-    stock_detail: pgStockDetail, fav_list: pgFavList, alert_list: pgAlertList,
-    alert_add: pgAlertAdd, alert_edit: pgAlertEdit, alert_log: pgAlertLog,
-    mypage: pgMypage, mypage_pw: pgMypagePw, mypage_leave: pgMypageLeave,
-    err_404: pgErr404, err_500: pgErr500,
-  };
-  const fn = pages[page] || pgMain;
-  document.getElementById('mainContent').innerHTML = fn();
-  // 페이지별 초기화
-  if(page==='stock_search') initSearch();
-  if(page==='alert_add'||page==='alert_edit') initAlertForm();
-  if(page==='signup') validateSignup();
-}
+  function renderSignup(){return authLayout(`
+        <div class="auth-title">회원가입</div>
+        <div class="auth-sub">K-Stock Compass에 오신 것을 환영합니다</div>
+        <div class="form-group"><div class="label">이메일 <span class="req">*</span></div>
+        <div style="display:flex;gap:8px;">
+        <input class="input" id="regEmail" placeholder="mail@example.com" style="flex:1;">
+        <button class="btn btn-blue btn-sm" style="white-space:nowrap;" onclick="sendVerifyCode()">인증번호 발송</button>
+        </div>
+        <div class="error-msg" id="regEmailErr"></div>
+        </div>
+        <div class="form-group" id="verifyGroup" style="display:none;">
+        <div class="label">인증번호 <span class="req">*</span></div>
+        <div style="display:flex;gap:8px;">
+        <input class="input" id="regVerifyCode" placeholder="인증번호 6자리 입력" style="flex:1;">
+        <button class="btn btn-blue btn-sm" style="white-space:nowrap;" onclick="checkVerifyCode()">확인</button>
+        </div>
+        <div class="error-msg" id="regVerifyErr"></div>
+        <div id="regVerifyOk" style="font-size:11px;color:var(--green);margin-top:4px;display:none;">✓ 이메일 인증이 완료되었습니다.</div>
+        </div>
+        <div class="form-group"><div class="label">이름 <span class="req">*</span></div>
+        <input class="input" id="regNick" placeholder="이름을 입력하세요 (2~10자)">
+        <div class="error-msg" id="regNickErr"></div></div>
+        <div class="form-group"><div class="label">전화번호 <span class="req">*</span></div>
+        <input class="input" id="regPhone" placeholder="01012345678" autocomplete="off">
+        <div class="error-msg" id="regPhoneErr"></div>
+        </div>
+        <div class="form-group"><div class="label">비밀번호 <span class="req">*</span></div>
+        <input class="input" id="regPw" type="password" placeholder="8자 이상, 영문+숫자+특수문자" autocomplete="new-password">
+        <div class="error-msg" id="regPwErr"></div></div>
+        <div class="form-group"><div class="label">비밀번호 확인 <span class="req">*</span></div>
+        <input class="input" id="regPw2" type="password" placeholder="비밀번호를 다시 입력하세요" autocomplete="new-password">
+        <div class="error-msg" id="regPw2Err"></div></div>
+        <button class="btn btn-primary btn-full mb8" onclick="doSignup()">회원가입</button>
+        <div style="text-align:center;font-size:12px;color:var(--gray);margin-top:10px;">이미 계정이 있으신가요? <span style="color:var(--blue);cursor:pointer;" onclick="navigate('login')">로그인</span></div>
+        `);}
 
-function pgMain(){return `<div class="page-wrap">
+  function renderSignupDone(){return `
+        <div class="success-wrap" style="min-height:100vh;">
+        <div class="success-card">
+        <div class="success-circle">✓</div>
+        <div style="font-size:26px;font-weight:700;color:var(--navy);margin-bottom:10px;">회원가입이 완료되었습니다!</div>
+        <div style="font-size:14px;color:var(--gray);margin-bottom:32px;">K-Stock Compass의 모든 기능을 이용하실 수 있습니다.</div>
+        <button class="btn btn-primary btn-full mb8" onclick="navigate('login')">로그인 하러 가기</button>
+        <button class="btn btn-secondary btn-full" onclick="navigate('main')">메인으로</button>
+        </div>
+        </div>`;}
 
-  <!-- 히어로 배너 -->
-  <div style="background:var(--navy);border-radius:16px;padding:48px 40px;margin-bottom:24px;">
-    <div style="font-size:28px;font-weight:900;color:white;letter-spacing:-0.5px;line-height:1.3;">K-상장사 재무 신호등</div>
-    <div style="font-size:15px;color:#93C5FD;margin-top:8px;line-height:1.6;">복잡한 재무제표 대신 <strong style="color:white;">5단계 신호등</strong>으로<br>상장기업의 재무 안정성을 한눈에 확인하세요.</div>
-  </div>
+  function renderFindId(){return authLayout(`
+        <div class="auth-title">아이디 찾기</div>
+        <div class="auth-sub" style="margin-bottom:28px;">가입 시 등록한 이름과 전화번호로 이메일을 찾을 수 있습니다.</div>
+        <div class="form-group"><div class="label">이름 <span class="req">*</span></div>
+        <input class="input" id="findName" placeholder="가입 시 등록한 이름 입력">
+        <div class="error-msg" id="findNameErr"></div></div>
+        <div class="form-group"><div class="label">전화번호 <span class="req">*</span></div>
+        <input class="input" id="findPhone" placeholder="01012345678">
+        <div class="error-msg" id="findPhoneErr"></div></div>
+        <button class="btn btn-primary btn-full mb8" onclick="doFindId()">아이디 찾기</button>
+        <div class="divider"></div>
+        <button class="btn btn-secondary btn-full mb8" onclick="navigate('login')">로그인 화면으로 돌아가기</button>
+        <button class="btn btn-outline btn-full" onclick="navigate('find_pw')">비밀번호 찾기</button>
+        `);}
 
-  <!-- 서비스 소개 카드 3개 -->
-  <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:16px;margin-bottom:24px;">
-    <div class="card" style="text-align:center;padding:28px 20px;">
-      <div style="font-size:36px;margin-bottom:12px;">📊</div>
-      <div style="font-size:15px;font-weight:700;color:var(--navy);margin-bottom:8px;">실시간 시장 지수</div>
-      <div style="font-size:13px;color:var(--gray);line-height:1.6;">KOSPI · KOSDAQ 실시간 지수와 주요 종목 시세를 확인하세요.</div>
-    </div>
-    <div class="card" style="text-align:center;padding:28px 20px;">
-      <div style="font-size:36px;margin-bottom:12px;">🔦</div>
-      <div style="font-size:15px;font-weight:700;color:var(--navy);margin-bottom:8px;">AI 재무 신호등</div>
-      <div style="font-size:13px;color:var(--gray);line-height:1.6;">DART 재무 데이터를 AI가 분석해 5단계 신호등으로 보여드려요.</div>
-    </div>
-    <div class="card" style="text-align:center;padding:28px 20px;">
-      <div style="font-size:36px;margin-bottom:12px;">⭐</div>
-      <div style="font-size:15px;font-weight:700;color:var(--navy);margin-bottom:8px;">관심종목 · 알림</div>
-      <div style="font-size:13px;color:var(--gray);line-height:1.6;">관심 종목을 저장하고 목표가 도달 시 알림을 받아보세요.</div>
-    </div>
-  </div>
+  function renderFindPw(){return authLayout(`
+        <div class="auth-title">비밀번호 찾기</div>
+        <div class="auth-sub" style="margin-bottom:28px;">가입 시 등록한 이름과 이메일로 임시 비밀번호를 받을 수 있습니다.</div>
+        <div class="form-group"><div class="label">이름 <span class="req">*</span></div>
+        <input class="input" id="findPwName" placeholder="가입 시 등록한 이름 입력">
+        <div class="error-msg" id="findPwNameErr"></div></div>
+        <div class="form-group"><div class="label">이메일 <span class="req">*</span></div>
+        <input class="input" id="findEmail" placeholder="가입 시 사용한 이메일 입력">
+        <div class="error-msg" id="findEmailErr"></div></div>
+        <button class="btn btn-primary btn-full mb12" onclick="doSendReset()">임시 비밀번호 발송</button>
+        <button class="btn btn-secondary btn-full" onclick="navigate('login')">로그인 화면으로 돌아가기</button>
+        `);}
 
-  <!-- 로그인 유도 (비로그인 시) -->
-  ${!state.loggedIn?`
-  <div style="background:#EFF6FF;border:1px solid #BFDBFE;border-radius:12px;padding:24px 28px;display:flex;align-items:center;gap:20px;margin-bottom:16px;">
-    <div style="font-size:28px;">🔒</div>
-    <div style="flex:1;">
-      <div style="font-size:15px;font-weight:700;color:var(--navy);margin-bottom:4px;">로그인하면 더 많은 기능을 이용할 수 있어요</div>
-      <div style="font-size:13px;color:var(--gray);">관심종목 저장 · 목표가 알림 · 마이페이지 · AI 분석 코멘트</div>
-    </div>
-  </div>
-  <!-- 관심종목 미리보기 (잠금) -->
-  <div class="card" style="position:relative;overflow:hidden;">
-    <div class="flex flex-between flex-center mb16">
-      <div class="section-title" style="margin-bottom:0;">⭐ 내 관심종목</div>
-      <span style="font-size:12px;color:var(--gray);">로그인 후 이용 가능</span>
-    </div>
-    ${[['삼성전자','005930','KOSPI','61,200','▲ +1,200 (+2.00%)','up'],['SK하이닉스','000660','KOSPI','182,500','▼ -1,500 (-0.81%)','down'],['NAVER','035420','KOSPI','215,000','▲ +3,000 (+1.41%)','up']].map(([n,c,m,p,ch,cls])=>`
-    <div class="stock-row" style="pointer-events:none;filter:blur(3px);">
-      <span class="sn">${n}</span><span class="sc">${c}</span>
-      <span class="badge badge-${m.toLowerCase()}">${m}</span>
-      <span class="sp" style="margin-left:auto;">${p}원</span>
-      <span class="sch ${cls}">${ch}</span>
-    </div>`).join('')}
-    <!-- 잠금 오버레이 -->
-    <div style="position:absolute;inset:0;background:rgba(255,255,255,0.6);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;">
-      <div style="font-size:36px;">🔒</div>
-      <div style="font-size:15px;font-weight:700;color:var(--navy);">로그인 후 이용할 수 있어요</div>
-      <div style="display:flex;gap:10px;">
+  function renderFindPwReset(){return authLayout(`
+        <div class="auth-title">새 비밀번호 설정</div>
+        <div class="auth-sub" style="margin-bottom:28px;">이메일 링크를 통해 새 비밀번호를 설정합니다.</div>
+        <div class="form-group"><div class="label">새 비밀번호 <span class="req">*</span></div>
+        <input class="input" id="newPw" type="password" placeholder="8자 이상, 영문+숫자+특수문자" oninput="updatePwStrength()"></div>
+        <div class="pw-strength" id="pwStrength">
+        <div class="pw-bar" id="pb1"></div><div class="pw-bar" id="pb2"></div><div class="pw-bar" id="pb3"></div>
+        <span style="font-size:12px;color:var(--gray);" id="pwStrengthLabel">비밀번호 강도</span>
+        </div>
+        <div class="form-group"><div class="label">새 비밀번호 확인 <span class="req">*</span></div>
+        <input class="input" id="newPw2" type="password" placeholder="비밀번호를 다시 입력하세요"></div>
+        <button class="btn btn-primary btn-full" onclick="doPwReset()">비밀번호 변경 완료</button>
+        `);}
+
+  // ══════════════════════════════════════
+  // 메인 페이지들
+  // ══════════════════════════════════════
+  function renderPage(page){
+    const pages = {
+      main: pgMain, stock_index: pgStockIndex, stock_search: pgStockSearch,
+      stock_detail: pgStockDetail, fav_list: pgFavList, alert_list: pgAlertList,
+      alert_add: pgAlertAdd, alert_edit: pgAlertEdit, alert_log: pgAlertLog,
+      mypage: pgMypage, mypage_pw: pgMypagePw, mypage_leave: pgMypageLeave,
+      err_404: pgErr404, err_500: pgErr500,
+    };
+    const fn = pages[page] || pgMain;
+    if(page === 'stock_index') {
+      pgStockIndex();
+    } else {
+      document.getElementById('mainContent').innerHTML = fn();
+    }
+    // 페이지별 초기화
+    if(page==='stock_search') initSearch();
+    if(page==='alert_add'||page==='alert_edit') initAlertForm();
+    if(page==='signup') validateSignup();
+  }
+
+  function pgMain(){return `<div class="page-wrap">
+
+        <!-- 히어로 배너 -->
+        <div style="background:var(--navy);border-radius:16px;padding:48px 40px;margin-bottom:24px;">
+        <div style="font-size:28px;font-weight:900;color:white;letter-spacing:-0.5px;line-height:1.3;">K-상장사 재무 신호등</div>
+        <div style="font-size:15px;color:#93C5FD;margin-top:8px;line-height:1.6;">복잡한 재무제표 대신 <strong style="color:white;">5단계 신호등</strong>으로<br>상장기업의 재무 안정성을 한눈에 확인하세요.</div>
+        </div>
+
+        <!-- 서비스 소개 카드 3개 -->
+        <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:16px;margin-bottom:24px;">
+        <div class="card" style="text-align:center;padding:28px 20px;">
+        <div style="font-size:36px;margin-bottom:12px;">📊</div>
+        <div style="font-size:15px;font-weight:700;color:var(--navy);margin-bottom:8px;">실시간 시장 지수</div>
+        <div style="font-size:13px;color:var(--gray);line-height:1.6;">KOSPI · KOSDAQ 실시간 지수와 주요 종목 시세를 확인하세요.</div>
+        </div>
+        <div class="card" style="text-align:center;padding:28px 20px;">
+        <div style="font-size:36px;margin-bottom:12px;">🔦</div>
+        <div style="font-size:15px;font-weight:700;color:var(--navy);margin-bottom:8px;">AI 재무 신호등</div>
+        <div style="font-size:13px;color:var(--gray);line-height:1.6;">DART 재무 데이터를 AI가 분석해 5단계 신호등으로 보여드려요.</div>
+        </div>
+        <div class="card" style="text-align:center;padding:28px 20px;">
+        <div style="font-size:36px;margin-bottom:12px;">⭐</div>
+        <div style="font-size:15px;font-weight:700;color:var(--navy);margin-bottom:8px;">관심종목 · 알림</div>
+        <div style="font-size:13px;color:var(--gray);line-height:1.6;">관심 종목을 저장하고 목표가 도달 시 알림을 받아보세요.</div>
+        </div>
+        </div>
+
+        <!-- 로그인 유도 (비로그인 시) -->
+        ${!state.loggedIn?`
+        <div style="background:#EFF6FF;border:1px solid #BFDBFE;border-radius:12px;padding:24px 28px;display:flex;align-items:center;gap:20px;margin-bottom:16px;">
+        <div style="font-size:28px;">🔒</div>
+        <div style="flex:1;">
+        <div style="font-size:15px;font-weight:700;color:var(--navy);margin-bottom:4px;">로그인하면 더 많은 기능을 이용할 수 있어요</div>
+        <div style="font-size:13px;color:var(--gray);">관심종목 저장 · 목표가 알림 · 마이페이지 · AI 분석 코멘트</div>
+        </div>
+        </div>
+        <!-- 관심종목 미리보기 (잠금) -->
+        <div class="card" style="position:relative;overflow:hidden;">
+        <div class="flex flex-between flex-center mb16">
+        <div class="section-title" style="margin-bottom:0;">⭐ 내 관심종목</div>
+        <span style="font-size:12px;color:var(--gray);">로그인 후 이용 가능</span>
+        </div>
+        ${[['삼성전자','005930','KOSPI','61,200','▲ +1,200 (+2.00%)','up'],['SK하이닉스','000660','KOSPI','182,500','▼ -1,500 (-0.81%)','down'],['NAVER','035420','KOSPI','215,000','▲ +3,000 (+1.41%)','up']].map(([n,c,m,p,ch,cls])=>`
+        <div class="stock-row" style="pointer-events:none;filter:blur(3px);">
+        <span class="sn">${n}</span><span class="sc">${c}</span>
+        <span class="badge badge-${m.toLowerCase()}">${m}</span>
+        <span class="sp" style="margin-left:auto;">${p}원</span>
+        <span class="sch ${cls}">${ch}</span>
+        </div>`).join('')}
+        <!-- 잠금 오버레이 -->
+        <div style="position:absolute;inset:0;background:rgba(255,255,255,0.6);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;">
+        <div style="font-size:36px;">🔒</div>
+        <div style="font-size:15px;font-weight:700;color:var(--navy);">로그인 후 이용할 수 있어요</div>
+        <div style="display:flex;gap:10px;">
         <button class="btn btn-primary" style="padding:10px 28px;" onclick="navigate('login')">로그인하기 →</button>
         <button class="btn btn-secondary" style="padding:10px 28px;" onclick="navigate('signup')">회원가입</button>
+        </div>
+        </div>
+        </div>`:`
+        <!-- 로그인 후: 관심종목 요약 -->
+        <div class="card">
+        <div class="flex flex-between flex-center mb16">
+        <div class="section-title" style="margin-bottom:0;">⭐ 내 관심종목</div>
+        <span style="font-size:12px;color:var(--gray);">총 ${state.favorites.length}개 · <span style="color:var(--blue);cursor:pointer;" onclick="navigate('fav_list')">전체보기 →</span></span>
+        </div>
+        ${state.favorites.length>0?state.favorites.slice(0,3).map(f=>`
+        <div class="stock-row" onclick="navigate('stock_detail',{currentStock:'${f.code}'})">
+        <span class="sn">${f.name}</span><span class="sc">${f.code}</span>
+        <span class="badge badge-${f.market.toLowerCase()}">${f.market}</span>
+        <span class="sp" style="margin-left:auto;">${fmt(f.price)}원</span>
+        <span class="sch ${f.change>=0?'up':'down'}">${f.change>=0?'▲ +':'▼ -'}${fmt(Math.abs(f.change))} (${f.pct>=0?'+':''}${f.pct.toFixed(2)}%)</span>
+        </div>`).join(''):`
+        <div class="empty" style="padding:40px 20px;">
+        <div class="empty-icon">⭐</div>
+        <div class="empty-title">관심종목이 없습니다</div>
+        <div class="empty-sub">관심있는 종목을 추가해보세요</div>
+        <button class="btn btn-primary" onclick="navigate('stock_search')">🔍 종목 검색</button>
+        </div>`}
+        </div>`}
+        </div>`;}
+
+  async function pgStockIndex(){
+    document.getElementById('mainContent').innerHTML = `<div class="page-wrap">
+        <div class="page-header"><div class="page-title">📊 시장 지수 조회</div><div class="page-sub">공공데이터포털 API 기반 전일 종가 기준</div></div>
+        <div class="grid2 mb16">
+        <div class="card" style="border-top:4px solid var(--navy);" id="kospiCard">
+        <div style="font-size:14px;font-weight:700;color:var(--navy);margin-bottom:12px;">KOSPI 코스피</div>
+        <div class="skeleton" style="height:48px;margin-bottom:10px;"></div>
+        <div class="skeleton" style="height:20px;width:60%;margin-bottom:6px;"></div>
+        </div>
+        <div class="card" style="border-top:4px solid var(--blue);" id="kosdaqCard">
+        <div style="font-size:14px;font-weight:700;color:var(--blue);margin-bottom:12px;">KOSDAQ 코스닥</div>
+        <div class="skeleton" style="height:48px;margin-bottom:10px;"></div>
+        <div class="skeleton" style="height:20px;width:60%;margin-bottom:6px;"></div>
+        </div>
+        </div>
+        <div class="notice mb16">ℹ 본 시세 정보는 공공데이터포털 API 기반 전일 종가 기준입니다.</div>
+        </div>`;
+
+    const getBaseDate = () => {
+      const d = new Date();
+      d.setDate(d.getDate() - 1); // 어제
+      return d.toISOString().slice(0,10).replace(/-/g,''); // YYYYMMDD
+    };
+    const today = getBaseDate();
+    const token = localStorage.getItem('jwt');
+    const headers = token ? {'Authorization': 'Bearer ' + token} : {};
+
+    try {
+      const [kospiRes, kosdaqRes] = await Promise.all([
+        fetch(`/api/stock/index?idxNm=코스피&baseDate=${today}`, {headers}),
+        fetch(`/api/stock/index?idxNm=코스닥&baseDate=${today}`, {headers})
+      ]);
+
+      const kospi = await kospiRes.json();
+      const kosdaq = await kosdaqRes.json();
+
+      const renderCard = (data, color) => {
+        const up = parseFloat(data.vs) >= 0;
+        return `
+        <div style="font-size:48px;font-weight:900;color:var(--dark);">${Number(data.clpr).toLocaleString()}</div>
+        <div class="${up?'up':'down'}" style="font-size:18px;margin:10px 0;">${up?'▲ +':'▼ -'}${Math.abs(parseFloat(data.vs)).toFixed(2)} &nbsp;(${up?'+':''}${parseFloat(data.fltRt).toFixed(2)}%)</div>
+        <div style="font-size:12px;color:var(--gray);">전일 대비 &nbsp;|&nbsp; 시가: ${Number(data.mkp).toLocaleString()}</div>
+        <div style="font-size:12px;color:var(--gray);margin-top:4px;">고가: ${Number(data.hipr).toLocaleString()} &nbsp;|&nbsp; 저가: ${Number(data.lopr).toLocaleString()}</div>
+        `;
+      };
+
+      document.getElementById('kospiCard').innerHTML = `
+        <div style="font-size:14px;font-weight:700;color:var(--navy);margin-bottom:12px;">KOSPI 코스피</div>
+        ${renderCard(kospi, 'var(--navy)')}
+        `;
+      document.getElementById('kosdaqCard').innerHTML = `
+        <div style="font-size:14px;font-weight:700;color:var(--blue);margin-bottom:12px;">KOSDAQ 코스닥</div>
+        ${renderCard(kosdaq, 'var(--blue)')}
+        `;
+
+      document.getElementById('mainContent').innerHTML += `
+    <div class="page-wrap" style="padding-top:0;">
+      <div class="card">
+        <div class="section-title">주요 종목 시세</div>
+        ${[['삼성전자','005930','KOSPI',61200,1200,2.00],['SK하이닉스','000660','KOSPI',182500,-1500,-0.81],['LG에너지솔루션','373220','KOSPI',415000,3000,0.73],['NAVER','035420','KOSPI',215000,3000,1.41],['카카오','035720','KOSDAQ',45800,-200,-0.43]].map(([n,c,m,p,ch,pct])=>`
+        <div class="stock-row" onclick="navigate('stock_detail',{currentStock:'${c}'})">
+          <span class="sn">${n}</span><span class="sc">${c}</span>
+          <span class="badge badge-${m.toLowerCase()}">${m}</span>
+          <span class="sp ${ch>=0?'up':'down'}" style="margin-left:auto;">${fmt(p)}원</span>
+          <span class="sch ${ch>=0?'up':'down'}">${ch>=0?'▲ +':'▼ -'}${fmt(Math.abs(ch))} (${pct>=0?'+':''}${pct.toFixed(2)}%)</span>
+        </div>`).join('')}
       </div>
-    </div>
-  </div>`:`
-  <!-- 로그인 후: 관심종목 요약 -->
-  <div class="card">
-    <div class="flex flex-between flex-center mb16">
-      <div class="section-title" style="margin-bottom:0;">⭐ 내 관심종목</div>
-      <span style="font-size:12px;color:var(--gray);">총 ${state.favorites.length}개 · <span style="color:var(--blue);cursor:pointer;" onclick="navigate('fav_list')">전체보기 →</span></span>
-    </div>
-    ${state.favorites.length>0?state.favorites.slice(0,3).map(f=>`
-    <div class="stock-row" onclick="navigate('stock_detail',{currentStock:'${f.code}'})">
-      <span class="sn">${f.name}</span><span class="sc">${f.code}</span>
-      <span class="badge badge-${f.market.toLowerCase()}">${f.market}</span>
-      <span class="sp" style="margin-left:auto;">${fmt(f.price)}원</span>
-      <span class="sch ${f.change>=0?'up':'down'}">${f.change>=0?'▲ +':'▼ -'}${fmt(Math.abs(f.change))} (${f.pct>=0?'+':''}${f.pct.toFixed(2)}%)</span>
-    </div>`).join(''):`
-    <div class="empty" style="padding:40px 20px;">
-      <div class="empty-icon">⭐</div>
-      <div class="empty-title">관심종목이 없습니다</div>
-      <div class="empty-sub">관심있는 종목을 추가해보세요</div>
-      <button class="btn btn-primary" onclick="navigate('stock_search')">🔍 종목 검색</button>
-    </div>`}
-  </div>`}
-</div>`;}
+    </div>`;
 
-function pgStockIndex(){return `<div class="page-wrap">
-  <div class="page-header"><div class="page-title">📊 시장 지수 조회</div><div class="page-sub">공공데이터포털 API 기반 실시간 데이터</div></div>
-  <div class="grid2 mb16">
-    <div class="card" style="border-top:4px solid var(--navy);">
-      <div style="font-size:14px;font-weight:700;color:var(--navy);margin-bottom:12px;">KOSPI  코스피</div>
-      <div style="font-size:48px;font-weight:900;color:var(--dark);">2,641.28</div>
-      <div class="up" style="font-size:18px;margin:10px 0;">▲ +12.45 &nbsp;(+0.47%)</div>
-      <div style="font-size:12px;color:var(--gray);">전일 대비 &nbsp;|&nbsp; 전일종가: 2,628.83</div>
-      <div style="font-size:12px;color:var(--gray);margin-top:4px;">거래량: 4.2억주 &nbsp;|&nbsp; 거래대금: 8.7조원</div>
-    </div>
-    <div class="card" style="border-top:4px solid var(--blue);">
-      <div style="font-size:14px;font-weight:700;color:var(--blue);margin-bottom:12px;">KOSDAQ  코스닥</div>
-      <div style="font-size:48px;font-weight:900;color:var(--dark);">862.54</div>
-      <div class="down" style="font-size:18px;margin:10px 0;">▼ -3.21 &nbsp;(-0.37%)</div>
-      <div style="font-size:12px;color:var(--gray);">전일 대비 &nbsp;|&nbsp; 전일종가: 865.75</div>
-      <div style="font-size:12px;color:var(--gray);margin-top:4px;">거래량: 8.7억주 &nbsp;|&nbsp; 거래대금: 6.2조원</div>
-    </div>
-  </div>
-  <div style="font-size:12px;color:var(--gray);margin-bottom:12px;">🕐 최종 업데이트: 2026.03.24 15:30 (장 마감)</div>
-  <div class="notice mb16">ℹ 본 시세 정보는 공공데이터포털 API를 통해 제공되며, 15분 지연될 수 있습니다.</div>
-  <div class="card">
-    <div class="section-title">주요 종목 시세</div>
-    ${[['삼성전자','005930','KOSPI',61200,1200,2.00],['SK하이닉스','000660','KOSPI',182500,-1500,-0.81],['LG에너지솔루션','373220','KOSPI',415000,3000,0.73],['NAVER','035420','KOSPI',215000,3000,1.41],['카카오','035720','KOSDAQ',45800,-200,-0.43]].map(([n,c,m,p,ch,pct])=>`
-    <div class="stock-row" onclick="navigate('stock_detail',{currentStock:'${c}'})">
-      <span class="sn">${n}</span><span class="sc">${c}</span>
-      <span class="badge badge-${m.toLowerCase()}">${m}</span>
-      <span class="sp ${ch>=0?'up':'down'}" style="margin-left:auto;">${fmt(p)}원</span>
-      <span class="sch ${ch>=0?'up':'down'}">${ch>=0?'▲ +':'▼ -'}${fmt(Math.abs(ch))} (${pct>=0?'+':''}${pct.toFixed(2)}%)</span>
-    </div>`).join('')}
-  </div>
-</div>`;}
+    } catch(e) {
+      showToast('시장 지수 조회에 실패했습니다.');
+    }
+  }
 
-function pgStockSearch(){
-  const stocks=[
-    {code:'005930',name:'삼성전자',market:'KOSPI',price:61200,change:1200,pct:2.00},
-    {code:'000660',name:'SK하이닉스',market:'KOSPI',price:182500,change:-1500,pct:-0.81},
-    {code:'373220',name:'LG에너지솔루션',market:'KOSPI',price:415000,change:3000,pct:0.73},
-    {code:'035420',name:'NAVER',market:'KOSPI',price:215000,change:3000,pct:1.41},
-    {code:'035720',name:'카카오',market:'KOSDAQ',price:45800,change:-200,pct:-0.43},
-    {code:'005380',name:'현대차',market:'KOSPI',price:231000,change:2500,pct:1.09},
-    {code:'006400',name:'삼성SDI',market:'KOSPI',price:298500,change:-2500,pct:-0.83},
-    {code:'207940',name:'삼성바이오로직스',market:'KOSPI',price:781000,change:5000,pct:0.64},
-  ];
-  window._allStocks = stocks;
-  return `<div class="page-wrap">
-  <div class="page-header"><div class="page-title">🔍 종목 검색</div></div>
-  <div class="card mb16">
-    <div class="search-bar mb12"><input id="stockSearchInput" placeholder="종목명 또는 종목코드 입력 (예: 삼성전자, 005930)" oninput="doStockSearch()" onkeydown="if(event.key==='Enter')doStockSearch()"><button onclick="doStockSearch()">🔍 검색</button></div>
-    <div style="display:flex;gap:8px;flex-wrap:wrap;">
-      ${['삼성전자','SK하이닉스','NAVER','카카오'].map(k=>`<span class="tag" onclick="document.getElementById('stockSearchInput').value='${k}';doStockSearch()">${k}</span>`).join('')}
-    </div>
-  </div>
-  <div id="searchResults">
-    <div class="card">
-      <div class="section-title">인기 종목 TOP 5</div>
-      ${stocks.slice(0,5).map((s,i)=>`
-      <div class="stock-row" onclick="navigate('stock_detail',{currentStock:'${s.code}'})">
+  function pgStockSearch(){
+    const stocks=[
+      {code:'005930',name:'삼성전자',market:'KOSPI',price:61200,change:1200,pct:2.00},
+      {code:'000660',name:'SK하이닉스',market:'KOSPI',price:182500,change:-1500,pct:-0.81},
+      {code:'373220',name:'LG에너지솔루션',market:'KOSPI',price:415000,change:3000,pct:0.73},
+      {code:'035420',name:'NAVER',market:'KOSPI',price:215000,change:3000,pct:1.41},
+      {code:'035720',name:'카카오',market:'KOSDAQ',price:45800,change:-200,pct:-0.43},
+      {code:'005380',name:'현대차',market:'KOSPI',price:231000,change:2500,pct:1.09},
+      {code:'006400',name:'삼성SDI',market:'KOSPI',price:298500,change:-2500,pct:-0.83},
+      {code:'207940',name:'삼성바이오로직스',market:'KOSPI',price:781000,change:5000,pct:0.64},
+    ];
+    window._allStocks = stocks;
+    return `<div class="page-wrap">
+        <div class="page-header"><div class="page-title">🔍 종목 검색</div></div>
+        <div class="card mb16">
+        <div class="search-bar mb12"><input id="stockSearchInput" placeholder="종목명 또는 종목코드 입력 (예: 삼성전자, 005930)" oninput="doStockSearch()" onkeydown="if(event.key==='Enter')doStockSearch()"><button onclick="doStockSearch()">🔍 검색</button></div>
+        <div style="display:flex;gap:8px;flex-wrap:wrap;">
+        ${['삼성전자','SK하이닉스','NAVER','카카오'].map(k=>`<span class="tag" onclick="document.getElementById('stockSearchInput').value='${k}';doStockSearch()">${k}</span>`).join('')}
+        </div>
+        </div>
+        <div id="searchResults">
+        <div class="card">
+        <div class="section-title">인기 종목 TOP 5</div>
+        ${stocks.slice(0,5).map((s,i)=>`
+        <div class="stock-row" onclick="navigate('stock_detail',{currentStock:'${s.code}'})">
         <span style="font-size:16px;font-weight:700;color:${i<3?'var(--blue)':'var(--gray)'};min-width:28px;">${i+1}</span>
         <span class="sn">${s.name}</span><span class="sc">${s.code}</span>
         <span class="badge badge-${s.market.toLowerCase()}">${s.market}</span>
         <span class="sp ${s.change>=0?'up':'down'}" style="margin-left:auto;">${fmt(s.price)}원</span>
         <span class="sch ${s.change>=0?'up':'down'}">${s.change>=0?'▲ +':'▼ -'}${fmt(Math.abs(s.change))} (${s.pct>=0?'+':''}${s.pct.toFixed(2)}%)</span>
-      </div>`).join('')}
-    </div>
-  </div>
-</div>`;}
+        </div>`).join('')}
+        </div>
+        </div>
+        </div>`;}
 
-function initSearch(){}
+  function initSearch(){}
 
-function doStockSearch(){
-  const q = (document.getElementById('stockSearchInput')||{value:''}).value.toLowerCase().trim();
-  const container = document.getElementById('searchResults');
-  if(!container) return;
-  if(!q){
-    container.innerHTML = `<div class="card"><div class="section-title">인기 종목 TOP 5</div>${(window._allStocks||[]).slice(0,5).map((s,i)=>`
-    <div class="stock-row" onclick="navigate('stock_detail',{currentStock:'${s.code}'})">
-      <span style="font-size:16px;font-weight:700;color:${i<3?'var(--blue)':'var(--gray)'};min-width:28px;">${i+1}</span>
-      <span class="sn">${s.name}</span><span class="sc">${s.code}</span>
-      <span class="badge badge-${s.market.toLowerCase()}">${s.market}</span>
-      <span class="sp ${s.change>=0?'up':'down'}" style="margin-left:auto;">${fmt(s.price)}원</span>
-      <span class="sch ${s.change>=0?'up':'down'}">${s.change>=0?'▲ +':'▼ -'}${fmt(Math.abs(s.change))} (${s.pct>=0?'+':''}${s.pct.toFixed(2)}%)</span>
-    </div>`).join('')}</div>`; return;}
-  const results=(window._allStocks||[]).filter(s=>s.name.toLowerCase().includes(q)||s.code.includes(q));
-  if(!results.length){
-    container.innerHTML=`<div class="card"><div style="font-size:13px;color:var(--gray);margin-bottom:20px;">'${q}' 검색 결과 <strong style="color:var(--red-err);">0건</strong></div>
-    <div class="empty"><div class="empty-icon">🔍</div><div class="empty-title">검색 결과가 없습니다</div>
-    <div class="empty-sub">종목명 또는 6자리 종목코드를 정확히 입력해 주세요</div></div></div>`; return;}
-  container.innerHTML=`<div class="card"><div style="font-size:13px;color:var(--gray);margin-bottom:16px;">'${q}' 검색 결과 <strong style="color:var(--navy);">${results.length}건</strong></div>
-  ${results.map(s=>`
-  <div class="stock-row" onclick="navigate('stock_detail',{currentStock:'${s.code}'})">
-    <span class="sn">${s.name}</span><span class="sc">${s.code}</span>
-    <span class="badge badge-${s.market.toLowerCase()}">${s.market}</span>
-    <span class="sp ${s.change>=0?'up':'down'}" style="margin-left:auto;">${fmt(s.price)}원</span>
-    <span class="sch ${s.change>=0?'up':'down'}">${s.change>=0?'▲ +':'▼ -'}${fmt(Math.abs(s.change))} (${s.pct>=0?'+':''}${s.pct.toFixed(2)}%)</span>
-    ${state.loggedIn?`<button class="btn btn-ghost btn-sm" style="margin-left:8px;" onclick="event.stopPropagation();openFavAdd('${s.name}','${s.code}')">⭐</button>`:''}
-  </div>`).join('')}</div>`;}
+  function doStockSearch(){
+    const q = (document.getElementById('stockSearchInput')||{value:''}).value.toLowerCase().trim();
+    const container = document.getElementById('searchResults');
+    if(!container) return;
+    if(!q){
+      container.innerHTML = `<div class="card"><div class="section-title">인기 종목 TOP 5</div>${(window._allStocks||[]).slice(0,5).map((s,i)=>`
+        <div class="stock-row" onclick="navigate('stock_detail',{currentStock:'${s.code}'})">
+        <span style="font-size:16px;font-weight:700;color:${i<3?'var(--blue)':'var(--gray)'};min-width:28px;">${i+1}</span>
+        <span class="sn">${s.name}</span><span class="sc">${s.code}</span>
+        <span class="badge badge-${s.market.toLowerCase()}">${s.market}</span>
+        <span class="sp ${s.change>=0?'up':'down'}" style="margin-left:auto;">${fmt(s.price)}원</span>
+        <span class="sch ${s.change>=0?'up':'down'}">${s.change>=0?'▲ +':'▼ -'}${fmt(Math.abs(s.change))} (${s.pct>=0?'+':''}${s.pct.toFixed(2)}%)</span>
+        </div>`).join('')}</div>`; return;}
+    const results=(window._allStocks||[]).filter(s=>s.name.toLowerCase().includes(q)||s.code.includes(q));
+    if(!results.length){
+      container.innerHTML=`<div class="card"><div style="font-size:13px;color:var(--gray);margin-bottom:20px;">'${q}' 검색 결과 <strong style="color:var(--red-err);">0건</strong></div>
+        <div class="empty"><div class="empty-icon">🔍</div><div class="empty-title">검색 결과가 없습니다</div>
+        <div class="empty-sub">종목명 또는 6자리 종목코드를 정확히 입력해 주세요</div></div></div>`; return;}
+    container.innerHTML=`<div class="card"><div style="font-size:13px;color:var(--gray);margin-bottom:16px;">'${q}' 검색 결과 <strong style="color:var(--navy);">${results.length}건</strong></div>
+        ${results.map(s=>`
+        <div class="stock-row" onclick="navigate('stock_detail',{currentStock:'${s.code}'})">
+        <span class="sn">${s.name}</span><span class="sc">${s.code}</span>
+        <span class="badge badge-${s.market.toLowerCase()}">${s.market}</span>
+        <span class="sp ${s.change>=0?'up':'down'}" style="margin-left:auto;">${fmt(s.price)}원</span>
+        <span class="sch ${s.change>=0?'up':'down'}">${s.change>=0?'▲ +':'▼ -'}${fmt(Math.abs(s.change))} (${s.pct>=0?'+':''}${s.pct.toFixed(2)}%)</span>
+        ${state.loggedIn?`<button class="btn btn-ghost btn-sm" style="margin-left:8px;" onclick="event.stopPropagation();openFavAdd('${s.name}','${s.code}')">⭐</button>`:''}
+        </div>`).join('')}</div>`;}
 
-function doMainSearch(){
-  const q=document.getElementById('mainSearch').value;
-  navigate('stock_search');
-  setTimeout(()=>{
-    const el=document.getElementById('stockSearchInput');
-    if(el){el.value=q;doStockSearch();}
-  },50);
-}
+  function doMainSearch(){
+    const q=document.getElementById('mainSearch').value;
+    navigate('stock_search');
+    setTimeout(()=>{
+      const el=document.getElementById('stockSearchInput');
+      if(el){el.value=q;doStockSearch();}
+    },50);
+  }
 
-function pgStockDetail(){
-  const stockMap={
-    '005930':{code:'005930',name:'삼성전자',market:'KOSPI',price:61200,change:1200,pct:2.00},
-    '000660':{code:'000660',name:'SK하이닉스',market:'KOSPI',price:182500,change:-1500,pct:-0.81},
-    '035420':{code:'035420',name:'NAVER',market:'KOSPI',price:215000,change:3000,pct:1.41},
-    '035720':{code:'035720',name:'카카오',market:'KOSDAQ',price:45800,change:-200,pct:-0.43},
-    '373220':{code:'373220',name:'LG에너지솔루션',market:'KOSPI',price:415000,change:3000,pct:0.73},
-    '005380':{code:'005380',name:'현대차',market:'KOSPI',price:231000,change:2500,pct:1.09},
-    '006400':{code:'006400',name:'삼성SDI',market:'KOSPI',price:298500,change:-2500,pct:-0.83},
-    '207940':{code:'207940',name:'삼성바이오로직스',market:'KOSPI',price:781000,change:5000,pct:0.64},
-  };
-  const s=stockMap[state.currentStock]||stockMap['005930'];
-  const isFav=state.favorites.some(f=>f.code===s.code);
-  const tab=state.detailTab||'info';
-  return `
-  <div class="detail-header">
-    <div><div class="detail-name">${s.name}</div><div class="detail-meta">${s.code} &nbsp;|&nbsp; <span class="badge badge-${s.market.toLowerCase()}">${s.market}</span></div></div>
-    <div class="detail-price">
-      <div class="price">${fmt(s.price)}원</div>
-      <div class="change ${s.change>=0?'up':'down'}">${s.change>=0?'▲ +':'▼ -'}${fmt(Math.abs(s.change))} &nbsp;(${s.pct>=0?'+':''}${s.pct.toFixed(2)}%)</div>
-    </div>
-  </div>
-  <div class="inner-tabs">
-    <div class="inner-tab ${tab==='info'?'active':''}" onclick="navigate('stock_detail',{currentStock:'${s.code}',detailTab:'info'})">종목 정보</div>
-    <div class="inner-tab ${tab==='ai'?'active':''}" onclick="navigate('stock_detail',{currentStock:'${s.code}',detailTab:'ai'})">AI 신호등</div>
-  </div>
-  <div class="page-wrap">
-    ${tab==='info'?detailInfo(s,isFav):detailAI(s)}
-  </div>`;}
+  function pgStockDetail(){
+    const stockMap={
+      '005930':{code:'005930',name:'삼성전자',market:'KOSPI',price:61200,change:1200,pct:2.00},
+      '000660':{code:'000660',name:'SK하이닉스',market:'KOSPI',price:182500,change:-1500,pct:-0.81},
+      '035420':{code:'035420',name:'NAVER',market:'KOSPI',price:215000,change:3000,pct:1.41},
+      '035720':{code:'035720',name:'카카오',market:'KOSDAQ',price:45800,change:-200,pct:-0.43},
+      '373220':{code:'373220',name:'LG에너지솔루션',market:'KOSPI',price:415000,change:3000,pct:0.73},
+      '005380':{code:'005380',name:'현대차',market:'KOSPI',price:231000,change:2500,pct:1.09},
+      '006400':{code:'006400',name:'삼성SDI',market:'KOSPI',price:298500,change:-2500,pct:-0.83},
+      '207940':{code:'207940',name:'삼성바이오로직스',market:'KOSPI',price:781000,change:5000,pct:0.64},
+    };
+    const s=stockMap[state.currentStock]||stockMap['005930'];
+    const isFav=state.favorites.some(f=>f.code===s.code);
+    const tab=state.detailTab||'info';
+    return `
+        <div class="detail-header">
+        <div><div class="detail-name">${s.name}</div><div class="detail-meta">${s.code} &nbsp;|&nbsp; <span class="badge badge-${s.market.toLowerCase()}">${s.market}</span></div></div>
+        <div class="detail-price">
+        <div class="price">${fmt(s.price)}원</div>
+        <div class="change ${s.change>=0?'up':'down'}">${s.change>=0?'▲ +':'▼ -'}${fmt(Math.abs(s.change))} &nbsp;(${s.pct>=0?'+':''}${s.pct.toFixed(2)}%)</div>
+        </div>
+        </div>
+        <div class="inner-tabs">
+        <div class="inner-tab ${tab==='info'?'active':''}" onclick="navigate('stock_detail',{currentStock:'${s.code}',detailTab:'info'})">종목 정보</div>
+        <div class="inner-tab ${tab==='ai'?'active':''}" onclick="navigate('stock_detail',{currentStock:'${s.code}',detailTab:'ai'})">AI 신호등</div>
+        </div>
+        <div class="page-wrap">
+        ${tab==='info'?detailInfo(s,isFav):detailAI(s)}
+        </div>`;}
 
-function detailInfo(s,isFav){return `
-  <!-- 시세 정보 -->
-  <div class="grid3 mb16">
-    ${[['현재가',`${fmt(s.price)}원`],['전일 대비',`${s.change>=0?'▲ +':'▼ -'}${fmt(Math.abs(s.change))}`],['등락률',`${s.pct>=0?'+':''}${s.pct.toFixed(2)}%`],['시가','60,300원'],['고가','61,500원'],['저가','60,100원'],['거래량','12,345,678주'],['시가총액','365조 4,321억'],['52주 최고','87,800원']].map(([l,v])=>`
-    <div class="card"><div style="font-size:11px;color:var(--gray);margin-bottom:6px;">${l}</div><div style="font-size:16px;font-weight:700;">${v}</div></div>`).join('')}
-  </div>
-  <!-- 재무 정보 -->
-  <div class="card mb16">
-    <div class="flex flex-between flex-center mb12">
-      <div><div class="section-title" style="margin-bottom:2px;">기업 재무 정보</div><div style="font-size:12px;color:var(--gray);">DART 전자공시 API · 최근 분기 기준</div></div>
-    </div>
-    <div class="grid3">
-      ${[['부채비율','38.2%','업종평균 72.1%','var(--green)'],['영업이익률','15.3%','전년동기 12.8%','var(--green)'],['유동비율','218%','업종평균 145%','var(--green)'],['ROE','12.5%','전년동기 9.2%','var(--blue)'],['매출액','79.1조원','YoY +8.3%','var(--dark)'],['영업이익','12.1조원','YoY +19.5%','var(--dark)']].map(([l,v,s2,c])=>`
-      <div class="fin-card"><div class="fin-bar" style="background:${c};"></div><div class="fin-label">${l}</div><div class="fin-val" style="color:${c};">${v}</div><div class="fin-sub">${s2}</div></div>`).join('')}
-    </div>
-  </div>
-  <!-- 관심종목/알림 버튼 -->
-  <div class="flex gap12">
-    ${state.loggedIn?`
-    <button class="btn ${isFav?'btn-secondary':'btn-outline'} btn-full" onclick="openFavAdd('${s.name}','${s.code}')">${isFav?'✅ 관심종목 추가됨':'⭐ 관심종목 추가'}</button>
-    <button class="btn btn-primary btn-full" onclick="navigate('alert_add',{alertStock:{code:'${s.code}',name:'${s.name}',price:${s.price}}})">🔔 알림 설정</button>`
-    :`<div class="notice btn-full" style="text-align:center;">로그인 후 관심종목 추가 및 알림 설정이 가능합니다. <span style="color:var(--blue);cursor:pointer;font-weight:600;" onclick="navigate('login')">로그인 →</span></div>`}
-  </div>`;}
+  function detailInfo(s,isFav){return `
+        <!-- 시세 정보 -->
+        <div class="grid3 mb16">
+        ${[['현재가',`${fmt(s.price)}원`],['전일 대비',`${s.change>=0?'▲ +':'▼ -'}${fmt(Math.abs(s.change))}`],['등락률',`${s.pct>=0?'+':''}${s.pct.toFixed(2)}%`],['시가','60,300원'],['고가','61,500원'],['저가','60,100원'],['거래량','12,345,678주'],['시가총액','365조 4,321억'],['52주 최고','87,800원']].map(([l,v])=>`
+        <div class="card"><div style="font-size:11px;color:var(--gray);margin-bottom:6px;">${l}</div><div style="font-size:16px;font-weight:700;">${v}</div></div>`).join('')}
+        </div>
+        <!-- 재무 정보 -->
+        <div class="card mb16">
+        <div class="flex flex-between flex-center mb12">
+        <div><div class="section-title" style="margin-bottom:2px;">기업 재무 정보</div><div style="font-size:12px;color:var(--gray);">DART 전자공시 API · 최근 분기 기준</div></div>
+        </div>
+        <div class="grid3">
+        ${[['부채비율','38.2%','업종평균 72.1%','var(--green)'],['영업이익률','15.3%','전년동기 12.8%','var(--green)'],['유동비율','218%','업종평균 145%','var(--green)'],['ROE','12.5%','전년동기 9.2%','var(--blue)'],['매출액','79.1조원','YoY +8.3%','var(--dark)'],['영업이익','12.1조원','YoY +19.5%','var(--dark)']].map(([l,v,s2,c])=>`
+        <div class="fin-card"><div class="fin-bar" style="background:${c};"></div><div class="fin-label">${l}</div><div class="fin-val" style="color:${c};">${v}</div><div class="fin-sub">${s2}</div></div>`).join('')}
+        </div>
+        </div>
+        <!-- 관심종목/알림 버튼 -->
+        <div class="flex gap12">
+        ${state.loggedIn?`
+        <button class="btn ${isFav?'btn-secondary':'btn-outline'} btn-full" onclick="openFavAdd('${s.name}','${s.code}')">${isFav?'✅ 관심종목 추가됨':'⭐ 관심종목 추가'}</button>
+        <button class="btn btn-primary btn-full" onclick="navigate('alert_add',{alertStock:{code:'${s.code}',name:'${s.name}',price:${s.price}}})">🔔 알림 설정</button>`
+          :`<div class="notice btn-full" style="text-align:center;">로그인 후 관심종목 추가 및 알림 설정이 가능합니다. <span style="color:var(--blue);cursor:pointer;font-weight:600;" onclick="navigate('login')">로그인 →</span></div>`}
+        </div>`;}
 
-function detailAI(s){
-  if(!state._aiMessages) state._aiMessages={};
-  if(!state._aiMessages[s.code]) state._aiMessages[s.code]=[
-    {role:'ai',text:`안녕하세요! ${s.name} 재무 분석 AI입니다. 궁금한 점을 질문해 주세요 😊`}
-  ];
-  const msgs=state._aiMessages[s.code];
-  return `
-  <!-- 신호등 -->
-  <div class="card mb16">
-    <div class="flex flex-between flex-center mb12">
-      <div><div class="section-title" style="margin-bottom:2px;">AI 재무 신호등</div>
-      <div style="font-size:12px;color:var(--gray);">OpenAI 기반 재무 안정성 분석</div></div>
-    </div>
-    <div style="display:grid;grid-template-columns:1fr 1fr;gap:24px;align-items:center;">
-      <!-- 왼쪽: 신호등 -->
-      <div>
+  function detailAI(s){
+    if(!state._aiMessages) state._aiMessages={};
+    if(!state._aiMessages[s.code]) state._aiMessages[s.code]=[
+      {role:'ai',text:`안녕하세요! ${s.name} 재무 분석 AI입니다. 궁금한 점을 질문해 주세요 😊`}
+    ];
+    const msgs=state._aiMessages[s.code];
+    return `
+        <!-- 신호등 -->
+        <div class="card mb16">
+        <div class="flex flex-between flex-center mb12">
+        <div><div class="section-title" style="margin-bottom:2px;">AI 재무 신호등</div>
+        <div style="font-size:12px;color:var(--gray);">OpenAI 기반 재무 안정성 분석</div></div>
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:24px;align-items:center;">
+        <!-- 왼쪽: 신호등 -->
+        <div>
         <div class="signal-wrap mb12">
-          ${[['#DC2626','1점','매우위험',false],['#F97316','2점','위험',false],['#EAB308','3점','보통',false],['#22C55E','4점','양호',true],['#16A34A','5점','매우안전',false]].map(([c,sc,lb,act])=>`
-          <div><div class="signal-dot ${act?'big':'small'}" style="background:${act?c:'#D1D5DB'};">${sc}</div>
-          <div class="signal-label" style="color:${act?'var(--dark)':'var(--gray)'};font-weight:${act?'700':'400'};">${lb}</div></div>`).join('')}
+        ${[['#DC2626','1점','매우위험',false],['#F97316','2점','위험',false],['#EAB308','3점','보통',false],['#22C55E','4점','양호',true],['#16A34A','5점','매우안전',false]].map(([c,sc,lb,act])=>`
+        <div><div class="signal-dot ${act?'big':'small'}" style="background:${act?c:'#D1D5DB'};">${sc}</div>
+        <div class="signal-label" style="color:${act?'var(--dark)':'var(--gray)'};font-weight:${act?'700':'400'};">${lb}</div></div>`).join('')}
         </div>
         <div class="success-bar" style="font-size:13px;font-weight:600;">종합 평가: 양호 (4점/5점) — 재무 안정성이 우수한 기업입니다</div>
-      </div>
-      <!-- 오른쪽: 분석 코멘트 -->
-      <div style="background:var(--bg);border-radius:10px;padding:20px;height:100%;box-sizing:border-box;">
+        </div>
+        <!-- 오른쪽: 분석 코멘트 -->
+        <div style="background:var(--bg);border-radius:10px;padding:20px;height:100%;box-sizing:border-box;">
         <div style="font-size:13px;font-weight:700;color:var(--navy);margin-bottom:10px;">📋 재무 분석 요약</div>
         <div style="font-size:13px;color:var(--dark);line-height:1.9;">
-          최근 3개년(2022~2024) 기준으로 <strong>부채비율이 꾸준히 감소</strong>하는 추세이며, 재무 건전성이 개선되고 있습니다.<br><br>
-          영업이익률은 전년 대비 <strong>2.5%p 상승</strong>하여 수익성이 향상되고 있는 상황이며, 유동비율 218%로 단기 채무 상환 능력 또한 우수한 수준을 유지하고 있습니다.<br><br>
-          전반적으로 <strong>안정적인 재무 구조</strong>를 유지하면서 성장세를 이어가고 있어 긍정적으로 평가됩니다.
+        최근 3개년(2022~2024) 기준으로 <strong>부채비율이 꾸준히 감소</strong>하는 추세이며, 재무 건전성이 개선되고 있습니다.<br><br>
+        영업이익률은 전년 대비 <strong>2.5%p 상승</strong>하여 수익성이 향상되고 있는 상황이며, 유동비율 218%로 단기 채무 상환 능력 또한 우수한 수준을 유지하고 있습니다.<br><br>
+        전반적으로 <strong>안정적인 재무 구조</strong>를 유지하면서 성장세를 이어가고 있어 긍정적으로 평가됩니다.
         </div>
         <div style="font-size:11px;color:var(--gray);margin-top:12px;">분석 기준: 2026.03.24 · DART 공시 기반 · Redis 캐싱 적용</div>
-      </div>
-    </div>
-  </div>
-  <!-- AI 채팅 -->
-  <div class="card" style="display:flex;flex-direction:column;height:420px;">
-    <div class="section-title mb12">💬 AI 에이전트에게 질문하기</div>
-    <div id="aiChatBox" style="flex:1;overflow-y:auto;padding:8px 0;display:flex;flex-direction:column;gap:10px;">
-      ${msgs.map(m=>`
-      <div style="display:flex;justify-content:${m.role==='user'?'flex-end':'flex-start'};">
-        <div style="max-width:75%;padding:10px 14px;border-radius:${m.role==='user'?'12px 12px 2px 12px':'12px 12px 12px 2px'};background:${m.role==='user'?'var(--navy)':'var(--bg)'};color:${m.role==='user'?'white':'var(--dark)'};font-size:13px;line-height:1.6;">
-          ${m.text}
         </div>
-      </div>`).join('')}
-    </div>
-    <div style="border-top:1px solid var(--border);padding-top:12px;display:flex;gap:8px;margin-top:8px;">
-      <input class="input" id="aiInput_${s.code}" placeholder="${s.name}에 대해 궁금한 점을 입력하세요..." style="flex:1;" onkeydown="if(event.key==='Enter')sendAiMsg('${s.code}','${s.name}')">
-      <button class="btn btn-primary" onclick="sendAiMsg('${s.code}','${s.name}')">전송</button>
-    </div>
-    <div style="font-size:11px;color:var(--gray);margin-top:6px;">※ AI 응답은 데모 버전입니다. 실제 서비스에서는 GPT/Gemini API 연동</div>
-  </div>`;}
+        </div>
+        </div>
+        <!-- AI 채팅 -->
+        <div class="card" style="display:flex;flex-direction:column;height:420px;">
+        <div class="section-title mb12">💬 AI 에이전트에게 질문하기</div>
+        <div id="aiChatBox" style="flex:1;overflow-y:auto;padding:8px 0;display:flex;flex-direction:column;gap:10px;">
+        ${msgs.map(m=>`
+        <div style="display:flex;justify-content:${m.role==='user'?'flex-end':'flex-start'};">
+        <div style="max-width:75%;padding:10px 14px;border-radius:${m.role==='user'?'12px 12px 2px 12px':'12px 12px 12px 2px'};background:${m.role==='user'?'var(--navy)':'var(--bg)'};color:${m.role==='user'?'white':'var(--dark)'};font-size:13px;line-height:1.6;">
+        ${m.text}
+        </div>
+        </div>`).join('')}
+        </div>
+        <div style="border-top:1px solid var(--border);padding-top:12px;display:flex;gap:8px;margin-top:8px;">
+        <input class="input" id="aiInput_${s.code}" placeholder="${s.name}에 대해 궁금한 점을 입력하세요..." style="flex:1;" onkeydown="if(event.key==='Enter')sendAiMsg('${s.code}','${s.name}')">
+        <button class="btn btn-primary" onclick="sendAiMsg('${s.code}','${s.name}')">전송</button>
+        </div>
+        <div style="font-size:11px;color:var(--gray);margin-top:6px;">※ AI 응답은 데모 버전입니다. 실제 서비스에서는 GPT/Gemini API 연동</div>
+        </div>`;}
 
-function sendAiMsg(code, name){
-  const input=document.getElementById(`aiInput_${code}`);
-  if(!input) return;
-  const text=input.value.trim();
-  if(!text) return;
-  if(!state._aiMessages) state._aiMessages={};
-  if(!state._aiMessages[code]) state._aiMessages[code]=[];
-  state._aiMessages[code].push({role:'user',text});
-  input.value='';
-  // 데모 응답
-  const responses=[
-    `${name}의 재무 안정성은 전반적으로 양호한 수준입니다. 부채비율이 낮고 유동비율이 높아 단기 채무 상환 능력이 우수합니다.`,
-    `최근 ${name}의 영업이익률은 15.3%로 업종 평균 대비 높은 편입니다. 수익성 측면에서 긍정적으로 평가할 수 있습니다.`,
-    `${name}의 ROE(자기자본이익률)는 12.5%로 적정 수준입니다. 주주 가치 창출 측면에서 안정적입니다.`,
-    `DART 공시 데이터 기준으로 ${name}의 재무제표를 분석한 결과, 전반적으로 건전한 재무 구조를 유지하고 있습니다.`,
-  ];
-  const reply=responses[Math.floor(Math.random()*responses.length)];
-  setTimeout(()=>{
-    state._aiMessages[code].push({role:'ai',text:reply});
+  function sendAiMsg(code, name){
+    const input=document.getElementById(`aiInput_${code}`);
+    if(!input) return;
+    const text=input.value.trim();
+    if(!text) return;
+    if(!state._aiMessages) state._aiMessages={};
+    if(!state._aiMessages[code]) state._aiMessages[code]=[];
+    state._aiMessages[code].push({role:'user',text});
+    input.value='';
+    // 데모 응답
+    const responses=[
+      `${name}의 재무 안정성은 전반적으로 양호한 수준입니다. 부채비율이 낮고 유동비율이 높아 단기 채무 상환 능력이 우수합니다.`,
+      `최근 ${name}의 영업이익률은 15.3%로 업종 평균 대비 높은 편입니다. 수익성 측면에서 긍정적으로 평가할 수 있습니다.`,
+      `${name}의 ROE(자기자본이익률)는 12.5%로 적정 수준입니다. 주주 가치 창출 측면에서 안정적입니다.`,
+      `DART 공시 데이터 기준으로 ${name}의 재무제표를 분석한 결과, 전반적으로 건전한 재무 구조를 유지하고 있습니다.`,
+    ];
+    const reply=responses[Math.floor(Math.random()*responses.length)];
+    setTimeout(()=>{
+      state._aiMessages[code].push({role:'ai',text:reply});
+      navigate('stock_detail',{currentStock:code,detailTab:'ai'});
+    },800);
     navigate('stock_detail',{currentStock:code,detailTab:'ai'});
-  },800);
-  navigate('stock_detail',{currentStock:code,detailTab:'ai'});
-}
+  }
 
-function pgFavList(){return `<div class="page-wrap">
-  <div class="flex flex-between flex-center mb24">
-    <div class="page-title">⭐ 내 관심종목</div>
-    <span style="font-size:13px;color:var(--gray);">총 ${state.favorites.length}개 종목</span>
-  </div>
-  ${state.favorites.length===0?`
-  <div class="card"><div class="empty"><div class="empty-icon">⭐</div><div class="empty-title">관심종목이 없습니다</div>
-  <div class="empty-sub">관심있는 종목을 검색하여 추가해 보세요!</div>
-  <button class="btn btn-primary" onclick="navigate('stock_search')">🔍 종목 검색하러 가기</button></div></div>`:
-  state.favorites.map(f=>`
-  <div class="fav-row">
-    <div style="flex:1;cursor:pointer;" onclick="navigate('stock_detail',{currentStock:'${f.code}'})">
-      <div style="font-size:16px;font-weight:600;">${f.name}</div>
-      <div style="font-size:12px;color:var(--gray);margin-top:4px;">${f.code} · ${f.market}</div>
-    </div>
-    <div style="text-align:right;margin-right:20px;cursor:pointer;" onclick="navigate('stock_detail',{currentStock:'${f.code}'})">
-      <div style="font-size:20px;font-weight:700;">${fmt(f.price)}원</div>
-      <div class="${f.change>=0?'up':'down'}" style="font-size:13px;margin-top:4px;">${f.change>=0?'▲ +':'▼ -'}${fmt(Math.abs(f.change))} (${f.pct>=0?'+':''}${f.pct.toFixed(2)}%)</div>
-    </div>
-    <div style="display:flex;gap:8px;">
-      <button class="btn btn-outline btn-sm" style="gap:4px;" onclick="navigate('stock_detail',{currentStock:'${f.code}',detailTab:'ai'})">🚦 신호등보기</button>
-      <button class="btn btn-sm" style="background:#FFF5F5;color:var(--red-err);border:1px solid var(--red-err);gap:4px;" onclick="openFavDel('${f.code}','${f.name}')">🗑 삭제하기</button>
-    </div>
-  </div>`).join('')}
-</div>`;}
+  function pgFavList(){return `<div class="page-wrap">
+        <div class="flex flex-between flex-center mb24">
+        <div class="page-title">⭐ 내 관심종목</div>
+        <span style="font-size:13px;color:var(--gray);">총 ${state.favorites.length}개 종목</span>
+        </div>
+        ${state.favorites.length===0?`
+        <div class="card"><div class="empty"><div class="empty-icon">⭐</div><div class="empty-title">관심종목이 없습니다</div>
+        <div class="empty-sub">관심있는 종목을 검색하여 추가해 보세요!</div>
+        <button class="btn btn-primary" onclick="navigate('stock_search')">🔍 종목 검색하러 가기</button></div></div>`:
+          state.favorites.map(f=>`
+        <div class="fav-row">
+        <div style="flex:1;cursor:pointer;" onclick="navigate('stock_detail',{currentStock:'${f.code}'})">
+        <div style="font-size:16px;font-weight:600;">${f.name}</div>
+        <div style="font-size:12px;color:var(--gray);margin-top:4px;">${f.code} · ${f.market}</div>
+        </div>
+        <div style="text-align:right;margin-right:20px;cursor:pointer;" onclick="navigate('stock_detail',{currentStock:'${f.code}'})">
+        <div style="font-size:20px;font-weight:700;">${fmt(f.price)}원</div>
+        <div class="${f.change>=0?'up':'down'}" style="font-size:13px;margin-top:4px;">${f.change>=0?'▲ +':'▼ -'}${fmt(Math.abs(f.change))} (${f.pct>=0?'+':''}${f.pct.toFixed(2)}%)</div>
+        </div>
+        <div style="display:flex;gap:8px;">
+        <button class="btn btn-outline btn-sm" style="gap:4px;" onclick="navigate('stock_detail',{currentStock:'${f.code}',detailTab:'ai'})">🚦 신호등보기</button>
+        <button class="btn btn-sm" style="background:#FFF5F5;color:var(--red-err);border:1px solid var(--red-err);gap:4px;" onclick="openFavDel('${f.code}','${f.name}')">🗑 삭제하기</button>
+        </div>
+        </div>`).join('')}
+        </div>`;}
 
-function pgAlertList(){return `<div class="page-wrap" style="padding-top:22px;">
-  <div class="flex flex-between flex-center mb24">
-    <div class="page-title">🔔 알림 설정</div>
-  </div>
-  ${state.alerts.length===0?`
-  <div class="card"><div class="empty"><div class="empty-icon">🔔</div><div class="empty-title">설정된 알림이 없습니다</div>
-  <div class="empty-sub">목표 주가에 도달하면 알림을 받아보세요!</div>
-  <button class="btn btn-primary" onclick="navigate('alert_add')">+ 알림 추가하기</button></div></div>`:
-  state.alerts.map(a=>`
-  <div class="alert-cfg">
-    <div class="flex flex-between flex-center mb8">
-      <div class="flex flex-center gap8"><span style="font-size:16px;font-weight:600;">${a.name}</span><span style="font-size:12px;color:var(--gray);">${a.code}</span></div>
-      <div style="display:flex;gap:8px;">
+  function pgAlertList(){return `<div class="page-wrap" style="padding-top:22px;">
+        <div class="flex flex-between flex-center mb24">
+        <div class="page-title">🔔 알림 설정</div>
+        </div>
+        ${state.alerts.length===0?`
+        <div class="card"><div class="empty"><div class="empty-icon">🔔</div><div class="empty-title">설정된 알림이 없습니다</div>
+        <div class="empty-sub">목표 주가에 도달하면 알림을 받아보세요!</div>
+        <button class="btn btn-primary" onclick="navigate('alert_add')">+ 알림 추가하기</button></div></div>`:
+          state.alerts.map(a=>`
+        <div class="alert-cfg">
+        <div class="flex flex-between flex-center mb8">
+        <div class="flex flex-center gap8"><span style="font-size:16px;font-weight:600;">${a.name}</span><span style="font-size:12px;color:var(--gray);">${a.code}</span></div>
+        <div style="display:flex;gap:8px;">
         <button class="btn btn-sm btn-outline" onclick="navigate('alert_edit',{editAlertId:${a.id}})">수정</button>
         <button class="btn btn-sm" style="background:#FFF5F5;color:var(--red-err);border:1px solid var(--red-err);" onclick="openAlertDel(${a.id},'${a.name}')">삭제</button>
-      </div>
-    </div>
-    <div style="font-size:15px;margin:6px 0;"><span style="color:${a.direction==='이상'?'var(--red-up)':'var(--blue-dn)'};font-weight:700;">${fmt(a.target)}원 ${a.direction}</span> 도달 시 알림</div>
-    <div style="font-size:12px;color:var(--gray);">현재가: ${fmt(a.current)}원</div>
-  </div>`).join('')}
-  <div class="divider"></div>
-  <div style="display:flex;gap:10px;">
-    <button class="btn btn-primary btn-sm" onclick="navigate('alert_add')">+ 알림 추가</button>
-    <button class="btn btn-ghost" onclick="navigate('alert_log')">📬 알림 내역 보기 →</button>
-  </div>
-</div>`;}
+        </div>
+        </div>
+        <div style="font-size:15px;margin:6px 0;"><span style="color:${a.direction==='이상'?'var(--red-up)':'var(--blue-dn)'};font-weight:700;">${fmt(a.target)}원 ${a.direction}</span> 도달 시 알림</div>
+        <div style="font-size:12px;color:var(--gray);">현재가: ${fmt(a.current)}원</div>
+        </div>`).join('')}
+        <div class="divider"></div>
+        <div style="display:flex;gap:10px;">
+        <button class="btn btn-primary btn-sm" onclick="navigate('alert_add')">+ 알림 추가</button>
+        <button class="btn btn-ghost" onclick="navigate('alert_log')">📬 알림 내역 보기 →</button>
+        </div>
+        </div>`;}
 
-function pgAlertAdd(){
-  const s=state.alertStock||{code:'',name:'',price:0};
-  return `<div class="page-wrap">
-  <div class="page-header"><div class="page-title">🔔 알림 등록</div></div>
-  <div style="display:flex;justify-content:center;">
-  <div class="card" style="width:100%;max-width:560px;">
-    <div class="form-group"><div class="label">종목 선택 <span class="req">*</span></div>
-      <div class="search-bar mb8"><input id="alertStockInput" placeholder="종목명 또는 코드 입력" value="${s.name}" oninput="searchAlertStock()"><button onclick="searchAlertStock()">🔍</button></div>
-      <div id="alertStockResults"></div>
-      <input type="hidden" id="alertStockCode" value="${s.code}">
-      <input type="hidden" id="alertStockName" value="${s.name}">
-      ${s.price?`<div class="notice mt8">현재가: <strong>${fmt(s.price)}원</strong> (${s.name})</div>`:''}
-    </div>
-    <div class="form-group"><div class="label">목표가 <span class="req">*</span></div>
-      <div style="display:flex;align-items:center;gap:8px;">
+  function pgAlertAdd(){
+    const s=state.alertStock||{code:'',name:'',price:0};
+    return `<div class="page-wrap">
+        <div class="page-header"><div class="page-title">🔔 알림 등록</div></div>
+        <div style="display:flex;justify-content:center;">
+        <div class="card" style="width:100%;max-width:560px;">
+        <div class="form-group"><div class="label">종목 선택 <span class="req">*</span></div>
+        <div class="search-bar mb8"><input id="alertStockInput" placeholder="종목명 또는 코드 입력" value="${s.name}" oninput="searchAlertStock()"><button onclick="searchAlertStock()">🔍</button></div>
+        <div id="alertStockResults"></div>
+        <input type="hidden" id="alertStockCode" value="${s.code}">
+        <input type="hidden" id="alertStockName" value="${s.name}">
+        ${s.price?`<div class="notice mt8">현재가: <strong>${fmt(s.price)}원</strong> (${s.name})</div>`:''}
+        </div>
+        <div class="form-group"><div class="label">목표가 <span class="req">*</span></div>
+        <div style="display:flex;align-items:center;gap:8px;">
         <input class="input" id="alertTarget" placeholder="목표 주가 입력" style="flex:1;" type="number">
         <span style="font-size:14px;color:var(--gray);">원</span>
-      </div></div>
-    <div class="form-group"><div class="label">알림 조건 <span class="req">*</span></div>
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;" id="alertDirBtns">
+        </div></div>
+        <div class="form-group"><div class="label">알림 조건 <span class="req">*</span></div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;" id="alertDirBtns">
         <div id="dirAbove" style="padding:12px;border-radius:7px;background:var(--navy);color:white;text-align:center;font-size:13px;font-weight:600;cursor:pointer;" onclick="selectDir('이상')">이상 (목표가 도달 또는 초과)</div>
         <div id="dirBelow" style="padding:12px;border-radius:7px;background:var(--bg);border:1px solid var(--border);text-align:center;font-size:13px;color:var(--gray);cursor:pointer;" onclick="selectDir('이하')">이하 (목표가 도달 또는 하락)</div>
-      </div>
-      <input type="hidden" id="alertDir" value="이상">
-    </div>
-    <div class="notice mb16">ℹ 현재가 기준으로 목표가를 설정해 주세요</div>
-    <button class="btn btn-primary btn-full mb8" onclick="doAddAlert()">알림 등록</button>
-    <button class="btn btn-secondary btn-full" onclick="navigate('alert_list')">취소</button>
-  </div>
-  </div>
-</div>`;}
+        </div>
+        <input type="hidden" id="alertDir" value="이상">
+        </div>
+        <div class="notice mb16">ℹ 현재가 기준으로 목표가를 설정해 주세요</div>
+        <button class="btn btn-primary btn-full mb8" onclick="doAddAlert()">알림 등록</button>
+        <button class="btn btn-secondary btn-full" onclick="navigate('alert_list')">취소</button>
+        </div>
+        </div>
+        </div>`;}
 
-function pgAlertEdit(){
-  const a=state.alerts.find(x=>x.id===state.editAlertId)||state.alerts[0];
-  return `<div class="page-wrap">
-  <div class="page-header"><div class="page-title">🔔 알림 수정</div></div>
-  <div style="display:flex;justify-content:center;">
-  <div class="card" style="width:100%;max-width:560px;">
-    <div class="form-group"><div class="label">종목</div>
-      <input class="input disabled" value="${a.name} (${a.code}) — 수정 불가" readonly></div>
-    <div class="form-group"><div class="label">목표가 <span class="req">*</span></div>
-      <div style="display:flex;align-items:center;gap:8px;">
+  function pgAlertEdit(){
+    const a=state.alerts.find(x=>x.id===state.editAlertId)||state.alerts[0];
+    return `<div class="page-wrap">
+        <div class="page-header"><div class="page-title">🔔 알림 수정</div></div>
+        <div style="display:flex;justify-content:center;">
+        <div class="card" style="width:100%;max-width:560px;">
+        <div class="form-group"><div class="label">종목</div>
+        <input class="input disabled" value="${a.name} (${a.code}) — 수정 불가" readonly></div>
+        <div class="form-group"><div class="label">목표가 <span class="req">*</span></div>
+        <div style="display:flex;align-items:center;gap:8px;">
         <input class="input" id="editTarget" value="${a.target}" style="flex:1;border-color:var(--blue);" type="number">
         <span style="font-size:14px;color:var(--gray);">원</span>
-      </div></div>
-    <div class="form-group"><div class="label">알림 조건 <span class="req">*</span></div>
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
+        </div></div>
+        <div class="form-group"><div class="label">알림 조건 <span class="req">*</span></div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
         <div id="editDirAbove" style="padding:12px;border-radius:7px;background:${a.direction==='이상'?'var(--navy)':'var(--bg)'};color:${a.direction==='이상'?'white':'var(--gray)'};border:1px solid ${a.direction==='이상'?'var(--navy)':'var(--border)'};text-align:center;font-size:13px;font-weight:600;cursor:pointer;" onclick="selectEditDir('이상')">이상</div>
         <div id="editDirBelow" style="padding:12px;border-radius:7px;background:${a.direction==='이하'?'var(--navy)':'var(--bg)'};color:${a.direction==='이하'?'white':'var(--gray)'};border:1px solid ${a.direction==='이하'?'var(--navy)':'var(--border)'};text-align:center;font-size:13px;color:var(--gray);cursor:pointer;" onclick="selectEditDir('이하')">이하</div>
-      </div>
-      <input type="hidden" id="editDir" value="${a.direction}">
-    </div>
-    <div class="notice mb16">ℹ 현재가: ${fmt(a.current)}원 | 등록일: 2026.03.01</div>
-    <button class="btn btn-primary btn-full mb8" onclick="doEditAlert(${a.id})">수정 완료</button>
-    <button class="btn btn-secondary btn-full" onclick="navigate('alert_list')">취소</button>
-  </div>
-  </div>
-</div>`;}
+        </div>
+        <input type="hidden" id="editDir" value="${a.direction}">
+        </div>
+        <div class="notice mb16">ℹ 현재가: ${fmt(a.current)}원 | 등록일: 2026.03.01</div>
+        <button class="btn btn-primary btn-full mb8" onclick="doEditAlert(${a.id})">수정 완료</button>
+        <button class="btn btn-secondary btn-full" onclick="navigate('alert_list')">취소</button>
+        </div>
+        </div>
+        </div>`;}
 
-function pgAlertLog(){
-  const unread=state.alertLogs.filter(l=>!l.read).length;
-  return `<div class="page-wrap">
-  <div class="flex flex-between flex-center mb24">
-    <div><div class="page-title">📬 알림 내역</div>${unread>0?`<div style="font-size:12px;color:var(--blue);margin-top:4px;">읽지 않은 알림 ${unread}개</div>`:''}</div>
-    ${unread>0?`<button class="btn btn-ghost btn-sm" onclick="markAllRead()">전체 읽음</button>`:''}
-  </div>
-  ${state.alertLogs.length===0?`
-  <div class="card"><div class="empty"><div class="empty-icon">📭</div><div class="empty-title">수신된 알림이 없습니다</div>
-  <div class="empty-sub">알림을 설정하면 목표 주가 도달 시 알림을 받을 수 있습니다.</div>
-  <button class="btn btn-primary" onclick="navigate('alert_list')">🔔 알림 설정하러 가기</button></div></div>`:
-  state.alertLogs.map(l=>`
-  <div class="alert-log-row ${l.read?'':'unread'}" onclick="markRead(${l.id})">
-    <div class="flex flex-between flex-center mb8">
-      <div class="flex flex-center gap8">
+  function pgAlertLog(){
+    const unread=state.alertLogs.filter(l=>!l.read).length;
+    return `<div class="page-wrap">
+        <div class="flex flex-between flex-center mb24">
+        <div><div class="page-title">📬 알림 내역</div>${unread>0?`<div style="font-size:12px;color:var(--blue);margin-top:4px;">읽지 않은 알림 ${unread}개</div>`:''}</div>
+        ${unread>0?`<button class="btn btn-ghost btn-sm" onclick="markAllRead()">전체 읽음</button>`:''}
+        </div>
+        ${state.alertLogs.length===0?`
+        <div class="card"><div class="empty"><div class="empty-icon">📭</div><div class="empty-title">수신된 알림이 없습니다</div>
+        <div class="empty-sub">알림을 설정하면 목표 주가 도달 시 알림을 받을 수 있습니다.</div>
+        <button class="btn btn-primary" onclick="navigate('alert_list')">🔔 알림 설정하러 가기</button></div></div>`:
+            state.alertLogs.map(l=>`
+        <div class="alert-log-row ${l.read?'':'unread'}" onclick="markRead(${l.id})">
+        <div class="flex flex-between flex-center mb8">
+        <div class="flex flex-center gap8">
         ${!l.read?`<span class="unread-dot"></span>`:''}
         <span style="font-size:14px;font-weight:600;color:${l.read?'var(--gray)':'var(--dark)'};">${l.name}</span>
-      </div>
-      <div class="flex flex-center gap8">
+        </div>
+        <div class="flex flex-center gap8">
         <span style="font-size:11px;color:${l.read?'var(--gray)':'var(--blue)'};">${l.read?'읽음':'읽지 않음'}</span>
         <button class="btn btn-sm" style="background:#FFF5F5;color:var(--red-err);border:1px solid var(--red-err);padding:4px 10px;" onclick="event.stopPropagation();deleteLog(${l.id})">삭제</button>
-      </div>
-    </div>
-    <div style="font-size:13px;color:${l.read?'var(--gray)':'var(--dark)'};">${l.msg}</div>
-    <div style="font-size:11px;color:var(--gray);margin-top:6px;">${l.time}</div>
-  </div>`).join('')}
-</div>`;}
+        </div>
+        </div>
+        <div style="font-size:13px;color:${l.read?'var(--gray)':'var(--dark)'};">${l.msg}</div>
+        <div style="font-size:11px;color:var(--gray);margin-top:6px;">${l.time}</div>
+        </div>`).join('')}
+        </div>`;}
 
-function pgMypage(){return `<div class="page-wrap">
-  <div class="page-header"><div class="page-title">👤 마이페이지</div></div>
-  <div style="display:grid;grid-template-columns:320px 1fr;gap:20px;">
-    <!-- 왼쪽 -->
-    <div>
-      <div class="card text-center mb12" style="padding:24px 20px;">
+  function pgMypage(){return `<div class="page-wrap">
+        <div class="page-header"><div class="page-title">👤 마이페이지</div></div>
+        <div style="display:grid;grid-template-columns:320px 1fr;gap:20px;">
+        <!-- 왼쪽 -->
+        <div>
+        <div class="card text-center mb12" style="padding:24px 20px;">
         <div style="width:60px;height:60px;border-radius:50%;background:var(--blue);display:flex;align-items:center;justify-content:center;font-size:26px;color:white;margin:0 auto 12px;">👤</div>
         <div style="font-size:16px;font-weight:700;">${(state.user?.email||'user@example.com').split('@')[0]}</div>
         <div style="font-size:12px;color:var(--gray);margin-top:4px;">${state.user?.email||'user@example.com'}</div>
-      </div>
-      <div class="card" style="padding:8px 0;">
+        </div>
+        <div class="card" style="padding:8px 0;">
         <div class="nav-item" style="padding:16px 20px;font-size:13px;" onclick="navigate('mypage_pw')">
-          <span class="nav-icon">👤</span>회원정보 수정
+        <span class="nav-icon">👤</span>회원정보 수정
         </div>
         <div class="nav-item" style="padding:16px 20px;font-size:13px;color:var(--red-err);" onclick="openModal('modalLeave')">
-          <span class="nav-icon">⚠</span>서비스 탈퇴
+        <span class="nav-icon">⚠</span>서비스 탈퇴
         </div>
-      </div>
-    </div>
-    <!-- 오른쪽 -->
-    <div>
-      <!-- 관심종목 -->
-      <div class="card mb16">
+        </div>
+        </div>
+        <!-- 오른쪽 -->
+        <div>
+        <!-- 관심종목 -->
+        <div class="card mb16">
         <div class="flex flex-between flex-center mb14">
-          <div class="section-title" style="margin-bottom:0;">⭐ 관심종목</div>
-          <span style="font-size:12px;color:var(--gray);">총 ${state.favorites.length}개 · <span style="color:var(--blue);cursor:pointer;" onclick="navigate('fav_list')">전체보기 →</span></span>
+        <div class="section-title" style="margin-bottom:0;">⭐ 관심종목</div>
+        <span style="font-size:12px;color:var(--gray);">총 ${state.favorites.length}개 · <span style="color:var(--blue);cursor:pointer;" onclick="navigate('fav_list')">전체보기 →</span></span>
         </div>
         ${state.favorites.length>0?state.favorites.slice(0,3).map(f=>`
         <div class="stock-row" onclick="navigate('stock_detail',{currentStock:'${f.code}'})">
-          <span class="sn">${f.name}</span><span class="sc">${f.code}</span>
-          <span class="badge badge-${f.market.toLowerCase()}">${f.market}</span>
-          <span class="sp ${f.change>=0?'up':'down'}" style="margin-left:auto;">${fmt(f.price)}원</span>
-          <span class="sch ${f.change>=0?'up':'down'}">${f.change>=0?'▲ +':'▼ -'}${fmt(Math.abs(f.change))} (${f.pct>=0?'+':''}${f.pct.toFixed(2)}%)</span>
+        <span class="sn">${f.name}</span><span class="sc">${f.code}</span>
+        <span class="badge badge-${f.market.toLowerCase()}">${f.market}</span>
+        <span class="sp ${f.change>=0?'up':'down'}" style="margin-left:auto;">${fmt(f.price)}원</span>
+        <span class="sch ${f.change>=0?'up':'down'}">${f.change>=0?'▲ +':'▼ -'}${fmt(Math.abs(f.change))} (${f.pct>=0?'+':''}${f.pct.toFixed(2)}%)</span>
         </div>`).join(''):`
         <div style="text-align:center;padding:20px;color:var(--gray);font-size:13px;">등록된 관심종목이 없습니다.</div>`}
-      </div>
-      <!-- 알림 -->
-      <div class="card">
+        </div>
+        <!-- 알림 -->
+        <div class="card">
         <div class="flex flex-between flex-center mb14">
-          <div class="section-title" style="margin-bottom:0;">🔔 설정한 알림</div>
-          <span style="font-size:12px;color:var(--gray);">총 ${state.alerts.length}개 · <span style="color:var(--blue);cursor:pointer;" onclick="navigate('alert_list')">전체보기 →</span></span>
+        <div class="section-title" style="margin-bottom:0;">🔔 설정한 알림</div>
+        <span style="font-size:12px;color:var(--gray);">총 ${state.alerts.length}개 · <span style="color:var(--blue);cursor:pointer;" onclick="navigate('alert_list')">전체보기 →</span></span>
         </div>
         ${state.alerts.length>0?state.alerts.slice(0,3).map(a=>`
         <div style="padding:12px 16px;border:1px solid var(--border);border-radius:8px;margin-bottom:8px;display:flex;align-items:center;justify-content:space-between;">
-          <div>
-            <span style="font-size:14px;font-weight:600;">${a.name}</span>
-            <span style="font-size:12px;color:var(--gray);margin-left:8px;">${a.code}</span>
-          </div>
-          <span style="font-size:13px;color:${a.direction==='이상'?'var(--red-up)':'var(--blue-dn)'};font-weight:600;">${fmt(a.target)}원 ${a.direction}</span>
+        <div>
+        <span style="font-size:14px;font-weight:600;">${a.name}</span>
+        <span style="font-size:12px;color:var(--gray);margin-left:8px;">${a.code}</span>
+        </div>
+        <span style="font-size:13px;color:${a.direction==='이상'?'var(--red-up)':'var(--blue-dn)'};font-weight:600;">${fmt(a.target)}원 ${a.direction}</span>
         </div>`).join(''):`
         <div style="text-align:center;padding:20px;color:var(--gray);font-size:13px;">설정된 알림이 없습니다.</div>`}
-      </div>
-    </div>
-  </div>
-</div>`;}
+        </div>
+        </div>
+        </div>
+        </div>`;}
 
-function pgMypagePw(){return `<div class="page-wrap">
-  <div class="page-header"><div class="page-title">👤 회원정보 수정</div></div>
-  <div style="display:flex;justify-content:center;">
-  <div class="card" style="width:100%;max-width:560px;">
-    <div class="form-group"><div class="label">이메일 (변경 불가)</div>
-      <input class="input disabled" value="${state.user?.email||'user@example.com'}" readonly></div>
-    <div class="form-group"><div class="label">이름 (변경 불가)</div>
-      <input class="input disabled" value="${(state.user?.email||'user@example.com').split('@')[0]}" readonly></div>
-    <div class="divider"></div>
-    <div style="font-size:13px;font-weight:600;color:var(--navy);margin-bottom:14px;">비밀번호 변경</div>
-    <div class="form-group"><div class="label">현재 비밀번호</div>
-      <input class="input" id="curPw" type="password" placeholder="현재 비밀번호 입력">
-      <div class="error-msg" id="curPwErr"></div></div>
-    <div class="form-group"><div class="label">새 비밀번호</div>
-      <input class="input" id="newPw" type="password" placeholder="8자 이상, 영문+숫자+특수문자">
-      </div>
-    <div class="form-group"><div class="label">새 비밀번호 확인</div>
-      <input class="input" id="newPw2" type="password" placeholder="새 비밀번호를 다시 입력하세요">
-      <div class="error-msg" id="newPw2Err"></div></div>
-    <div class="notice mb16">ℹ 비밀번호를 변경하지 않으려면 비밀번호 칸을 비워두세요.</div>
-    <button class="btn btn-primary btn-full mb8" onclick="doChangePw()">수정 완료</button>
-    <button class="btn btn-secondary btn-full" onclick="navigate('mypage')">취소</button>
-  </div>
-  </div>
-</div>`;}
+  function pgMypagePw(){return `<div class="page-wrap">
+        <div class="page-header"><div class="page-title">👤 회원정보 수정</div></div>
+        <div style="display:flex;justify-content:center;">
+        <div class="card" style="width:100%;max-width:560px;">
+        <div class="form-group"><div class="label">이메일 (변경 불가)</div>
+        <input class="input disabled" value="${state.user?.email||'user@example.com'}" readonly></div>
+        <div class="form-group"><div class="label">이름 (변경 불가)</div>
+        <input class="input disabled" value="${(state.user?.email||'user@example.com').split('@')[0]}" readonly></div>
+        <div class="divider"></div>
+        <div style="font-size:13px;font-weight:600;color:var(--navy);margin-bottom:14px;">비밀번호 변경</div>
+        <div class="form-group"><div class="label">현재 비밀번호</div>
+        <input class="input" id="curPw" type="password" placeholder="현재 비밀번호 입력">
+        <div class="error-msg" id="curPwErr"></div></div>
+        <div class="form-group"><div class="label">새 비밀번호</div>
+        <input class="input" id="newPw" type="password" placeholder="8자 이상, 영문+숫자+특수문자">
+        </div>
+        <div class="form-group"><div class="label">새 비밀번호 확인</div>
+        <input class="input" id="newPw2" type="password" placeholder="새 비밀번호를 다시 입력하세요">
+        <div class="error-msg" id="newPw2Err"></div></div>
+        <div class="notice mb16">ℹ 비밀번호를 변경하지 않으려면 비밀번호 칸을 비워두세요.</div>
+        <button class="btn btn-primary btn-full mb8" onclick="doChangePw()">수정 완료</button>
+        <button class="btn btn-secondary btn-full" onclick="navigate('mypage')">취소</button>
+        </div>
+        </div>
+        </div>`;}
 
-function pgMypageLeave(){return `<div class="page-wrap">
-  <div class="page-header"><div class="page-title" style="color:var(--red-err);">⚠ 서비스 탈퇴</div></div>
-  <div class="card" style="max-width:560px;">
-    <div class="warning mb16" style="padding:20px;">
-      <div style="font-weight:700;margin-bottom:10px;">탈퇴 전 반드시 확인하세요</div>
-      <ul style="padding-left:16px;line-height:2.2;font-size:13px;">
+  function pgMypageLeave(){return `<div class="page-wrap">
+        <div class="page-header"><div class="page-title" style="color:var(--red-err);">⚠ 서비스 탈퇴</div></div>
+        <div class="card" style="max-width:560px;">
+        <div class="warning mb16" style="padding:20px;">
+        <div style="font-weight:700;margin-bottom:10px;">탈퇴 전 반드시 확인하세요</div>
+        <ul style="padding-left:16px;line-height:2.2;font-size:13px;">
         <li>모든 계정 정보가 영구적으로 삭제됩니다.</li>
         <li>관심종목, 알림 설정 및 알림 내역이 모두 삭제됩니다.</li>
         <li>탈퇴 후 동일 이메일로 재가입이 가능합니다.</li>
-      </ul>
-    </div>
-    <div class="form-group">
-      <div class="label">탈퇴 확인을 위해 비밀번호를 입력해 주세요.</div>
-      <input class="input" id="leavePw" type="password" placeholder="현재 비밀번호 입력">
-    </div>
-    <button class="btn btn-danger btn-full mb8" onclick="openModal('modalLeave')">탈퇴 확인</button>
-    <button class="btn btn-secondary btn-full" onclick="navigate('mypage')">취소 (마이페이지로)</button>
-  </div>
-</div>`;}
+        </ul>
+        </div>
+        <div class="form-group">
+        <div class="label">탈퇴 확인을 위해 비밀번호를 입력해 주세요.</div>
+        <input class="input" id="leavePw" type="password" placeholder="현재 비밀번호 입력">
+        </div>
+        <button class="btn btn-danger btn-full mb8" onclick="openModal('modalLeave')">탈퇴 확인</button>
+        <button class="btn btn-secondary btn-full" onclick="navigate('mypage')">취소 (마이페이지로)</button>
+        </div>
+        </div>`;}
 
-function pgErr404(){return `<div class="error-page">
-  <div class="error-num">404</div>
-  <div class="error-msg-main">페이지를 찾을 수 없습니다</div>
-  <div class="error-desc">요청하신 페이지가 존재하지 않거나 이동되었습니다.</div>
-  <button class="btn btn-secondary" onclick="navigate('main')">🏠 메인으로 돌아가기</button>
-</div>`;}
+  function pgErr404(){return `<div class="error-page">
+        <div class="error-num">404</div>
+        <div class="error-msg-main">페이지를 찾을 수 없습니다</div>
+        <div class="error-desc">요청하신 페이지가 존재하지 않거나 이동되었습니다.</div>
+        <button class="btn btn-secondary" onclick="navigate('main')">🏠 메인으로 돌아가기</button>
+        </div>`;}
 
-function pgErr500(){return `<div class="error-page">
-  <div class="error-num">500</div>
-  <div class="error-msg-main" style="color:#FF6B6B;">서버 오류가 발생했습니다</div>
-  <div class="error-desc">일시적인 오류입니다. 잠시 후 다시 시도해 주세요.</div>
-  <div style="display:flex;gap:12px;">
-    <button class="btn" style="background:var(--amber);color:white;border:none;">🔄 다시 시도</button>
-    <button class="btn btn-secondary" onclick="navigate('main')">🏠 메인으로</button>
-  </div>
-</div>`;}
+  function pgErr500(){return `<div class="error-page">
+        <div class="error-num">500</div>
+        <div class="error-msg-main" style="color:#FF6B6B;">서버 오류가 발생했습니다</div>
+        <div class="error-desc">일시적인 오류입니다. 잠시 후 다시 시도해 주세요.</div>
+        <div style="display:flex;gap:12px;">
+        <button class="btn" style="background:var(--amber);color:white;border:none;">🔄 다시 시도</button>
+        <button class="btn btn-secondary" onclick="navigate('main')">🏠 메인으로</button>
+        </div>
+        </div>`;}
 
-// ══════════════════════════════════════
-// 액션 함수들
-// ══════════════════════════════════════
-function clearErr(id){const el=document.getElementById(id);if(el)el.textContent='';}
+  // ══════════════════════════════════════
+  // 액션 함수들
+  // ══════════════════════════════════════
+  function clearErr(id){const el=document.getElementById(id);if(el)el.textContent='';}
 
-async function doLogin(){
-  const email = document.getElementById('loginEmail').value.trim();
-  const pw = document.getElementById('loginPw').value;
+  async function doLogin(){
+    const email = document.getElementById('loginEmail').value.trim();
+    const pw = document.getElementById('loginPw').value;
 
-  if(!email){ document.getElementById('loginEmailErr').textContent='이메일을 입력해 주세요.'; return; }
-  if(!/\S+@\S+\.\S+/.test(email)){ document.getElementById('loginEmailErr').textContent='올바른 이메일 형식이 아닙니다.'; return; }
-  if(!pw){ document.getElementById('loginPwErr').textContent='비밀번호를 입력해 주세요.'; return; }
+    if(!email){ document.getElementById('loginEmailErr').textContent='이메일을 입력해 주세요.'; return; }
+    if(!/\S+@\S+\.\S+/.test(email)){ document.getElementById('loginEmailErr').textContent='올바른 이메일 형식이 아닙니다.'; return; }
+    if(!pw){ document.getElementById('loginPwErr').textContent='비밀번호를 입력해 주세요.'; return; }
 
-  try {
-    const res = await fetch('/api/user/login', {
-      method: 'POST',
-      headers: {'Content-Type': 'application/json'},
-      body: JSON.stringify({userEmail: email, userPwd: pw})
-    });
+    try {
+      const res = await fetch('/api/user/login', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({userEmail: email, userPwd: pw})
+      });
 
-    if(res.ok){
-      const token = await res.text();
-      localStorage.setItem('jwt', token);
-      localStorage.setItem('userEmail', email);
-      state.loggedIn = true;
-      state.user = {email: email, nickname: email.split('@')[0]};
-      document.getElementById('loginSuccessMsg').textContent = `환영합니다, ${email.split('@')[0]}님!`;
-      openModal('modalLoginSuccess');
-    } else {
+      if(res.ok){
+        const token = await res.text();
+        localStorage.setItem('jwt', token);
+        localStorage.setItem('userEmail', email);
+        state.loggedIn = true;
+        state.user = {email: email, nickname: email.split('@')[0]};
+        document.getElementById('loginSuccessMsg').textContent = `환영합니다, ${email.split('@')[0]}님!`;
+        openModal('modalLoginSuccess');
+      } else {
+        openModal('modalLoginFail');
+      }
+    } catch(e) {
       openModal('modalLoginFail');
     }
-  } catch(e) {
-    openModal('modalLoginFail');
   }
-}
 
-async function sendVerifyCode(){
-  const email = document.getElementById('regEmail').value.trim();
-  const errEl = document.getElementById('regEmailErr');
+  async function sendVerifyCode(){
+    const email = document.getElementById('regEmail').value.trim();
+    const errEl = document.getElementById('regEmailErr');
 
-  if(!email){ errEl.textContent='이메일을 입력해 주세요.'; errEl.style.color='var(--red-err)'; return; }
-  if(!/\S+@\S+\.\S+/.test(email)){ errEl.textContent='올바른 이메일 형식이 아닙니다.'; errEl.style.color='var(--red-err)'; return; }
+    if(!email){ errEl.textContent='이메일을 입력해 주세요.'; errEl.style.color='var(--red-err)'; return; }
+    if(!/\S+@\S+\.\S+/.test(email)){ errEl.textContent='올바른 이메일 형식이 아닙니다.'; errEl.style.color='var(--red-err)'; return; }
 
-  try {
-    const res = await fetch(`/api/user/check-email?userEmail=${encodeURIComponent(email)}`);
-    if(!res.ok){
-      errEl.textContent='이미 사용 중인 이메일입니다.';
+    try {
+      const res = await fetch(`/api/user/check-email?userEmail=${encodeURIComponent(email)}`);
+      if(!res.ok){
+        errEl.textContent='이미 사용 중인 이메일입니다.';
+        errEl.style.color='var(--red-err)';
+        return;
+      }
+
+      const sendRes = await fetch('/api/user/send-code', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({userEmail: email})
+      });
+
+      if(sendRes.ok){
+        errEl.textContent='사용 가능한 이메일입니다.';
+        errEl.style.color='var(--green)';
+        state._emailVerified = false;
+        document.getElementById('verifyGroup').style.display='block';
+        document.getElementById('regVerifyErr').textContent='인증번호를 발송했습니다. 이메일을 확인해 주세요.';
+        document.getElementById('regVerifyErr').style.color='var(--blue)';
+        document.getElementById('regVerifyOk').style.display='none';
+      } else {
+        errEl.textContent='인증번호 발송에 실패했습니다.';
+        errEl.style.color='var(--red-err)';
+      }
+    } catch(e) {
+      errEl.textContent='서버 오류가 발생했습니다.';
       errEl.style.color='var(--red-err)';
-      return;
     }
-
-    const sendRes = await fetch('/api/user/send-code', {
-      method: 'POST',
-      headers: {'Content-Type': 'application/json'},
-      body: JSON.stringify({userEmail: email})
-    });
-
-    if(sendRes.ok){
-      errEl.textContent='사용 가능한 이메일입니다.';
-      errEl.style.color='var(--green)';
-      state._emailVerified = false;
-      document.getElementById('verifyGroup').style.display='block';
-      document.getElementById('regVerifyErr').textContent='인증번호를 발송했습니다. 이메일을 확인해 주세요.';
-      document.getElementById('regVerifyErr').style.color='var(--blue)';
-      document.getElementById('regVerifyOk').style.display='none';
-    } else {
-      errEl.textContent='인증번호 발송에 실패했습니다.';
-      errEl.style.color='var(--red-err)';
-    }
-  } catch(e) {
-    errEl.textContent='서버 오류가 발생했습니다.';
-    errEl.style.color='var(--red-err)';
   }
-}
 
-async function checkVerifyCode(){
-  const email = document.getElementById('regEmail').value.trim();
-  const code = document.getElementById('regVerifyCode').value.trim();
-  const vErr = document.getElementById('regVerifyErr');
+  async function checkVerifyCode(){
+    const email = document.getElementById('regEmail').value.trim();
+    const code = document.getElementById('regVerifyCode').value.trim();
+    const vErr = document.getElementById('regVerifyErr');
 
-  if(!code){ vErr.textContent='인증번호를 입력해 주세요.'; vErr.style.color='var(--red-err)'; return; }
+    if(!code){ vErr.textContent='인증번호를 입력해 주세요.'; vErr.style.color='var(--red-err)'; return; }
 
-  try {
-    const res = await fetch('/api/user/verify-code', {
-      method: 'POST',
-      headers: {'Content-Type': 'application/json'},
-      body: JSON.stringify({userEmail: email, verifyCode: code})
-    });
+    try {
+      const res = await fetch('/api/user/verify-code', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({userEmail: email, verifyCode: code})
+      });
 
-    if(res.ok){
-      state._emailVerified = true;
-      document.getElementById('regVerifyOk').style.display='block';
-      vErr.textContent='';
-    } else {
-      vErr.textContent='인증번호가 일치하지 않습니다.';
+      if(res.ok){
+        state._emailVerified = true;
+        document.getElementById('regVerifyOk').style.display='block';
+        vErr.textContent='';
+      } else {
+        vErr.textContent='인증번호가 일치하지 않습니다.';
+        vErr.style.color='var(--red-err)';
+        state._emailVerified = false;
+      }
+    } catch(e) {
+      vErr.textContent='서버 오류가 발생했습니다.';
       vErr.style.color='var(--red-err)';
-      state._emailVerified = false;
     }
-  } catch(e) {
-    vErr.textContent='서버 오류가 발생했습니다.';
-    vErr.style.color='var(--red-err)';
   }
-}
 
 
-function validateSignup(){
-  const email=document.getElementById('regEmail')?.value||'';
-  const pw=document.getElementById('regPw')?.value||'';
-  const pw2=document.getElementById('regPw2')?.value||'';
-  const nick=document.getElementById('regNick')?.value||'';
-  const phone=document.getElementById('regPhone')?.value||'';
-  const agree=document.getElementById('regAgree')?.checked||false;
-  let valid=true;
-  if(pw&&pw.length<8){document.getElementById('regPwErr').textContent='8자 이상 입력해 주세요.';valid=false;}
-  else if(document.getElementById('regPwErr'))document.getElementById('regPwErr').textContent='';
-  if(pw2&&pw&&pw!==pw2){document.getElementById('regPw2Err').textContent='비밀번호가 일치하지 않습니다.';valid=false;}
-  else if(document.getElementById('regPw2Err'))document.getElementById('regPw2Err').textContent='';
-  const btn=document.getElementById('regBtn');
-  if(btn){
-    const verified=state._emailVerified||false;
-    const allFilled=email&&verified&&pw&&pw2&&nick&&phone&&agree&&valid&&pw===pw2&&pw.length>=8;
-    btn.style.background=allFilled?'var(--navy)':'var(--light-gray)';
-    btn.style.color=allFilled?'white':'var(--gray)';
-    btn.style.cursor=allFilled?'pointer':'not-allowed';
-  }
-}
-
-
-async function doSignup(){
-  const email = document.getElementById('regEmail').value.trim();
-  const verified = state._emailVerified || false;
-  const nick = document.getElementById('regNick').value.trim();
-  const phone = document.getElementById('regPhone').value.trim();
-  const pw = document.getElementById('regPw').value;
-  const pw2 = document.getElementById('regPw2').value;
-
-  if(!email){ document.getElementById('regEmailErr').textContent='이메일을 입력해 주세요.'; return; }
-  if(!verified){ document.getElementById('regVerifyErr').textContent='이메일 인증을 완료해 주세요.'; return; }
-  if(!nick){ document.getElementById('regNickErr').textContent='이름을 입력해 주세요.'; return; }
-  if(!phone){ document.getElementById('regPhoneErr').textContent='전화번호를 입력해 주세요.'; return; }
-  if(!pw){ document.getElementById('regPwErr').textContent='비밀번호를 입력해 주세요.'; return; }
-  if(pw.length<8){ document.getElementById('regPwErr').textContent='8자 이상 입력해 주세요.'; return; }
-  if(pw!==pw2){ document.getElementById('regPw2Err').textContent='비밀번호가 일치하지 않습니다.'; return; }
-
-  try {
-    const res = await fetch('/api/user/signup', {
-      method: 'POST',
-      headers: {'Content-Type': 'application/json'},
-      body: JSON.stringify({
-        userEmail: email,
-        userPwd: pw,
-        userName: nick,
-        userPnum: phone
-      })
-    });
-
-    if(res.ok){
-      openModal('modalSignupDone');
-    } else {
-      const err = await res.text();
-      console.log('회원가입 실패:', err);
-      showToast('회원가입 실패: ' + err);
+  function validateSignup(){
+    const email=document.getElementById('regEmail')?.value||'';
+    const pw=document.getElementById('regPw')?.value||'';
+    const pw2=document.getElementById('regPw2')?.value||'';
+    const nick=document.getElementById('regNick')?.value||'';
+    const phone=document.getElementById('regPhone')?.value||'';
+    const agree=document.getElementById('regAgree')?.checked||false;
+    let valid=true;
+    if(pw&&pw.length<8){document.getElementById('regPwErr').textContent='8자 이상 입력해 주세요.';valid=false;}
+    else if(document.getElementById('regPwErr'))document.getElementById('regPwErr').textContent='';
+    if(pw2&&pw&&pw!==pw2){document.getElementById('regPw2Err').textContent='비밀번호가 일치하지 않습니다.';valid=false;}
+    else if(document.getElementById('regPw2Err'))document.getElementById('regPw2Err').textContent='';
+    const btn=document.getElementById('regBtn');
+    if(btn){
+      const verified=state._emailVerified||false;
+      const allFilled=email&&verified&&pw&&pw2&&nick&&phone&&agree&&valid&&pw===pw2&&pw.length>=8;
+      btn.style.background=allFilled?'var(--navy)':'var(--light-gray)';
+      btn.style.color=allFilled?'white':'var(--gray)';
+      btn.style.cursor=allFilled?'pointer':'not-allowed';
     }
-  } catch(e) {
-    showToast('서버 오류가 발생했습니다.');
   }
-}
 
-async function doFindId(){
-  const name = document.getElementById('findName').value.trim();
-  const phone = document.getElementById('findPhone').value.trim();
-  const nameErr = document.getElementById('findNameErr');
-  const phoneErr = document.getElementById('findPhoneErr');
 
-  if(!name){ nameErr.textContent='이름을 입력해 주세요.'; nameErr.style.color='var(--red-err)'; document.getElementById('findName').focus(); return; }
-  nameErr.textContent='';
-  if(!phone){ phoneErr.textContent='전화번호를 입력해 주세요.'; phoneErr.style.color='var(--red-err)'; document.getElementById('findPhone').focus(); return; }
-  phoneErr.textContent='';
+  async function doSignup(){
+    const email = document.getElementById('regEmail').value.trim();
+    const verified = state._emailVerified || false;
+    const nick = document.getElementById('regNick').value.trim();
+    const phone = document.getElementById('regPhone').value.trim();
+    const pw = document.getElementById('regPw').value;
+    const pw2 = document.getElementById('regPw2').value;
 
-  try {
-    const res = await fetch(`/api/user/find-email?userName=${encodeURIComponent(name)}&userPnum=${encodeURIComponent(phone)}`);
+    if(!email){ document.getElementById('regEmailErr').textContent='이메일을 입력해 주세요.'; return; }
+    if(!verified){ document.getElementById('regVerifyErr').textContent='이메일 인증을 완료해 주세요.'; return; }
+    if(!nick){ document.getElementById('regNickErr').textContent='이름을 입력해 주세요.'; return; }
+    if(!phone){ document.getElementById('regPhoneErr').textContent='전화번호를 입력해 주세요.'; return; }
+    if(!pw){ document.getElementById('regPwErr').textContent='비밀번호를 입력해 주세요.'; return; }
+    if(pw.length<8){ document.getElementById('regPwErr').textContent='8자 이상 입력해 주세요.'; return; }
+    if(pw!==pw2){ document.getElementById('regPw2Err').textContent='비밀번호가 일치하지 않습니다.'; return; }
 
-    if(res.ok){
-      const maskedEmail = await res.text();
-      document.getElementById('findIdResultLabel').textContent = `이름 '${name}'으로 등록된 계정`;
-      document.getElementById('findIdResultEmail').textContent = maskedEmail;
-      openModal('modalFindIdResult');
-    } else {
+    try {
+      const res = await fetch('/api/user/signup', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({
+          userEmail: email,
+          userPwd: pw,
+          userName: nick,
+          userPnum: phone
+        })
+      });
+
+      if(res.ok){
+        openModal('modalSignupDone');
+      } else {
+        const err = await res.text();
+        console.log('회원가입 실패:', err);
+        showToast('회원가입 실패: ' + err);
+      }
+    } catch(e) {
+      showToast('서버 오류가 발생했습니다.');
+    }
+  }
+
+  async function doFindId(){
+    const name = document.getElementById('findName').value.trim();
+    const phone = document.getElementById('findPhone').value.trim();
+    const nameErr = document.getElementById('findNameErr');
+    const phoneErr = document.getElementById('findPhoneErr');
+
+    if(!name){ nameErr.textContent='이름을 입력해 주세요.'; nameErr.style.color='var(--red-err)'; document.getElementById('findName').focus(); return; }
+    nameErr.textContent='';
+    if(!phone){ phoneErr.textContent='전화번호를 입력해 주세요.'; phoneErr.style.color='var(--red-err)'; document.getElementById('findPhone').focus(); return; }
+    phoneErr.textContent='';
+
+    try {
+      const res = await fetch(`/api/user/find-email?userName=${encodeURIComponent(name)}&userPnum=${encodeURIComponent(phone)}`);
+
+      if(res.ok){
+        const maskedEmail = await res.text();
+        document.getElementById('findIdResultLabel').textContent = `이름 '${name}'으로 등록된 계정`;
+        document.getElementById('findIdResultEmail').textContent = maskedEmail;
+        openModal('modalFindIdResult');
+      } else {
+        openModal('modalFindIdFail');
+      }
+    } catch(e) {
       openModal('modalFindIdFail');
     }
-  } catch(e) {
-    openModal('modalFindIdFail');
   }
-}
 
-async function doSendReset(){
-  const name = document.getElementById('findPwName').value.trim();
-  const email = document.getElementById('findEmail').value.trim();
-  const nameErr = document.getElementById('findPwNameErr');
-  const emailErr = document.getElementById('findEmailErr');
+  async function doSendReset(){
+    const name = document.getElementById('findPwName').value.trim();
+    const email = document.getElementById('findEmail').value.trim();
+    const nameErr = document.getElementById('findPwNameErr');
+    const emailErr = document.getElementById('findEmailErr');
 
-  if(!name){ nameErr.textContent='이름을 입력해 주세요.'; nameErr.style.color='var(--red-err)'; document.getElementById('findPwName').focus(); return; }
-  nameErr.textContent='';
-  if(!email){ emailErr.textContent='이메일을 입력해 주세요.'; emailErr.style.color='var(--red-err)'; document.getElementById('findEmail').focus(); return; }
-  if(!/\S+@\S+\.\S+/.test(email)){ emailErr.textContent='올바른 이메일 형식이 아닙니다.'; emailErr.style.color='var(--red-err)'; return; }
-  emailErr.textContent='';
+    if(!name){ nameErr.textContent='이름을 입력해 주세요.'; nameErr.style.color='var(--red-err)'; document.getElementById('findPwName').focus(); return; }
+    nameErr.textContent='';
+    if(!email){ emailErr.textContent='이메일을 입력해 주세요.'; emailErr.style.color='var(--red-err)'; document.getElementById('findEmail').focus(); return; }
+    if(!/\S+@\S+\.\S+/.test(email)){ emailErr.textContent='올바른 이메일 형식이 아닙니다.'; emailErr.style.color='var(--red-err)'; return; }
+    emailErr.textContent='';
 
-  try {
-    const res = await fetch(`/api/user/reset-password?userName=${encodeURIComponent(name)}&userEmail=${encodeURIComponent(email)}`, {
-      method: 'POST'
-    });
+    try {
+      const res = await fetch(`/api/user/reset-password?userName=${encodeURIComponent(name)}&userEmail=${encodeURIComponent(email)}`, {
+        method: 'POST'
+      });
 
-    if(res.ok){
-      document.getElementById('tempPwEmail').innerHTML = `<strong>${email}</strong>로<br>임시 비밀번호를 전송했습니다.<br>로그인 후 비밀번호를 변경해 주세요.`;
-      openModal('modalTempPwSent');
-    } else {
+      if(res.ok){
+        document.getElementById('tempPwEmail').innerHTML = `<strong>${email}</strong>로<br>임시 비밀번호를 전송했습니다.<br>로그인 후 비밀번호를 변경해 주세요.`;
+        openModal('modalTempPwSent');
+      } else {
+        openModal('modalFindPwFail');
+      }
+    } catch(e) {
       openModal('modalFindPwFail');
     }
-  } catch(e) {
-    openModal('modalFindPwFail');
   }
-}
 
-function updatePwStrength(){
-  const pw=document.getElementById('newPw')?.value||'';
-  const bars=[document.getElementById('pb1'),document.getElementById('pb2'),document.getElementById('pb3')];
-  const label=document.getElementById('pwStrengthLabel');
-  const strength=pw.length>=8?pw.length>=12?3:2:pw.length>=4?1:0;
-  const colors=['var(--light-gray)','var(--red-err)','var(--amber)','var(--green)'];
-  const labels=['입력하세요','약함','보통','강함'];
-  bars.forEach((b,i)=>{if(b)b.style.background=i<strength?colors[strength]:'var(--light-gray)';});
-  if(label)label.textContent=labels[strength];
-}
-
-function updatePwStrength2(){
-  const pw=document.getElementById('newPw')?.value||'';
-  const bars=[document.getElementById('pb21'),document.getElementById('pb22'),document.getElementById('pb23')];
-  const label=document.getElementById('pwStr2Label');
-  const strength=pw.length>=8?pw.length>=12?3:2:pw.length>=4?1:0;
-  const colors=['var(--light-gray)','var(--red-err)','var(--amber)','var(--green)'];
-  const labels=['입력하세요','약함','보통','강함'];
-  bars.forEach((b,i)=>{if(b)b.style.background=i<strength?colors[strength]:'var(--light-gray)';});
-  if(label)label.textContent=labels[strength];
-}
-
-function doPwReset(){showToast('비밀번호가 변경되었습니다! 다시 로그인해 주세요.');navigate('login');}
-
-function doLogout() {
-  state.loggedIn=false;
-  state.user=null;
-  localStorage.removeItem('jwt');
-  localStorage.removeItem('userEmail');
-  closeModal('modalLogout');
-  showToast('로그아웃되었습니다.');
-  navigate('main');
-}
-
-function openFavAdd(name,code){
-  document.getElementById('favAddName').textContent=`${name} (${code})`;
-  state._pendingFavCode=code; state._pendingFavName=name;
-  openModal('modalFavAdd');
-}
-function doFavAdd(){
-  const code=state._pendingFavCode;
-  const name=state._pendingFavName;
-  if(!state.favorites.some(f=>f.code===code)){
-    state.favorites.push({code,name,market:'KOSPI',price:61200,change:1200,pct:2.00});
+  function updatePwStrength(){
+    const pw=document.getElementById('newPw')?.value||'';
+    const bars=[document.getElementById('pb1'),document.getElementById('pb2'),document.getElementById('pb3')];
+    const label=document.getElementById('pwStrengthLabel');
+    const strength=pw.length>=8?pw.length>=12?3:2:pw.length>=4?1:0;
+    const colors=['var(--light-gray)','var(--red-err)','var(--amber)','var(--green)'];
+    const labels=['입력하세요','약함','보통','강함'];
+    bars.forEach((b,i)=>{if(b)b.style.background=i<strength?colors[strength]:'var(--light-gray)';});
+    if(label)label.textContent=labels[strength];
   }
-  closeModal('modalFavAdd');
-  showToast(`${name}이(가) 관심종목에 추가되었습니다!`);
-  if(state.currentPage==='fav_list') renderPage('fav_list');
-}
 
-function openFavDel(code,name){
-  state._pendingFavCode=code;
-  document.getElementById('favDelName').textContent=`${name} (${code})`;
-  openModal('modalFavDel');
-}
-function doFavDel(){
-  state.favorites=state.favorites.filter(f=>f.code!==state._pendingFavCode);
-  closeModal('modalFavDel');
-  showToast('관심종목에서 삭제되었습니다.');
-  renderPage('fav_list');
-}
+  function updatePwStrength2(){
+    const pw=document.getElementById('newPw')?.value||'';
+    const bars=[document.getElementById('pb21'),document.getElementById('pb22'),document.getElementById('pb23')];
+    const label=document.getElementById('pwStr2Label');
+    const strength=pw.length>=8?pw.length>=12?3:2:pw.length>=4?1:0;
+    const colors=['var(--light-gray)','var(--red-err)','var(--amber)','var(--green)'];
+    const labels=['입력하세요','약함','보통','강함'];
+    bars.forEach((b,i)=>{if(b)b.style.background=i<strength?colors[strength]:'var(--light-gray)';});
+    if(label)label.textContent=labels[strength];
+  }
 
-function openAlertDel(id,name){
-  state._pendingAlertId=id;
-  document.getElementById('alertDelName').textContent=`${name} 알림`;
-  openModal('modalAlertDel');
-}
-function doAlertDel(){
-  state.alerts=state.alerts.filter(a=>a.id!==state._pendingAlertId);
-  closeModal('modalAlertDel');
-  showToast('알림이 삭제되었습니다.');
-  renderPage('alert_list');
-}
+  function doPwReset(){showToast('비밀번호가 변경되었습니다! 다시 로그인해 주세요.');navigate('login');}
 
-function doLeave(){closeModal('modalLeave');state.loggedIn=false;state.user=null;showToast('탈퇴가 완료되었습니다.');navigate('main');}
+  function doLogout() {
+    state.loggedIn=false;
+    state.user=null;
+    localStorage.removeItem('jwt');
+    localStorage.removeItem('userEmail');
+    closeModal('modalLogout');
+    showToast('로그아웃되었습니다.');
+    navigate('main');
+  }
 
-function selectDir(dir){
-  document.getElementById('alertDir').value=dir;
-  document.getElementById('dirAbove').style.cssText=`padding:12px;border-radius:7px;background:${dir==='이상'?'var(--navy)':'var(--bg)'};color:${dir==='이상'?'white':'var(--gray)'};border:1px solid ${dir==='이상'?'var(--navy)':'var(--border)'};text-align:center;font-size:13px;font-weight:600;cursor:pointer;`;
-  document.getElementById('dirBelow').style.cssText=`padding:12px;border-radius:7px;background:${dir==='이하'?'var(--navy)':'var(--bg)'};color:${dir==='이하'?'white':'var(--gray)'};border:1px solid ${dir==='이하'?'var(--navy)':'var(--border)'};text-align:center;font-size:13px;font-weight:600;cursor:pointer;`;
-}
-
-function selectEditDir(dir){
-  document.getElementById('editDir').value=dir;
-  ['above','below'].forEach(d=>{
-    const isDirMatch=(d==='above'&&dir==='이상')||(d==='below'&&dir==='이하');
-    document.getElementById(`editDir${d==='above'?'Above':'Below'}`).style.cssText=`padding:12px;border-radius:7px;background:${isDirMatch?'var(--navy)':'var(--bg)'};color:${isDirMatch?'white':'var(--gray)'};border:1px solid ${isDirMatch?'var(--navy)':'var(--border)'};text-align:center;font-size:13px;font-weight:600;cursor:pointer;`;
-  });
-}
-
-function searchAlertStock(){
-  const q=(document.getElementById('alertStockInput').value||'').toLowerCase();
-  const res=(window._allStocks||[{code:'005930',name:'삼성전자'},{code:'000660',name:'SK하이닉스'},{code:'035420',name:'NAVER'}]).filter(s=>s.name.toLowerCase().includes(q)||s.code.includes(q)).slice(0,4);
-  const container=document.getElementById('alertStockResults');
-  if(!q||!container){if(container)container.innerHTML='';return;}
-  container.innerHTML=`<div class="card" style="padding:8px 0;margin-top:4px;">${res.map(s=>`
-  <div style="padding:10px 16px;cursor:pointer;font-size:13px;display:flex;gap:10px;align-items:center;" onmouseover="this.style.background='var(--bg)'" onmouseout="this.style.background=''" onclick="selectAlertStock('${s.code}','${s.name}',${s.price||61200})">
-    <span style="font-weight:600;">${s.name}</span><span style="color:var(--gray);font-size:11px;">${s.code}</span>
-  </div>`).join('')}</div>`;
-}
-
-function selectAlertStock(code,name,price){
-  document.getElementById('alertStockInput').value=name;
-  document.getElementById('alertStockCode').value=code;
-  document.getElementById('alertStockName').value=name;
-  document.getElementById('alertStockResults').innerHTML=`<div class="notice mt8">현재가: <strong>${fmt(price)}원</strong> (${name})</div>`;
-}
-
-function initAlertForm(){}
-
-function doAddAlert(){
-  const code=document.getElementById('alertStockCode').value;
-  const name=document.getElementById('alertStockName').value;
-  const target=parseInt(document.getElementById('alertTarget').value);
-  const dir=document.getElementById('alertDir').value;
-  if(!code||!target){showToast('종목과 목표가를 입력해 주세요.');return;}
-  const newId=Math.max(0,...state.alerts.map(a=>a.id))+1;
-  state.alerts.push({id:newId,code,name,target,direction:dir,current:61200});
-  showToast('알림이 등록되었습니다!');
-  navigate('alert_list');
-}
-
-function doEditAlert(id){
-  const a=state.alerts.find(x=>x.id===id);
-  if(!a) return;
-  a.target=parseInt(document.getElementById('editTarget').value)||a.target;
-  a.direction=document.getElementById('editDir').value;
-  showToast('알림이 수정되었습니다!');
-  navigate('alert_list');
-}
-
-function markRead(id){
-  const l=state.alertLogs.find(x=>x.id===id);
-  if(l&&!l.read){l.read=true;renderPage('alert_log');}
-}
-
-function markAllRead(){
-  state.alertLogs.forEach(l=>l.read=true);
-  showToast('전체 알림을 읽음 처리했습니다.');
-  renderPage('alert_log');
-}
-
-function deleteLog(id){
-  state.alertLogs=state.alertLogs.filter(l=>l.id!==id);
-  renderPage('alert_log');
-}
-
-function doEditProfile(){
-  const name=document.getElementById('editName')?.value.trim();
-  const phone=document.getElementById('editPhone')?.value.trim();
-  const nameErr=document.getElementById('editNameErr');
-  const phoneErr=document.getElementById('editPhoneErr');
-  if(!name){nameErr.textContent='이름을 입력해 주세요.';nameErr.style.color='var(--red-err)';return;}
-  nameErr.textContent='';
-  if(!phone){phoneErr.textContent='전화번호를 입력해 주세요.';phoneErr.style.color='var(--red-err)';return;}
-  phoneErr.textContent='';
-  state.user.nickname=name;
-  showToast('회원정보가 수정되었습니다!');
-  renderSidebar();
-  navigate('mypage');
-}
-
-async function doChangePw(){
-  const cur = document.getElementById('curPw').value;
-  const nw = document.getElementById('newPw').value;
-  const nw2 = document.getElementById('newPw2').value;
-  const curErr = document.getElementById('curPwErr');
-  const nw2Err = document.getElementById('newPw2Err');
-
-  if(!cur){ curErr.textContent='현재 비밀번호를 입력해 주세요.'; curErr.style.color='var(--red-err)'; return; }
-  curErr.textContent='';
-  if(!nw){ nw2Err.textContent='새 비밀번호를 입력해 주세요.'; nw2Err.style.color='var(--red-err)'; return; }
-  if(nw.length<8){ nw2Err.textContent='비밀번호는 8자 이상이어야 합니다.'; nw2Err.style.color='var(--red-err)'; return; }
-  if(nw!==nw2){ openModal('modalPwMismatch'); return; }
-  nw2Err.textContent='';
-
-  try {
-    const token = localStorage.getItem('jwt');
-    const res = await fetch('/api/user/change-password', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': 'Bearer ' + token
-      },
-      body: JSON.stringify({ currentPwd: cur, newPwd: nw })
-    });
-
-    if(res.ok){
-      openModal('modalPwSuccess');
-    } else {
-      curErr.textContent='현재 비밀번호가 일치하지 않습니다.';
-      curErr.style.color='var(--red-err)';
+  function openFavAdd(name,code){
+    document.getElementById('favAddName').textContent=`${name} (${code})`;
+    state._pendingFavCode=code; state._pendingFavName=name;
+    openModal('modalFavAdd');
+  }
+  function doFavAdd(){
+    const code=state._pendingFavCode;
+    const name=state._pendingFavName;
+    if(!state.favorites.some(f=>f.code===code)){
+      state.favorites.push({code,name,market:'KOSPI',price:61200,change:1200,pct:2.00});
     }
-  } catch(e) {
-    showToast('서버 오류가 발생했습니다.');
+    closeModal('modalFavAdd');
+    showToast(`${name}이(가) 관심종목에 추가되었습니다!`);
+    if(state.currentPage==='fav_list') renderPage('fav_list');
   }
-}
 
-// ══════════════════════════════════════
-// 초기 실행
-// ══════════════════════════════════════
+  function openFavDel(code,name){
+    state._pendingFavCode=code;
+    document.getElementById('favDelName').textContent=`${name} (${code})`;
+    openModal('modalFavDel');
+  }
+  function doFavDel(){
+    state.favorites=state.favorites.filter(f=>f.code!==state._pendingFavCode);
+    closeModal('modalFavDel');
+    showToast('관심종목에서 삭제되었습니다.');
+    renderPage('fav_list');
+  }
 
-document.getElementById('authArea').style.display='block';
+  function openAlertDel(id,name){
+    state._pendingAlertId=id;
+    document.getElementById('alertDelName').textContent=`${name} 알림`;
+    openModal('modalAlertDel');
+  }
+  function doAlertDel(){
+    state.alerts=state.alerts.filter(a=>a.id!==state._pendingAlertId);
+    closeModal('modalAlertDel');
+    showToast('알림이 삭제되었습니다.');
+    renderPage('alert_list');
+  }
 
-// JWT 복원
-const savedToken = localStorage.getItem('jwt');
-const savedEmail = localStorage.getItem('userEmail');
-if(savedToken && savedEmail){
-  state.loggedIn = true;
-  state.user = { email: savedEmail, nickname: savedEmail.split('@')[0] };
-}
+  function doLeave(){closeModal('modalLeave');state.loggedIn=false;state.user=null;showToast('탈퇴가 완료되었습니다.');navigate('main');}
 
-navigate('main');
+  function selectDir(dir){
+    document.getElementById('alertDir').value=dir;
+    document.getElementById('dirAbove').style.cssText=`padding:12px;border-radius:7px;background:${dir==='이상'?'var(--navy)':'var(--bg)'};color:${dir==='이상'?'white':'var(--gray)'};border:1px solid ${dir==='이상'?'var(--navy)':'var(--border)'};text-align:center;font-size:13px;font-weight:600;cursor:pointer;`;
+    document.getElementById('dirBelow').style.cssText=`padding:12px;border-radius:7px;background:${dir==='이하'?'var(--navy)':'var(--bg)'};color:${dir==='이하'?'white':'var(--gray)'};border:1px solid ${dir==='이하'?'var(--navy)':'var(--border)'};text-align:center;font-size:13px;font-weight:600;cursor:pointer;`;
+  }
+
+  function selectEditDir(dir){
+    document.getElementById('editDir').value=dir;
+    ['above','below'].forEach(d=>{
+      const isDirMatch=(d==='above'&&dir==='이상')||(d==='below'&&dir==='이하');
+      document.getElementById(`editDir${d==='above'?'Above':'Below'}`).style.cssText=`padding:12px;border-radius:7px;background:${isDirMatch?'var(--navy)':'var(--bg)'};color:${isDirMatch?'white':'var(--gray)'};border:1px solid ${isDirMatch?'var(--navy)':'var(--border)'};text-align:center;font-size:13px;font-weight:600;cursor:pointer;`;
+    });
+  }
+
+  function searchAlertStock(){
+    const q=(document.getElementById('alertStockInput').value||'').toLowerCase();
+    const res=(window._allStocks||[{code:'005930',name:'삼성전자'},{code:'000660',name:'SK하이닉스'},{code:'035420',name:'NAVER'}]).filter(s=>s.name.toLowerCase().includes(q)||s.code.includes(q)).slice(0,4);
+    const container=document.getElementById('alertStockResults');
+    if(!q||!container){if(container)container.innerHTML='';return;}
+    container.innerHTML=`<div class="card" style="padding:8px 0;margin-top:4px;">${res.map(s=>`
+        <div style="padding:10px 16px;cursor:pointer;font-size:13px;display:flex;gap:10px;align-items:center;" onmouseover="this.style.background='var(--bg)'" onmouseout="this.style.background=''" onclick="selectAlertStock('${s.code}','${s.name}',${s.price||61200})">
+        <span style="font-weight:600;">${s.name}</span><span style="color:var(--gray);font-size:11px;">${s.code}</span>
+        </div>`).join('')}</div>`;
+  }
+
+  function selectAlertStock(code,name,price){
+    document.getElementById('alertStockInput').value=name;
+    document.getElementById('alertStockCode').value=code;
+    document.getElementById('alertStockName').value=name;
+    document.getElementById('alertStockResults').innerHTML=`<div class="notice mt8">현재가: <strong>${fmt(price)}원</strong> (${name})</div>`;
+  }
+
+  function initAlertForm(){}
+
+  function doAddAlert(){
+    const code=document.getElementById('alertStockCode').value;
+    const name=document.getElementById('alertStockName').value;
+    const target=parseInt(document.getElementById('alertTarget').value);
+    const dir=document.getElementById('alertDir').value;
+    if(!code||!target){showToast('종목과 목표가를 입력해 주세요.');return;}
+    const newId=Math.max(0,...state.alerts.map(a=>a.id))+1;
+    state.alerts.push({id:newId,code,name,target,direction:dir,current:61200});
+    showToast('알림이 등록되었습니다!');
+    navigate('alert_list');
+  }
+
+  function doEditAlert(id){
+    const a=state.alerts.find(x=>x.id===id);
+    if(!a) return;
+    a.target=parseInt(document.getElementById('editTarget').value)||a.target;
+    a.direction=document.getElementById('editDir').value;
+    showToast('알림이 수정되었습니다!');
+    navigate('alert_list');
+  }
+
+  function markRead(id){
+    const l=state.alertLogs.find(x=>x.id===id);
+    if(l&&!l.read){l.read=true;renderPage('alert_log');}
+  }
+
+  function markAllRead(){
+    state.alertLogs.forEach(l=>l.read=true);
+    showToast('전체 알림을 읽음 처리했습니다.');
+    renderPage('alert_log');
+  }
+
+  function deleteLog(id){
+    state.alertLogs=state.alertLogs.filter(l=>l.id!==id);
+    renderPage('alert_log');
+  }
+
+  function doEditProfile(){
+    const name=document.getElementById('editName')?.value.trim();
+    const phone=document.getElementById('editPhone')?.value.trim();
+    const nameErr=document.getElementById('editNameErr');
+    const phoneErr=document.getElementById('editPhoneErr');
+    if(!name){nameErr.textContent='이름을 입력해 주세요.';nameErr.style.color='var(--red-err)';return;}
+    nameErr.textContent='';
+    if(!phone){phoneErr.textContent='전화번호를 입력해 주세요.';phoneErr.style.color='var(--red-err)';return;}
+    phoneErr.textContent='';
+    state.user.nickname=name;
+    showToast('회원정보가 수정되었습니다!');
+    renderSidebar();
+    navigate('mypage');
+  }
+
+  async function doChangePw(){
+    const cur = document.getElementById('curPw').value;
+    const nw = document.getElementById('newPw').value;
+    const nw2 = document.getElementById('newPw2').value;
+    const curErr = document.getElementById('curPwErr');
+    const nw2Err = document.getElementById('newPw2Err');
+
+    if(!cur){ curErr.textContent='현재 비밀번호를 입력해 주세요.'; curErr.style.color='var(--red-err)'; return; }
+    curErr.textContent='';
+    if(!nw){ nw2Err.textContent='새 비밀번호를 입력해 주세요.'; nw2Err.style.color='var(--red-err)'; return; }
+    if(nw.length<8){ nw2Err.textContent='비밀번호는 8자 이상이어야 합니다.'; nw2Err.style.color='var(--red-err)'; return; }
+    if(nw!==nw2){ openModal('modalPwMismatch'); return; }
+    nw2Err.textContent='';
+
+    try {
+      const token = localStorage.getItem('jwt');
+      const res = await fetch('/api/user/change-password', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer ' + token
+        },
+        body: JSON.stringify({ currentPwd: cur, newPwd: nw })
+      });
+
+      if(res.ok){
+        openModal('modalPwSuccess');
+      } else {
+        curErr.textContent='현재 비밀번호가 일치하지 않습니다.';
+        curErr.style.color='var(--red-err)';
+      }
+    } catch(e) {
+      showToast('서버 오류가 발생했습니다.');
+    }
+  }
+
+  // ══════════════════════════════════════
+  // 초기 실행
+  // ══════════════════════════════════════
+
+  document.getElementById('authArea').style.display='block';
+
+  // JWT 복원
+  const savedToken = localStorage.getItem('jwt');
+  const savedEmail = localStorage.getItem('userEmail');
+  if(savedToken && savedEmail){
+    state.loggedIn = true;
+    state.user = { email: savedEmail, nickname: savedEmail.split('@')[0] };
+  }
+
+  navigate('main');
 </script>
 </body>
 </html>

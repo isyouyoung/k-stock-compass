@@ -2,6 +2,7 @@ package kopo.kstockcompass.service;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import kopo.kstockcompass.dto.MarketIndexDTO;
 import kopo.kstockcompass.dto.StockItemDTO;
 import kopo.kstockcompass.dto.StockSearchDTO;
 import lombok.RequiredArgsConstructor;
@@ -209,6 +210,46 @@ public class StockService {
                 .queryParam("basDt", baseDate)
                 .build(true)
                 .toUriString();
+    }
+
+    public MarketIndexDTO getMarketIndex(String idxNm, String baseDate) {
+        String url = UriComponentsBuilder
+                .fromHttpUrl("https://apis.data.go.kr/1160100/service/GetMarketIndexInfoService/getStockMarketIndex")
+                .queryParam("serviceKey", "5870f4586dba4a01c320f135f5cec6f13e06f50f2117f685eae1cf35b8ad6c1e")
+                .queryParam("numOfRows", 1)
+                .queryParam("pageNo", 1)
+                .queryParam("resultType", "json")
+                .queryParam("basDt", baseDate)
+                .queryParam("idxNm", idxNm)
+                .build(false)
+                .toUriString();
+
+        try {
+            String response = webClient.get()
+                    .uri(url)
+                    .retrieve()
+                    .bodyToMono(String.class)
+                    .block();
+
+            JsonNode root = objectMapper.readTree(response);
+            JsonNode item = root.path("response").path("body").path("items").path("item");
+
+            JsonNode node = item.isArray() ? item.get(0) : item;
+
+            return MarketIndexDTO.builder()
+                    .idxNm(node.path("idxNm").asText())
+                    .clpr(node.path("clpr").asText())
+                    .vs(node.path("vs").asText())
+                    .fltRt(node.path("fltRt").asText())
+                    .mkp(node.path("mkp").asText())
+                    .hipr(node.path("hipr").asText())
+                    .lopr(node.path("lopr").asText())
+                    .build();
+
+        } catch (Exception e) {
+            log.error("지수 조회 실패: {}", e.getMessage());
+            throw new RuntimeException("지수 조회 실패: " + e.getMessage());
+        }
     }
 
 }
