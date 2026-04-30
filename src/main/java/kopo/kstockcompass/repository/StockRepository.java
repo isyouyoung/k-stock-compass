@@ -17,4 +17,5 @@ public interface StockRepository extends JpaRepository<StockEntity, String> {
     //       → SELECT * FROM STOCK WHERE STOCK_NM LIKE '%삼성%'
     // 사용: 종목 검색 API에서 호출합니다.
     List<StockEntity> findByStockNmContaining(String stockNm);
+    // 여기가 종착점! JPA가 메서드 이름 보고 자동으로 SQL 만들어줌
 }

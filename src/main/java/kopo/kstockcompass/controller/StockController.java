@@ -30,6 +30,7 @@ public class StockController {
             @RequestParam String stockCode,
             @RequestParam String baseDate) {
         StockItemDTO result = stockService.getStockPrice(stockCode, baseDate);
+        // GetStockPrice에 커서 놓고 컨트롤 + B로 I서비스 진입
         return ResponseEntity.ok(result);
     }
 
@@ -53,6 +54,7 @@ public class StockController {
     @GetMapping("/search")
     public ResponseEntity<List<StockSearchDTO>> searchStocks(@RequestParam String keyword) {
         return ResponseEntity.ok(stockService.searchStocks(keyword));
+        // 서비스 호출!! 리턴쪽에 searchStocks 컨트롤 + B로 타볼것
     }
 
     /**
@@ -65,6 +67,7 @@ public class StockController {
             @RequestParam String idxNm,
             @RequestParam String baseDate) {
         return ResponseEntity.ok(stockService.getMarketIndex(idxNm, baseDate));
+        // 서비스 호출!! 리턴쪽에 getMarketIndex 컨트롤 + B로 타볼것
     }
 }
 

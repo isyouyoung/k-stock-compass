@@ -50,10 +50,11 @@ public class StockService implements IStockService {
             if (cached != null) {
                 log.info("✅ Cache Hit! Redis에서 반환: {}", stockCode);
                 return objectMapper.readValue(cached, StockItemDTO.class);
-            }
+            } // Redis에 있으면 여기서 끝남 => API 호출 따로 하지않음!
 
             log.info("❌ Cache Miss! API 호출: {}", stockCode);
 
+            // 위에서 확인해봤는대 없다? 그렇다면
             // 2. 공공데이터 API 호출
             String url = buildStockApiUrl(1, baseDate, 1000);
             String response = webClient.get()
@@ -61,6 +62,8 @@ public class StockService implements IStockService {
                     .retrieve()
                     .bodyToMono(String.class)
                     .block();
+            // WebClient로 호출 레스트템플릿 X
+
             JsonNode root = objectMapper.readTree(response);
 
             // API 응답 코드 검증
@@ -97,7 +100,7 @@ public class StockService implements IStockService {
                             TimeUnit.SECONDS
                     );
                     log.info("💾 Redis 저장 완료: {} (TTL 900초)", stockCode);
-
+                    // 저장 끝! 레포지토리는 따로안감 외부 API에서 가져오는거라서
                     return result;
                 }
             }
@@ -192,6 +195,7 @@ public class StockService implements IStockService {
         log.debug("종목 검색 키워드: '{}'", keyword);
 
         return stockRepository.findByStockNmContaining(keyword)
+                // 마지막 여기서 레포지토리 호출!!! findByStockNmContaining
                 .stream()
                 .map(stock -> new StockSearchDTO(
                         stock.getStockCd(),

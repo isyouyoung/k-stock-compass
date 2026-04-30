@@ -50,14 +50,16 @@ public class UserService implements IUserService {
     @Override
     public String login(LoginRequestDTO dto) {
 
+        // 1. 이메일로 조회함
         UserInfoEntity user = userInfoRepository.findByUserEmail(dto.getUserEmail())
                 .orElseThrow(() -> new RuntimeException("이메일이 존재하지 않습니다."));
 
+        // 2. 비밀번호 검증 (복호화 없이 비교)
         if (!passwordEncoder.matches(dto.getUserPwd(), user.getUserPwd())) {
             throw new RuntimeException("비밀번호가 일치하지 않습니다.");
         }
 
-        // 로그인 성공 → JWT 토큰 발급!
+        // 3. JWT 발급 로그인 성공 → JWT 토큰 발급!
         return jwtProvider.createToken(user.getUserEmail());
     }
 
@@ -112,6 +114,10 @@ public class UserService implements IUserService {
 
         if (!passwordEncoder.matches(dto.getCurrentPwd(), user.getUserPwd())) {
             throw new RuntimeException("현재 비밀번호가 일치하지 않습니다.");
+        }
+
+        if (passwordEncoder.matches(dto.getNewPwd(), user.getUserPwd())) {
+            throw new RuntimeException("새 비밀번호가 현재 비밀번호와 동일합니다.");
         }
 
         // [비밀번호 단방향 암호화 - BCrypt]

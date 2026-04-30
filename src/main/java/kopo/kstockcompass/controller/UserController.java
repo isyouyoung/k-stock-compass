@@ -59,10 +59,20 @@ public class UserController {
     /**
      * [4. 이메일 인증번호 발송 API]
      * 비즈니스 로직: 실제 SMTP 서버를 연동하여 사용자의 메일함으로 6자리 인증 코드를 전송함.
-     * 보안: 이 단계에서 생성된 코드는 서버 메모리(또는 Redis)에 일정 시간(예: 3분) 동안만 유효하게 저장됨.
+     * 보안: 이 단계에서 생성된 코드는 서버 메모리(또는 Redis)에 일정 시간(예: 5분) 동안만 유효하게 저장됨
+     * 보완: 메일을 보내기 전에 이미 가입된 회원인지 먼저 확인합니다.
      */
     @PostMapping("/send-code")
     public ResponseEntity<String> sendCode(@RequestBody EmailRequestDTO dto) {
+        // 1. 중복 체크 먼저 수행
+        boolean isDuplicate = userService.checkEmail(dto.getUserEmail());
+
+        if (isDuplicate) {
+            // 이미 가입된 이메일이면 메일을 보내지 않고 에러 메시지 반환
+            return ResponseEntity.badRequest().body("이미 가입된 이메일입니다. 다른 이메일을 사용해주세요.");
+        }
+
+        // 2. 중복이 아닐 때만 인증번호 발송
         emailVerifyService.sendCode(dto.getUserEmail());
         return ResponseEntity.ok("해당 이메일로 인증번호가 발송되었습니다. 3분 이내에 입력해주세요.");
     }
@@ -121,7 +131,7 @@ public class UserController {
             @RequestHeader("Authorization") String token,
             @RequestBody ChangePasswordRequestDTO dto) {
 
-        // 토큰 위변조 검사 및 사용자 식별 (JWT의 강점)
+        // 토큰 위변조 검사 및 사용자 식별 JWT
         String pureToken = token.replace("Bearer ", "");
         // 헤더에서 토큰을 꺼내서 이메일을 추출
         String email = jwtProvider.getEmail(pureToken);

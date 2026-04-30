@@ -1367,7 +1367,8 @@
 
     try {
       const res = await fetch(`/api/user/check-email?userEmail=${encodeURIComponent(email)}`);
-      if(!res.ok){
+      const isDuplicate = await res.json(); // true/false 받아서
+      if(isDuplicate){
         errEl.textContent='이미 사용 중인 이메일입니다.';
         errEl.style.color='var(--red-err)';
         return;
@@ -1735,7 +1736,8 @@
       if(res.ok){
         openModal('modalPwSuccess');
       } else {
-        curErr.textContent='현재 비밀번호가 일치하지 않습니다.';
+        const errJson = await res.json(); // JSON으로 파싱
+        curErr.textContent = errJson.message; // message 필드만 추출
         curErr.style.color='var(--red-err)';
       }
     } catch(e) {
