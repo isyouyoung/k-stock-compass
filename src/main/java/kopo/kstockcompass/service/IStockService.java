@@ -15,7 +15,7 @@ public interface IStockService {
 
     void saveAllStocks();
 
-    List<StockSearchDTO> searchStocks(String keyword);
+    List<StockSearchDTO> searchStocks(String query, String type);
     // searchStock에서 컨트롤 알트 b 하면 실제 구현체로 이동됨
 
     MarketIndexDTO getMarketIndex(String idxNm, String baseDate);
