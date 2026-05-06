@@ -52,9 +52,10 @@ public class StockController {
      * 검색 결과도 StockSearchDTO 리스트로 보내줌으로써 DB 보안을 유지
      */
     @GetMapping("/search")
-    public ResponseEntity<List<StockSearchDTO>> searchStocks(@RequestParam String keyword) {
-        return ResponseEntity.ok(stockService.searchStocks(keyword));
-        // 서비스 호출!! 리턴쪽에 searchStocks 컨트롤 + B로 타볼것
+    public ResponseEntity<List<StockSearchDTO>> searchStocks(
+            @RequestParam String query,
+            @RequestParam String type) {
+        return ResponseEntity.ok(stockService.searchStocks(query, type));
     }
 
     /**
