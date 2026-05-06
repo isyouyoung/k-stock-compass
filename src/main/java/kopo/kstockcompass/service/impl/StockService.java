@@ -183,19 +183,18 @@ public class StockService implements IStockService {
      * 방어: null/공백 키워드 입력 시 빈 리스트 반환합니다.
      */
     @Override
-    public List<StockSearchDTO> searchStocks(String keyword) {
+    public List<StockSearchDTO> searchStocks(String query, String type) {
 
         // 방어 코드: 키워드가 null이거나 공백이면 빈 리스트 반환
-        if (keyword == null || keyword.trim().isEmpty()) {
+        if (query == null || query.trim().isEmpty()) {
             return List.of();
         }
 
         // 앞뒤 공백 제거
-        keyword = keyword.trim();
-        log.debug("종목 검색 키워드: '{}'", keyword);
+        query = query.trim();
+        log.debug("종목 검색 키워드: '{}', 타입: '{}'", query, type);
 
-        return stockRepository.findByStockNmContaining(keyword)
-                // 마지막 여기서 레포지토리 호출!!! findByStockNmContaining
+        return stockRepository.findByStockNmContaining(query)
                 .stream()
                 .map(stock -> new StockSearchDTO(
                         stock.getStockCd(),
