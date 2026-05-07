@@ -41,6 +41,8 @@ dependencies {
     implementation 'org.springframework.boot:spring-boot-starter-mail'
     // WebClient 사용
     implementation 'org.springframework.boot:spring-boot-starter-webflux'
+    // thymeleaf 사용
+    implementation 'org.springframework.boot:spring-boot-starter-thymeleaf'
 }
 
 tasks.named('test') {
