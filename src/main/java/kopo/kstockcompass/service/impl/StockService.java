@@ -19,6 +19,8 @@ import org.springframework.transaction.annotation.Transactional;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
+import java.time.LocalDate;
+import java.time.format.DateTimeFormatter;
 
 @Slf4j
 @Service
@@ -222,43 +224,58 @@ public class StockService implements IStockService {
 
     @Override
     public MarketIndexDTO getMarketIndex(String idxNm, String baseDate) {
-        String url = UriComponentsBuilder
-                .fromHttpUrl("https://apis.data.go.kr/1160100/service/GetMarketIndexInfoService/getStockMarketIndex")
-                .queryParam("serviceKey", "5870f4586dba4a01c320f135f5cec6f13e06f50f2117f685eae1cf35b8ad6c1e")
-                .queryParam("numOfRows", 1)
-                .queryParam("pageNo", 1)
-                .queryParam("resultType", "json")
-                .queryParam("basDt", baseDate)
-                .queryParam("idxNm", idxNm)
-                .build(false)
-                .toUriString();
 
-        try {
-            String response = webClient.get()
-                    .uri(url)
-                    .retrieve()
-                    .bodyToMono(String.class)
-                    .block();
+        // 최근 영업일 자동 탐색 (최대 10일 전까지)
+        for (int i = 0; i < 10; i++) {
+            try {
+                LocalDate date = LocalDate.parse(baseDate, DateTimeFormatter.ofPattern("yyyyMMdd"))
+                        .minusDays(i);
+                String targetDate = date.format(DateTimeFormatter.ofPattern("yyyyMMdd"));
 
-            JsonNode root = objectMapper.readTree(response);
-            JsonNode item = root.path("response").path("body").path("items").path("item");
+                String url = UriComponentsBuilder
+                        .fromHttpUrl("https://apis.data.go.kr/1160100/service/GetMarketIndexInfoService/getStockMarketIndex")
+                        .queryParam("serviceKey", "5870f4586dba4a01c320f135f5cec6f13e06f50f2117f685eae1cf35b8ad6c1e")
+                        .queryParam("numOfRows", 1)
+                        .queryParam("pageNo", 1)
+                        .queryParam("resultType", "json")
+                        .queryParam("basDt", targetDate)
+                        .queryParam("idxNm", idxNm)
+                        .build(false)
+                        .toUriString();
 
-            JsonNode node = item.isArray() ? item.get(0) : item;
+                String response = webClient.get()
+                        .uri(url)
+                        .retrieve()
+                        .bodyToMono(String.class)
+                        .block();
 
-            return MarketIndexDTO.builder()
-                    .idxNm(node.path("idxNm").asText())
-                    .clpr(node.path("clpr").asText())
-                    .vs(node.path("vs").asText())
-                    .fltRt(node.path("fltRt").asText())
-                    .mkp(node.path("mkp").asText())
-                    .hipr(node.path("hipr").asText())
-                    .lopr(node.path("lopr").asText())
-                    .build();
+                JsonNode root = objectMapper.readTree(response);
+                JsonNode item = root.path("response").path("body").path("items").path("item");
 
-        } catch (Exception e) {
-            log.error("지수 조회 실패: {}", e.getMessage());
-            throw new RuntimeException("지수 조회 실패: " + e.getMessage());
+                // 데이터 없으면 하루 더 과거로
+                if (!item.isArray() || item.isEmpty()) {
+                    log.info("{}에 {}데이터 없음, 하루 전 재시도", targetDate, idxNm);
+                    continue;
+                }
+
+                JsonNode node = item.get(0);
+                log.info("{}기준일 {}데이터 조회 성공", targetDate, idxNm);
+
+                return MarketIndexDTO.builder()
+                        .idxNm(node.path("idxNm").asText())
+                        .clpr(node.path("clpr").asText())
+                        .vs(node.path("vs").asText())
+                        .fltRt(node.path("fltRt").asText())
+                        .mkp(node.path("mkp").asText())
+                        .hipr(node.path("hipr").asText())
+                        .lopr(node.path("lopr").asText())
+                        .build();
+
+            } catch (Exception e) {
+                log.warn("{}일 조회 실패, 재시도: {}", i, e.getMessage());
+            }
         }
+        throw new RuntimeException("최근 10일 내 " + idxNm + " 데이터를 찾을 수 없습니다.");
     }
 
 }
