@@ -17,7 +17,11 @@ public class AppConfig {
     // WebClient 이걸로 하였음
     @Bean
     public WebClient webClient() {
-        return WebClient.builder().build();
+        return WebClient.builder()
+                .codecs(configurer -> configurer
+                        .defaultCodecs()
+                        .maxInMemorySize(10 * 1024 * 1024)) // 10MB
+                .build();
     }
 
     // API에서 데이터를 받아오면 그게 다 JSON(문자열) 형태임
