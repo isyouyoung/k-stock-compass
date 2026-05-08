@@ -47,67 +47,63 @@ public class StockService implements IStockService {
         String cacheKey = "stock:price:" + stockCode;
 
         try {
-            // 1. Redis 캐시 확인 (Cache Hit)
+            // 1. Redis 캐시 확인
             String cached = redisTemplate.opsForValue().get(cacheKey);
             if (cached != null) {
                 log.info("✅ Cache Hit! Redis에서 반환: {}", stockCode);
                 return objectMapper.readValue(cached, StockItemDTO.class);
-            } // Redis에 있으면 여기서 끝남 => API 호출 따로 하지않음!
+            }
 
             log.info("❌ Cache Miss! API 호출: {}", stockCode);
 
-            // 위에서 확인해봤는대 없다? 그렇다면
-            // 2. 공공데이터 API 호출
-            String url = buildStockApiUrl(1, baseDate, 1000);
-            String response = webClient.get()
-                    .uri(url)
-                    .retrieve()
-                    .bodyToMono(String.class)
-                    .block();
-            // WebClient로 호출 레스트템플릿 X
+            // 2. 최근 영업일 자동 탐색 (최대 10일)
+            for (int i = 0; i < 10; i++) {
+                LocalDate date = LocalDate.parse(baseDate, DateTimeFormatter.ofPattern("yyyyMMdd"))
+                        .minusDays(i);
+                String targetDate = date.format(DateTimeFormatter.ofPattern("yyyyMMdd"));
 
-            JsonNode root = objectMapper.readTree(response);
+                String url = buildStockApiUrl(1, targetDate, 5000);
+                String response = webClient.get()
+                        .uri(url)
+                        .retrieve()
+                        .bodyToMono(String.class)
+                        .block();
 
-            // API 응답 코드 검증
-            String resultCode = root.path("response").path("header").path("resultCode").asText();
-            if (!"00".equals(resultCode)) {
-                String resultMsg = root.path("response").path("header").path("resultMsg").asText();
-                throw new RuntimeException("공공데이터 API 오류 [" + resultCode + "]: " + resultMsg);
-            }
+                JsonNode root = objectMapper.readTree(response);
+                String resultCode = root.path("response").path("header").path("resultCode").asText();
+                if (!"00".equals(resultCode)) continue;
 
-            JsonNode itemNode = root.path("response").path("body").path("items").path("item");
+                JsonNode itemNode = root.path("response").path("body").path("items").path("item");
+                if (!itemNode.isArray() || itemNode.isEmpty()) {
+                    log.info("{}에 데이터 없음, 하루 전 재시도", targetDate);
+                    continue;
+                }
 
-            if (!itemNode.isArray() || itemNode.isEmpty()) {
-                throw new RuntimeException("해당 날짜(" + baseDate + ")에 데이터가 없습니다.");
-            }
+                for (JsonNode node : itemNode) {
+                    String currentSrtnCd = node.path("srtnCd").asText();
+                    if (stockCode.equals(currentSrtnCd)) {
+                        StockItemDTO result = StockItemDTO.builder()
+                                .srtnCd(currentSrtnCd)
+                                .itmsNm(node.path("itmsNm").asText())
+                                .clpr(node.path("clpr").asText())
+                                .fltRt(node.path("fltRt").asText())
+                                .vs(node.path("vs").asText())
+                                .build();
 
-            // 종목코드로 필터링
-            for (JsonNode node : itemNode) {
-                String currentSrtnCd = node.path("srtnCd").asText();
-                if (stockCode != null && stockCode.equals(currentSrtnCd)) {
-
-                    StockItemDTO result = StockItemDTO.builder()
-                            .srtnCd(currentSrtnCd)
-                            .itmsNm(node.path("itmsNm").asText())
-                            .clpr(node.path("clpr").asText())
-                            .fltRt(node.path("fltRt").asText())
-                            .vs(node.path("vs").asText())
-                            .build();
-
-                    // 3. Redis에 저장 (TTL 900초)
-                    redisTemplate.opsForValue().set(
-                            cacheKey,
-                            objectMapper.writeValueAsString(result),
-                            900,
-                            TimeUnit.SECONDS
-                    );
-                    log.info("💾 Redis 저장 완료: {} (TTL 900초)", stockCode);
-                    // 저장 끝! 레포지토리는 따로안감 외부 API에서 가져오는거라서
-                    return result;
+                        // 3. Redis 저장 (TTL 900초)
+                        redisTemplate.opsForValue().set(
+                                cacheKey,
+                                objectMapper.writeValueAsString(result),
+                                900,
+                                TimeUnit.SECONDS
+                        );
+                        log.info("💾 Redis 저장 완료: {} (TTL 900초)", stockCode);
+                        return result;
+                    }
                 }
             }
 
-            throw new RuntimeException("해당 종목(" + stockCode + ")이 없습니다.");
+            throw new RuntimeException("최근 10일 내 " + stockCode + " 데이터를 찾을 수 없습니다.");
 
         } catch (Exception e) {
             log.error("Stock API 처리 중 에러 발생: {}", e.getMessage());
