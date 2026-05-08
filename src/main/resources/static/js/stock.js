@@ -121,18 +121,23 @@ async function doStockSearch(){
 
         if(!results.length){
             container.innerHTML=`<div class="card"><div style="font-size:13px;color:var(--gray);margin-bottom:20px;">'${q}' 검색 결과 <strong style="color:var(--red-err);">0건</strong></div>
-            <div class="empty"><div class="empty-icon">🔍</div><div class="empty-title">검색 결과가 없습니다</div>
-            <div class="empty-sub">종목명 또는 6자리 종목코드를 정확히 입력해 주세요</div></div></div>`;
+        <div class="empty"><div class="empty-icon">🔍</div><div class="empty-title">검색 결과가 없습니다</div>
+        <div class="empty-sub">종목명 또는 6자리 종목코드를 정확히 입력해 주세요</div></div></div>`;
             return;
         }
 
-        container.innerHTML=`<div class="card"><div style="font-size:13px;color:var(--gray);margin-bottom:16px;">'${q}' 검색 결과 <strong style="color:var(--navy);">${results.length}건</strong></div>
-        ${results.map(s=>`
+        const rows = results.map(s => {
+            const isFav = state.favorites.some(f => f.code === s.stockCd);
+            return `
         <div class="stock-row" onclick="navigate('stock_detail',{currentStock:'${s.stockCd}'})">
         <span class="sn">${s.stockNm}</span>
         <span class="sc">${s.stockCd}</span>
-        ${state.loggedIn?`<button class="btn btn-ghost btn-sm" style="margin-left:auto;" onclick="event.stopPropagation();openFavAdd('${s.stockNm}','${s.stockCd}')">⭐</button>`:''}
-        </div>`).join('')}</div>`;
+        ${state.loggedIn ? `<button class="btn btn-ghost btn-sm" style="margin-left:auto;color:${isFav ? '#FBBF24' : 'var(--gray)'};" onclick="event.stopPropagation();openFavAdd('${s.stockNm}','${s.stockCd}')">${isFav ? '★' : '☆'}</button>` : ''}
+
+        </div>`;
+        }).join('');
+
+        container.innerHTML=`<div class="card"><div style="font-size:13px;color:var(--gray);margin-bottom:16px;">'${q}' 검색 결과 <strong style="color:var(--navy);">${results.length}건</strong></div>${rows}</div>`;
 
     } catch(e) {
         container.innerHTML=`<div class="card"><div style="color:var(--red-err);font-size:13px;">검색 중 오류가 발생했습니다.</div></div>`;
