@@ -332,7 +332,7 @@
         <div class="section-title" style="margin-bottom:0;">⭐ 내 관심종목</div>
         <span style="font-size:12px;color:var(--gray);">총 ${state.favorites.length}개 · <span style="color:var(--blue);cursor:pointer;" onclick="navigate('fav_list')">전체보기 →</span></span>
         </div>
-        ${state.favorites.length>0?state.favorites.slice(0,3).map(f=>`
+        ${state.favorites.length>0?state.favorites.slice(0,5).map(f=>`
         <div class="stock-row" onclick="navigate('stock_detail',{currentStock:'${f.code}'})">
         <span class="sn">${f.name}</span><span class="sc">${f.code}</span>
         <span class="badge badge-${f.market.toLowerCase()}">${f.market}</span>
@@ -614,15 +614,55 @@
     state._pendingFavCode=code; state._pendingFavName=name;
     openModal('modalFavAdd');
   }
-  function doFavAdd(){
-    const code=state._pendingFavCode;
-    const name=state._pendingFavName;
-    if(!state.favorites.some(f=>f.code===code)){
-      state.favorites.push({code,name,market:'KOSPI',price:61200,change:1200,pct:2.00});
+
+  async function loadFavorites() {
+    const token = localStorage.getItem('jwt');
+    if (!token) return;
+    try {
+      const res = await fetch('/api/favorite', {
+        headers: { 'Authorization': 'Bearer ' + token }
+      });
+      if (res.ok) {
+        const data = await res.json();
+        // 백엔드 DTO 필드(stockCd, stockNm)를 프론트 state 구조에 맞게 변환
+        state.favorites = data.map(f => ({
+          code: f.stockCd,
+          name: f.stockNm,
+          market: 'KOSPI',
+          price: 0,
+          change: 0,
+          pct: 0
+        }));
+        if (state.currentPage === 'fav_list') renderPage('fav_list');
+      }
+    } catch (e) {
+      console.error('관심종목 로드 실패', e);
     }
-    closeModal('modalFavAdd');
-    showToast(`${name}이(가) 관심종목에 추가되었습니다!`);
-    if(state.currentPage==='fav_list') renderPage('fav_list');
+  }
+
+  async function doFavAdd() {
+    const code = state._pendingFavCode;
+    const token = localStorage.getItem('jwt');
+    try {
+      const res = await fetch('/api/favorite', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer ' + token
+        },
+        body: JSON.stringify({ stockCd: code })
+      });
+      if (res.ok) {
+        closeModal('modalFavAdd');
+        showToast('관심종목에 추가되었습니다! ⭐');
+        await loadFavorites();
+      } else {
+        const msg = await res.text();
+        showToast(msg);
+      }
+    } catch (e) {
+      showToast('서버 오류가 발생했습니다.');
+    }
   }
 
   function openFavDel(code,name){
@@ -630,11 +670,26 @@
     document.getElementById('favDelName').textContent=`${name} (${code})`;
     openModal('modalFavDel');
   }
-  function doFavDel(){
-    state.favorites=state.favorites.filter(f=>f.code!==state._pendingFavCode);
-    closeModal('modalFavDel');
-    showToast('관심종목에서 삭제되었습니다.');
-    renderPage('fav_list');
+
+  async function doFavDel() {
+    const code = state._pendingFavCode;
+    const token = localStorage.getItem('jwt');
+    try {
+      const res = await fetch(`/api/favorite/${code}`, {
+        method: 'DELETE',
+        headers: { 'Authorization': 'Bearer ' + token }
+      });
+      if (res.ok) {
+        state.favorites = state.favorites.filter(f => f.code !== code);
+        closeModal('modalFavDel');
+        showToast('관심종목에서 삭제되었습니다.');
+        if (state.currentPage === 'fav_list') renderPage('fav_list');
+      } else {
+        showToast('삭제에 실패했습니다. 다시 시도해 주세요.');
+      }
+    } catch (e) {
+      showToast('서버 오류가 발생했습니다.');
+    }
   }
 
   function openAlertDel(id,name){
