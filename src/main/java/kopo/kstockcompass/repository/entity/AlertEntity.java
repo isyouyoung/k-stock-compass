@@ -33,4 +33,7 @@ public class AlertEntity {
     @CreationTimestamp
     @Column(name = "REG_DT", nullable = false, updatable = false)
     private LocalDateTime regDt;
+
+    @Column(name = "direction", length = 10, nullable = false)
+    private String direction;
 }
