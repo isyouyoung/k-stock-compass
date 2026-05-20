@@ -369,3 +369,261 @@ function formatMktcap(val) {
     if (jo > 0) return `${fmt(jo)}조 ${fmt(eok)}억`;
     return `${fmt(n)}억`;
 }
+
+async function pgPortfolio() {
+    document.getElementById('mainContent').innerHTML = `<div class="page-wrap">
+        <div class="flex flex-between flex-center mb24">
+        <div class="page-title">💼 내 포트폴리오</div>
+        <button class="btn btn-primary btn-sm" onclick="openPortfolioAdd()">+ 종목 추가</button>
+        </div>
+        <div id="portfolioContent"><div class="card"><div style="padding:40px;text-align:center;color:var(--gray);">로딩 중...</div></div></div>
+        </div>`;
+
+    await loadPortfolio();
+}
+
+async function loadPortfolio() {
+    const token = localStorage.getItem('jwt');
+    try {
+        const [portRes, accRes] = await Promise.all([
+            fetch('/api/portfolio', { headers: { 'Authorization': 'Bearer ' + token } }),
+            fetch('/api/portfolio/account', { headers: { 'Authorization': 'Bearer ' + token } })
+        ]);
+        const portfolio = await portRes.json();
+        const account = await accRes.json();
+
+        const totalEval = portfolio.reduce((sum, p) => sum + Number(p.evalAmt), 0);
+        const totalInvest = portfolio.reduce((sum, p) => sum + Number(p.avgPrice) * Number(p.quantity), 0);
+        const totalProfit = totalEval - totalInvest;
+        const totalProfitRate = totalInvest > 0 ? (totalProfit / totalInvest * 100) : 0;
+        const cash = Number(account.cash || 0);
+        const loan = Number(account.loan || 0);
+        const netAsset = totalEval + cash - loan;
+
+        const el = document.getElementById('portfolioContent');
+        if (!el) return;
+
+        el.innerHTML = `
+        <!-- 요약 카드 -->
+        <div class="grid3 mb16">
+        <div class="card" style="text-align:center;">
+        <div style="font-size:11px;color:var(--gray);margin-bottom:6px;">총 평가금액</div>
+        <div style="font-size:18px;font-weight:700;">${fmt(totalEval)}원</div>
+        </div>
+        <div class="card" style="text-align:center;">
+        <div style="font-size:11px;color:var(--gray);margin-bottom:6px;">총 손익</div>
+        <div style="font-size:18px;font-weight:700;" class="${totalProfit>=0?'up':'down'}">${totalProfit>=0?'+':''}${fmt(Math.round(totalProfit))}원</div>
+        <div style="font-size:12px;" class="${totalProfit>=0?'up':'down'}">(${totalProfitRate>=0?'+':''}${totalProfitRate.toFixed(2)}%)</div>
+        </div>
+        <div class="card" style="text-align:center;">
+        <div style="font-size:11px;color:var(--gray);margin-bottom:6px;">순자산</div>
+        <div style="font-size:18px;font-weight:700;">${fmt(Math.round(netAsset))}원</div>
+        </div>
+        </div>
+
+        <!-- 예수금/대출금 -->
+        <div class="card mb16">
+        <div class="flex flex-between flex-center mb12">
+        <div class="section-title" style="margin-bottom:0;">💰 계좌 정보</div>
+        <button class="btn btn-ghost btn-sm" onclick="openAccountEdit(${cash}, ${loan})">수정</button>
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;">
+        <div><div style="font-size:12px;color:var(--gray);margin-bottom:4px;">예수금</div>
+        <div style="font-size:16px;font-weight:700;color:var(--green);">${fmt(cash)}원</div></div>
+        <div><div style="font-size:12px;color:var(--gray);margin-bottom:4px;">대출금</div>
+        <div style="font-size:16px;font-weight:700;color:var(--red-err);">${fmt(loan)}원</div></div>
+        </div>
+        </div>
+
+        <!-- 보유종목 -->
+        <div class="card mb16">
+        <div class="section-title mb12">📋 보유종목</div>
+        ${portfolio.length === 0 ? `
+        <div class="empty"><div class="empty-icon">💼</div>
+        <div class="empty-title">보유 종목이 없습니다</div>
+        <div class="empty-sub">종목을 추가해보세요</div></div>` :
+            portfolio.map(p => {
+                const profit = Number(p.profitAmt);
+                const rate = Number(p.profitRate);
+                return `
+            <div style="padding:14px 0;border-bottom:1px solid var(--border);">
+            <div class="flex flex-between flex-center mb8">
+            <div>
+            <span style="font-size:15px;font-weight:600;">${p.stockNm}</span>
+            <span style="font-size:12px;color:var(--gray);margin-left:8px;">${p.stockCd}</span>
+            </div>
+            <button class="btn btn-sm" style="background:#FFF5F5;color:var(--red-err);border:1px solid var(--red-err);" onclick="deletePortfolio(${p.portId})">삭제</button>
+            </div>
+            <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px;font-size:12px;">
+            <div><div style="color:var(--gray);margin-bottom:2px;">평균매수가</div><div style="font-weight:600;">${fmt(p.avgPrice)}원</div></div>
+            <div><div style="color:var(--gray);margin-bottom:2px;">현재가</div><div style="font-weight:600;">${fmt(p.currentPrice)}원</div></div>
+            <div><div style="color:var(--gray);margin-bottom:2px;">수량</div><div style="font-weight:600;">${fmt(p.quantity)}주</div></div>
+            <div><div style="color:var(--gray);margin-bottom:2px;">손익</div>
+            <div style="font-weight:600;" class="${profit>=0?'up':'down'}">${profit>=0?'+':''}${fmt(Math.round(profit))}원</div>
+            <div style="font-size:11px;" class="${profit>=0?'up':'down'}">(${rate>=0?'+':''}${rate.toFixed(2)}%)</div>
+            </div>
+            </div>
+            </div>`;
+            }).join('')}
+        </div>
+
+        <!-- 시나리오 계산기 -->
+        <div class="card">
+        <div class="section-title mb12">🧮 수익 시뮬레이터</div>
+        <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;align-items:end;">
+        <div><div class="label">종목 선택</div>
+        <select class="input" id="simStock">
+        <option value="">종목 선택</option>
+        ${portfolio.map(p=>`<option value="${p.stockCd}" data-avg="${p.avgPrice}" data-qty="${p.quantity}" data-current="${p.currentPrice}">${p.stockNm}</option>`).join('')}
+        </select></div>
+        <div><div class="label">목표 매도가</div>
+        <input class="input" id="simPrice" type="number" placeholder="목표가 입력" oninput="calcSimulator()"></div>
+        <div><div class="label">매도 수량</div>
+        <input class="input" id="simQty" type="number" placeholder="수량 입력" oninput="calcSimulator()"></div>
+        </div>
+        <div id="simResult" style="margin-top:16px;"></div>
+        </div>`;
+
+    } catch(e) {
+        console.error('포트폴리오 로드 실패', e);
+        showToast('포트폴리오 조회에 실패했습니다.');
+    }
+}
+
+function calcSimulator() {
+    const select = document.getElementById('simStock');
+    const priceEl = document.getElementById('simPrice');
+    const qtyEl = document.getElementById('simQty');
+    const resultEl = document.getElementById('simResult');
+    if (!select || !priceEl || !qtyEl || !resultEl) return;
+
+    const opt = select.options[select.selectedIndex];
+    if (!opt || !opt.value) { resultEl.innerHTML = ''; return; }
+
+    const avgPrice = Number(opt.dataset.avg);
+    const targetPrice = Number(priceEl.value);
+    const qty = Number(qtyEl.value);
+
+    if (!targetPrice || !qty) { resultEl.innerHTML = ''; return; }
+
+    const revenue = targetPrice * qty;
+    const cost = avgPrice * qty;
+    const profit = revenue - cost;
+    const rate = cost > 0 ? (profit / cost * 100) : 0;
+
+    resultEl.innerHTML = `
+    <div style="background:var(--bg);border-radius:10px;padding:16px;display:grid;grid-template-columns:repeat(4,1fr);gap:12px;text-align:center;">
+    <div><div style="font-size:11px;color:var(--gray);margin-bottom:4px;">매도 금액</div><div style="font-weight:700;">${fmt(revenue)}원</div></div>
+    <div><div style="font-size:11px;color:var(--gray);margin-bottom:4px;">투자 원금</div><div style="font-weight:700;">${fmt(Math.round(cost))}원</div></div>
+    <div><div style="font-size:11px;color:var(--gray);margin-bottom:4px;">예상 손익</div><div style="font-weight:700;" class="${profit>=0?'up':'down'}">${profit>=0?'+':''}${fmt(Math.round(profit))}원</div></div>
+    <div><div style="font-size:11px;color:var(--gray);margin-bottom:4px;">수익률</div><div style="font-weight:700;" class="${profit>=0?'up':'down'}">${rate>=0?'+':''}${rate.toFixed(2)}%</div></div>
+    </div>`;
+}
+
+function openPortfolioAdd() {
+    const html = `<div class="card" style="max-width:480px;margin:0 auto;">
+    <div class="section-title mb16">📌 종목 추가</div>
+    <div class="form-group"><div class="label">종목 검색</div>
+    <div class="search-bar"><input id="portStockInput" placeholder="종목명 입력" oninput="searchPortStock()"><button onclick="searchPortStock()">🔍</button></div>
+    <div id="portStockResults"></div>
+    <input type="hidden" id="portStockCd">
+    </div>
+    <div class="form-group"><div class="label">평균매수가 (원)</div>
+    <input class="input" id="portAvgPrice" type="number" placeholder="평균 매수가 입력"></div>
+    <div class="form-group"><div class="label">보유 수량 (주)</div>
+    <input class="input" id="portQty" type="number" placeholder="보유 수량 입력"></div>
+    <div style="display:flex;gap:8px;">
+    <button class="btn btn-primary btn-full" onclick="doAddPortfolio()">추가</button>
+    <button class="btn btn-secondary btn-full" onclick="loadPortfolio()">취소</button>
+    </div></div>`;
+    document.getElementById('portfolioContent').innerHTML = html;
+}
+
+async function searchPortStock() {
+    const q = (document.getElementById('portStockInput')?.value || '').trim();
+    const container = document.getElementById('portStockResults');
+    if (!q || !container) return;
+    try {
+        const res = await fetch(`/api/stock/search?query=${encodeURIComponent(q)}&type=name`);
+        const results = await res.json();
+        if (!results.length) { container.innerHTML = ''; return; }
+        container.innerHTML = `<div class="card" style="padding:8px 0;margin-top:4px;">${results.slice(0,5).map(s=>`
+            <div style="padding:10px 16px;cursor:pointer;font-size:13px;display:flex;gap:10px;" onclick="selectPortStock('${s.stockCd}','${s.stockNm}')">
+            <span style="font-weight:600;">${s.stockNm}</span><span style="color:var(--gray);font-size:11px;">${s.stockCd}</span>
+            </div>`).join('')}</div>`;
+    } catch(e) { container.innerHTML = ''; }
+}
+
+function selectPortStock(code, name) {
+    document.getElementById('portStockInput').value = name;
+    document.getElementById('portStockCd').value = code;
+    document.getElementById('portStockResults').innerHTML = '';
+}
+
+async function doAddPortfolio() {
+    const code = document.getElementById('portStockCd').value;
+    const avgPrice = document.getElementById('portAvgPrice').value;
+    const qty = document.getElementById('portQty').value;
+    const token = localStorage.getItem('jwt');
+
+    if (!code || !avgPrice || !qty) { showToast('모든 항목을 입력해 주세요.'); return; }
+
+    try {
+        const res = await fetch('/api/portfolio', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token },
+            body: JSON.stringify({ stockCd: code, avgPrice: parseInt(avgPrice), quantity: parseInt(qty) })
+        });
+        if (res.ok) {
+            showToast('종목이 추가되었습니다! 💼');
+            await loadPortfolio();
+        } else {
+            showToast('추가에 실패했습니다.');
+        }
+    } catch(e) { showToast('서버 오류가 발생했습니다.'); }
+}
+
+async function deletePortfolio(portId) {
+    const token = localStorage.getItem('jwt');
+    try {
+        const res = await fetch(`/api/portfolio/${portId}`, {
+            method: 'DELETE',
+            headers: { 'Authorization': 'Bearer ' + token }
+        });
+        if (res.ok) {
+            showToast('삭제되었습니다.');
+            await loadPortfolio();
+        }
+    } catch(e) { showToast('서버 오류가 발생했습니다.'); }
+}
+
+function openAccountEdit(cash, loan) {
+    const html = `<div class="card" style="max-width:480px;margin:0 auto;">
+    <div class="section-title mb16">💰 계좌 정보 수정</div>
+    <div class="form-group"><div class="label">예수금 (원)</div>
+    <input class="input" id="editCash" type="number" value="${cash}" placeholder="예수금 입력"></div>
+    <div class="form-group"><div class="label">대출금 (원)</div>
+    <input class="input" id="editLoan" type="number" value="${loan}" placeholder="대출금 입력"></div>
+    <div style="display:flex;gap:8px;">
+    <button class="btn btn-primary btn-full" onclick="doUpdateAccount()">저장</button>
+    <button class="btn btn-secondary btn-full" onclick="loadPortfolio()">취소</button>
+    </div></div>`;
+    document.getElementById('portfolioContent').innerHTML = html;
+}
+
+async function doUpdateAccount() {
+    const cash = document.getElementById('editCash').value;
+    const loan = document.getElementById('editLoan').value;
+    const token = localStorage.getItem('jwt');
+    try {
+        const res = await fetch('/api/portfolio/account', {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token },
+            body: JSON.stringify({ cash: parseInt(cash||0), loan: parseInt(loan||0) })
+        });
+        if (res.ok) {
+            showToast('계좌 정보가 저장되었습니다!');
+            await loadPortfolio();
+        }
+    } catch(e) { showToast('서버 오류가 발생했습니다.'); }
+}
