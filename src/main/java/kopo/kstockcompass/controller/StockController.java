@@ -4,9 +4,11 @@ import kopo.kstockcompass.dto.MarketIndexDTO;
 import kopo.kstockcompass.dto.StockItemDTO;
 import kopo.kstockcompass.dto.StockSearchDTO;
 import kopo.kstockcompass.service.IStockService;
+import kopo.kstockcompass.service.impl.KisStockService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import kopo.kstockcompass.repository.StockRepository;
 
 import java.util.List;
 
@@ -18,6 +20,9 @@ import java.util.List;
 public class StockController {
 
     private final IStockService stockService;
+    private final KisStockService kisStockService;
+    private final StockRepository stockRepository;
+
 
     /**
      * [주식 시세 조회]
@@ -69,6 +74,41 @@ public class StockController {
             @RequestParam String baseDate) {
         return ResponseEntity.ok(stockService.getMarketIndex(idxNm, baseDate));
         // 서비스 호출!! 리턴쪽에 getMarketIndex 컨트롤 + B로 타볼것
+    }
+
+    @GetMapping("/kis-price")
+    public ResponseEntity<Long> getKisPrice(@RequestParam String stockCode) {
+        return ResponseEntity.ok(kisStockService.getCurrentPrice(stockCode));
+    }
+
+    @GetMapping("/detail")
+    public ResponseEntity<StockItemDTO> getStockDetail(@RequestParam String stockCode) {
+        StockItemDTO kisData = kisStockService.getStockDetail(stockCode);
+
+        String stockNm = stockRepository.findById(stockCode)
+                .map(s -> s.getStockNm())
+                .orElse(stockCode);
+
+        String mrktCtg = stockRepository.findById(stockCode)
+                .map(s -> s.getMktType())
+                .orElse("KOSPI");
+
+        StockItemDTO result = StockItemDTO.builder()
+                .srtnCd(stockCode)
+                .itmsNm(stockNm)
+                .clpr(kisData.getClpr())
+                .vs(kisData.getVs())
+                .fltRt(kisData.getFltRt())
+                .mrktCtg(mrktCtg)
+                .oprc(kisData.getOprc())
+                .hgpr(kisData.getHgpr())
+                .lwpr(kisData.getLwpr())
+                .acmlVol(kisData.getAcmlVol())
+                .htsMktcap(kisData.getHtsMktcap())
+                .w52Hgpr(kisData.getW52Hgpr())
+                .build();
+
+        return ResponseEntity.ok(result);
     }
 }
 

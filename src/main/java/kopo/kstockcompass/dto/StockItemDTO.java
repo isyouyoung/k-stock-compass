@@ -15,4 +15,12 @@ public class StockItemDTO {
     private String clpr;     // 종가
     private String fltRt;    // 등락률
     private String vs;       // 전일대비
+    private String mrktCtg;  // 시장구분 (코스피/코스닥)
+
+    private String oprc;     // 시가
+    private String hgpr;     // 고가
+    private String lwpr;     // 저가
+    private String acmlVol;  // 거래량
+    private String htsMktcap; // 시가총액
+    private String w52Hgpr;  // 52주 최고
 }

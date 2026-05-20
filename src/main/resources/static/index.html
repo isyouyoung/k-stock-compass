@@ -163,7 +163,7 @@
       <div class="modal-desc">K-Stock Compass에 오신 것을 환영해요.<br>관심종목과 AI 신호등을 확인해보세요.</div>
     </div>
     <div class="modal-footer">
-      <button class="btn btn-primary" onclick="closeModal('modalLoginSuccess');navigate('main');">메인으로 →</button>
+      <button class="btn btn-primary" id="loginSuccessBtn" onclick="closeModal('modalLoginSuccess');navigate('main');">메인으로 →</button>
     </div>
   </div>
 </div>
@@ -258,6 +258,8 @@
     const fn = pages[page] || pgMain;
     if(page === 'stock_index') {
       pgStockIndex();
+    } else if(page === 'stock_detail') {
+      pgStockDetail();
     } else {
       document.getElementById('mainContent').innerHTML = fn();
     }
@@ -402,7 +404,10 @@
         </div>`;}
 
   function pgAlertAdd(){
-    const s=state.alertStock||{code:'',name:'',price:0};
+    // 사이드바에서 직접 알림 추가 진입 시 초기화
+    if(!state._alertFromDetail) state.alertStock = null;
+    state._alertFromDetail = false;
+    const s = state.alertStock || {code:'', name:'', price:0};
     return `<div class="page-wrap">
         <div class="page-header"><div class="page-title">🔔 알림 등록</div></div>
         <div style="display:flex;justify-content:center;">
@@ -624,7 +629,6 @@
       });
       if (res.ok) {
         const data = await res.json();
-        // 백엔드 DTO 필드(stockCd, stockNm)를 프론트 state 구조에 맞게 변환
         state.favorites = data.map(f => ({
           code: f.stockCd,
           name: f.stockNm,
@@ -633,6 +637,25 @@
           change: 0,
           pct: 0
         }));
+
+        // 가격 실시간 연동 추가
+        const priceResults = await Promise.all(
+                state.favorites.map(f =>
+                        fetch(`/api/stock/detail?stockCode=${f.code}`)
+                                .then(r => r.json())
+                                .catch(() => null)
+                )
+        );
+
+        priceResults.forEach((d, i) => {
+          if (d) {
+            state.favorites[i].price = Number(d.clpr);
+            state.favorites[i].change = Number(d.vs);
+            state.favorites[i].pct = Number(d.fltRt);
+            state.favorites[i].market = d.mrktCtg || 'KOSPI';
+          }
+        });
+
         if (state.currentPage === 'fav_list') renderPage('fav_list');
       }
     } catch (e) {
@@ -697,11 +720,26 @@
     document.getElementById('alertDelName').textContent=`${name} 알림`;
     openModal('modalAlertDel');
   }
-  function doAlertDel(){
-    state.alerts=state.alerts.filter(a=>a.id!==state._pendingAlertId);
-    closeModal('modalAlertDel');
-    showToast('알림이 삭제되었습니다.');
-    renderPage('alert_list');
+
+  async function doAlertDel(){
+    const id = state._pendingAlertId;
+    const token = localStorage.getItem('jwt');
+    try {
+      const res = await fetch(`/api/alert/${id}`, {
+        method: 'DELETE',
+        headers: { 'Authorization': 'Bearer ' + token }
+      });
+      if(res.ok){
+        state.alerts = state.alerts.filter(a => a.id !== id);
+        closeModal('modalAlertDel');
+        showToast('알림이 삭제되었습니다.');
+        navigate('alert_list');
+      } else {
+        showToast('삭제에 실패했습니다.');
+      }
+    } catch(e) {
+      showToast('서버 오류가 발생했습니다.');
+    }
   }
 
   function doLeave(){closeModal('modalLeave');state.loggedIn=false;state.user=null;showToast('탈퇴가 완료되었습니다.');navigate('main');}
@@ -720,36 +758,69 @@
     });
   }
 
-  function searchAlertStock(){
-    const q=(document.getElementById('alertStockInput').value||'').toLowerCase();
-    const res=(window._allStocks||[{code:'005930',name:'삼성전자'},{code:'000660',name:'SK하이닉스'},{code:'035420',name:'NAVER'}]).filter(s=>s.name.toLowerCase().includes(q)||s.code.includes(q)).slice(0,4);
-    const container=document.getElementById('alertStockResults');
-    if(!q||!container){if(container)container.innerHTML='';return;}
-    container.innerHTML=`<div class="card" style="padding:8px 0;margin-top:4px;">${res.map(s=>`
-        <div style="padding:10px 16px;cursor:pointer;font-size:13px;display:flex;gap:10px;align-items:center;" onmouseover="this.style.background='var(--bg)'" onmouseout="this.style.background=''" onclick="selectAlertStock('${s.code}','${s.name}',${s.price||61200})">
-        <span style="font-weight:600;">${s.name}</span><span style="color:var(--gray);font-size:11px;">${s.code}</span>
+  async function searchAlertStock(){
+    const q = (document.getElementById('alertStockInput').value || '').trim();
+    const container = document.getElementById('alertStockResults');
+    if(!q || !container){ if(container) container.innerHTML=''; return; }
+
+    try {
+      const res = await fetch(`/api/stock/search?query=${encodeURIComponent(q)}&type=name`);
+      const results = await res.json();
+      if(!results.length){ container.innerHTML=''; return; }
+
+      container.innerHTML=`<div class="card" style="padding:8px 0;margin-top:4px;">${results.slice(0,5).map(s=>`
+        <div style="padding:10px 16px;cursor:pointer;font-size:13px;display:flex;gap:10px;align-items:center;" onmouseover="this.style.background='var(--bg)'" onmouseout="this.style.background=''" onclick="selectAlertStock('${s.stockCd}','${s.stockNm}',0)">
+        <span style="font-weight:600;">${s.stockNm}</span><span style="color:var(--gray);font-size:11px;">${s.stockCd}</span>
         </div>`).join('')}</div>`;
+    } catch(e) {
+      container.innerHTML='';
+    }
   }
 
-  function selectAlertStock(code,name,price){
-    document.getElementById('alertStockInput').value=name;
-    document.getElementById('alertStockCode').value=code;
-    document.getElementById('alertStockName').value=name;
-    document.getElementById('alertStockResults').innerHTML=`<div class="notice mt8">현재가: <strong>${fmt(price)}원</strong> (${name})</div>`;
+  function selectAlertStock(code, name, price){
+    document.getElementById('alertStockInput').value = name;
+    document.getElementById('alertStockCode').value = code;
+    document.getElementById('alertStockName').value = name;
+    document.getElementById('alertStockResults').innerHTML = '';
+    // state에도 저장
+    state.alertStock = {code, name, price};
   }
 
   function initAlertForm(){}
 
-  function doAddAlert(){
-    const code=document.getElementById('alertStockCode').value;
-    const name=document.getElementById('alertStockName').value;
-    const target=parseInt(document.getElementById('alertTarget').value);
-    const dir=document.getElementById('alertDir').value;
-    if(!code||!target){showToast('종목과 목표가를 입력해 주세요.');return;}
-    const newId=Math.max(0,...state.alerts.map(a=>a.id))+1;
-    state.alerts.push({id:newId,code,name,target,direction:dir,current:61200});
-    showToast('알림이 등록되었습니다!');
-    navigate('alert_list');
+  async function doAddAlert(){
+    const code = document.getElementById('alertStockCode').value || (state.alertStock && state.alertStock.code);
+    const name = document.getElementById('alertStockName').value || (state.alertStock && state.alertStock.name);
+    const target = document.getElementById('alertTarget').value;
+    const dir = document.getElementById('alertDir').value;
+    const token = localStorage.getItem('jwt');
+
+    if(!code || !target){ showToast('종목과 목표가를 입력해 주세요.'); return; }
+
+    try {
+      const res = await fetch('/api/alert', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer ' + token
+        },
+        body: JSON.stringify({
+          stockCd: code,
+          targetPrice: parseInt(target),
+          direction: dir
+        })
+      });
+
+      if(res.ok){
+        showToast('알림이 등록되었습니다! 🔔');
+        navigate('alert_list');
+      } else {
+        const msg = await res.text();
+        showToast(msg);
+      }
+    } catch(e) {
+      showToast('서버 오류가 발생했습니다.');
+    }
   }
 
   function doEditAlert(id){
@@ -828,6 +899,30 @@
       showToast('서버 오류가 발생했습니다.');
     }
   }
+
+  async function loadAlerts() {
+    const token = localStorage.getItem('jwt');
+    if (!token) return;
+    try {
+      const res = await fetch('/api/alert', {
+        headers: { 'Authorization': 'Bearer ' + token }
+      });
+      if (res.ok) {
+        const data = await res.json();
+        state.alerts = data.map(a => ({
+          id: a.alertId,
+          code: a.stockCd,
+          name: a.stockNm,
+          target: Number(a.targetPrice),
+          direction: a.direction,
+          current: 0
+        }));
+      }
+    } catch (e) {
+      console.error('알림 로드 실패', e);
+    }
+  }
+
 </script>
 <script src="/js/auth.js"></script>
 <script src="/js/stock.js"></script>
