@@ -72,7 +72,7 @@ function renderLogin(){return authLayout(`
         <input class="input" id="loginEmail" placeholder="mail@example.com" oninput="clearErr('loginEmailErr')">
         <div class="error-msg" id="loginEmailErr"></div></div>
         <div class="form-group"><div class="label">비밀번호 <span class="req">*</span></div>
-        <input class="input" id="loginPw" type="password" placeholder="비밀번호" oninput="clearErr('loginPwErr')">
+        <input class="input" id="loginPw" type="password" placeholder="비밀번호" oninput="clearErr('loginPwErr')" onkeydown="if(event.key==='Enter')doLogin()">
         <div class="error-msg" id="loginPwErr"></div></div>
         <div id="loginErr" class="warning mb12" style="display:none;"></div>
         <button class="btn btn-primary btn-full mb8" onclick="doLogin()">로그인</button>
@@ -201,6 +201,9 @@ async function doLogin(){
             state.user = {email: email, nickname: email.split('@')[0]};
             document.getElementById('loginSuccessMsg').textContent = `환영합니다, ${email.split('@')[0]}님!`;
             openModal('modalLoginSuccess');
+            setTimeout(() => {
+                document.getElementById('loginSuccessBtn').focus();
+            }, 100);
         } else {
             openModal('modalLoginFail');
         }
@@ -316,6 +319,13 @@ async function doSignup(){
     if(!phone){ document.getElementById('regPhoneErr').textContent='전화번호를 입력해 주세요.'; return; }
     if(!pw){ document.getElementById('regPwErr').textContent='비밀번호를 입력해 주세요.'; return; }
     if(pw.length<8){ document.getElementById('regPwErr').textContent='8자 이상 입력해 주세요.'; return; }
+
+// 비밀번호 패턴 검증 (영문+숫자+특수문자)
+    const pwPattern = /^(?=.*[A-Za-z])(?=.*\d)(?=.*[@$!%*#?&])[A-Za-z\d@$!%*#?&]{4,20}$/;
+    if(!pwPattern.test(pw)){
+        document.getElementById('regPwErr').textContent='영문, 숫자, 특수문자(@$!%*#?&)를 포함하여 입력해 주세요.';
+        return;
+    }
     if(pw!==pw2){ document.getElementById('regPw2Err').textContent='비밀번호가 일치하지 않습니다.'; return; }
 
     try {
