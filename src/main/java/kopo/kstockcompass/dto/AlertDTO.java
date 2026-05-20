@@ -19,4 +19,5 @@ public class AlertDTO {
     private String stockNm;
     private BigDecimal targetPrice;
     private String regDt;
+    private String direction;
 }
