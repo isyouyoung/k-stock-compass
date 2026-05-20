@@ -34,6 +34,13 @@ function closeModal(id){document.getElementById(id).classList.remove('open');}
 function navigate(page, params={}) {
     state.currentPage = page;
     Object.assign(state, params);
+    // 현재 페이지 저장 (새로고침 복원용)
+    if(!['login','signup','signup_done','find_id','find_pw','find_pw_reset'].includes(page)) {
+        sessionStorage.setItem('lastPage', page);
+        if(page === 'stock_detail' && state.currentStock) {
+            sessionStorage.setItem('lastStock', state.currentStock);
+        }
+    }
     if (['login', 'signup', 'signup_done', 'find_id', 'find_pw', 'find_pw_reset'].includes(page)) {
         document.getElementById('app').style.display = 'none';
         document.getElementById('authArea').style.display = 'block';
@@ -58,7 +65,12 @@ function navigate(page, params={}) {
     if(savedToken && savedEmail){
         state.loggedIn = true;
         state.user = { email: savedEmail, nickname: savedEmail.split('@')[0] };
-        loadFavorites().then(() => navigate('main'));
+        const lastPage = sessionStorage.getItem('lastPage') || 'main';
+        if(lastPage === 'stock_detail') {
+            const lastStock = sessionStorage.getItem('lastStock');
+            if(lastStock) state.currentStock = lastStock;
+        }
+        Promise.all([loadFavorites(), loadAlerts()]).then(() => navigate(lastPage));
     } else {
         navigate('main');
     }

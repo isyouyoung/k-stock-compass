@@ -49,14 +49,39 @@ async function pgStockIndex(){
         <div class="page-wrap" style="padding-top:0;">
         <div class="card">
         <div class="section-title">주요 종목 시세</div>
-        ${[['삼성전자','005930','KOSPI',61200,1200,2.00],['SK하이닉스','000660','KOSPI',182500,-1500,-0.81],['LG에너지솔루션','373220','KOSPI',415000,3000,0.73],['NAVER','035420','KOSPI',215000,3000,1.41],['카카오','035720','KOSDAQ',45800,-200,-0.43]].map(([n,c,m,p,ch,pct])=>`
-        <div class="stock-row" onclick="navigate('stock_detail',{currentStock:'${c}'})">
-        <span class="sn">${n}</span><span class="sc">${c}</span>
-        <span class="badge badge-${m.toLowerCase()}">${m}</span>
-        <span class="sp ${ch>=0?'up':'down'}" style="margin-left:auto;">${fmt(p)}원</span>
-        <span class="sch ${ch>=0?'up':'down'}">${ch>=0?'▲ +':'▼ -'}${fmt(Math.abs(ch))} (${pct>=0?'+':''}${pct.toFixed(2)}%)</span>
-        </div>`).join('')}
+        <div id="majorStocks"><div style="font-size:13px;color:var(--gray);padding:20px 0;">시세 조회 중...</div></div>
         </div></div>`;
+
+        const majorCodes = [
+            {code:'005930', name:'삼성전자', market:'KOSPI'},
+            {code:'000660', name:'SK하이닉스', market:'KOSPI'},
+            {code:'373220', name:'LG에너지솔루션', market:'KOSPI'},
+            {code:'035420', name:'NAVER', market:'KOSPI'},
+            {code:'035720', name:'카카오', market:'KOSDAQ'}
+        ];
+
+        const majorResults = await Promise.all(
+            majorCodes.map(s => fetch(`/api/stock/detail?stockCode=${s.code}`)
+                .then(r=>r.json())
+                .then(d=>({...s, ...d}))
+                .catch(()=>null))
+        );
+
+        const majorEl = document.getElementById('majorStocks');
+        if(majorEl) {
+            majorEl.innerHTML = majorResults.filter(Boolean).map(d => {
+                const price = Number(d.clpr);
+                const change = Number(d.vs);
+                const pct = Number(d.fltRt);
+                return `
+                <div class="stock-row" onclick="navigate('stock_detail',{currentStock:'${d.code}'})">
+                <span class="sn">${d.name}</span><span class="sc">${d.code}</span>
+                <span class="badge badge-${d.market.toLowerCase()}">${d.market}</span>
+                <span class="sp ${change>=0?'up':'down'}" style="margin-left:auto;">${fmt(price)}원</span>
+                <span class="sch ${change>=0?'up':'down'}">${change>=0?'▲ +':'▼ -'}${fmt(Math.abs(change))} (${pct>=0?'+':''}${pct.toFixed(2)}%)</span>
+                </div>`;
+            }).join('');
+        }
 
     } catch(e) {
         showToast('시장 지수 조회에 실패했습니다.');
@@ -150,26 +175,57 @@ function doMainSearch(){
     setTimeout(()=>{const el=document.getElementById('stockSearchInput');if(el){el.value=q;doStockSearch();}},50);
 }
 
-function pgStockDetail(){
-    const stockMap={
-        '005930':{code:'005930',name:'삼성전자',market:'KOSPI',price:61200,change:1200,pct:2.00},
-        '000660':{code:'000660',name:'SK하이닉스',market:'KOSPI',price:182500,change:-1500,pct:-0.81},
-        '035420':{code:'035420',name:'NAVER',market:'KOSPI',price:215000,change:3000,pct:1.41},
-        '035720':{code:'035720',name:'카카오',market:'KOSDAQ',price:45800,change:-200,pct:-0.43},
-        '373220':{code:'373220',name:'LG에너지솔루션',market:'KOSPI',price:415000,change:3000,pct:0.73},
-        '005380':{code:'005380',name:'현대차',market:'KOSPI',price:231000,change:2500,pct:1.09},
-        '006400':{code:'006400',name:'삼성SDI',market:'KOSPI',price:298500,change:-2500,pct:-0.83},
-        '207940':{code:'207940',name:'삼성바이오로직스',market:'KOSPI',price:781000,change:5000,pct:0.64},
-    };
-    const s=stockMap[state.currentStock]||stockMap['005930'];
-    const isFav=state.favorites.some(f=>f.code===s.code);
-    const tab=state.detailTab||'info';
-    return `
+async function pgStockDetail(){
+    // 기존 인터벌 제거
+    if(window._stockDetailInterval) {
+        clearInterval(window._stockDetailInterval);
+        window._stockDetailInterval = null;
+    }
+
+    document.getElementById('mainContent').innerHTML = `<div class="page-wrap"><div class="card"><div style="padding:40px;text-align:center;color:var(--gray);">로딩 중...</div></div></div>`;
+
+    await loadStockDetail(state.currentStock);
+
+    // 10초마다 가격 갱신 => 3초로 바꿈 => 혼자 쓸때는 1초 가능
+    window._stockDetailInterval = setInterval(async () => {
+        if(state.currentPage !== 'stock_detail') {
+            clearInterval(window._stockDetailInterval);
+            window._stockDetailInterval = null;
+            return;
+        }
+        await refreshStockPrice(state.currentStock);
+    }, 1000);
+}
+
+async function loadStockDetail(stockCode) {
+    try {
+        const res = await fetch(`/api/stock/detail?stockCode=${stockCode}`);
+        const data = await res.json();
+
+        const s = {
+            code: data.srtnCd,
+            name: data.itmsNm,
+            market: data.mrktCtg || 'KOSPI',
+            price: Number(data.clpr),
+            change: Number(data.vs),
+            pct: Number(data.fltRt),
+            oprc: data.oprc,
+            hgpr: data.hgpr,
+            lwpr: data.lwpr,
+            acmlVol: data.acmlVol,
+            htsMktcap: data.htsMktcap,
+            w52Hgpr: data.w52Hgpr
+        };
+
+        const isFav = state.favorites.some(f => f.code === s.code);
+        const tab = state.detailTab || 'info';
+
+        document.getElementById('mainContent').innerHTML = `
         <div class="detail-header">
         <div><div class="detail-name">${s.name}</div><div class="detail-meta">${s.code} &nbsp;|&nbsp; <span class="badge badge-${s.market.toLowerCase()}">${s.market}</span></div></div>
         <div class="detail-price">
-        <div class="price">${fmt(s.price)}원</div>
-        <div class="change ${s.change>=0?'up':'down'}">${s.change>=0?'▲ +':'▼ -'}${fmt(Math.abs(s.change))} &nbsp;(${s.pct>=0?'+':''}${s.pct.toFixed(2)}%)</div>
+        <div class="price" id="stockPrice">${fmt(s.price)}원</div>
+        <div class="change ${s.change>=0?'up':'down'}" id="stockChange">${s.change>=0?'▲ +':'▼ -'}${fmt(Math.abs(s.change))} &nbsp;(${s.pct>=0?'+':''}${s.pct.toFixed(2)}%)</div>
         </div></div>
         <div class="inner-tabs">
         <div class="inner-tab ${tab==='info'?'active':''}" onclick="navigate('stock_detail',{currentStock:'${s.code}',detailTab:'info'})">종목 정보</div>
@@ -177,26 +233,63 @@ function pgStockDetail(){
         </div>
         <div class="page-wrap">
         ${tab==='info'?detailInfo(s,isFav):detailAI(s)}
-        </div>`;}
+        </div>`;
+
+    } catch(e) {
+        showToast('종목 정보 조회에 실패했습니다.');
+    }
+}
+
+async function refreshStockPrice(stockCode) {
+    try {
+        const res = await fetch(`/api/stock/detail?stockCode=${stockCode}`);
+        const data = await res.json();
+
+        const priceEl = document.getElementById('stockPrice');
+        const changeEl = document.getElementById('stockChange');
+        if(!priceEl || !changeEl) return;
+
+        const price = Number(data.clpr);
+        const change = Number(data.vs);
+        const pct = Number(data.fltRt);
+
+        priceEl.textContent = fmt(price) + '원';
+        changeEl.className = `change ${change>=0?'up':'down'}`;
+        changeEl.innerHTML = `${change>=0?'▲ +':'▼ -'}${fmt(Math.abs(change))} &nbsp;(${pct>=0?'+':''}${pct.toFixed(2)}%)`;
+    } catch(e) {
+        // 조용히 실패
+    }
+}
 
 function detailInfo(s,isFav){return `
         <div class="grid3 mb16">
-        ${[['현재가',`${fmt(s.price)}원`],['전일 대비',`${s.change>=0?'▲ +':'▼ -'}${fmt(Math.abs(s.change))}`],['등락률',`${s.pct>=0?'+':''}${s.pct.toFixed(2)}%`],['시가','60,300원'],['고가','61,500원'],['저가','60,100원'],['거래량','12,345,678주'],['시가총액','365조 4,321억'],['52주 최고','87,800원']].map(([l,v])=>`
-        <div class="card"><div style="font-size:11px;color:var(--gray);margin-bottom:6px;">${l}</div><div style="font-size:16px;font-weight:700;">${v}</div></div>`).join('')}
+        ${[
+    ['현재가', `${fmt(s.price)}원`],
+    ['전일 대비', `${s.change >= 0 ? '▲ +' : '▼ -'}${fmt(Math.abs(s.change))}`],
+    ['등락률', `${s.pct >= 0 ? '+' : ''}${s.pct.toFixed(2)}%`],
+    ['시가', `${fmt(Number(s.oprc))}원`],
+    ['고가', `${fmt(Number(s.hgpr))}원`],
+    ['저가', `${fmt(Number(s.lwpr))}원`],
+    ['거래량', `${fmt(Number(s.acmlVol))}주`],
+    ['시가총액', formatMktcap(s.htsMktcap)],
+    ['52주 최고', `${fmt(Number(s.w52Hgpr))}원`]
+].map(([l, v]) => `
+    <div class="card"><div style="font-size:11px;color:var(--gray);margin-bottom:6px;">${l}</div><div style="font-size:16px;font-weight:700;">${v}</div></div>`).join('')}
         </div>
+        <div style="font-size:11px;color:var(--gray);margin-bottom:12px;">※ 거래량은 정규장 매수 체결 기준이며 실제와 다소 차이가 있을 수 있습니다.</div>
         <div class="card mb16">
         <div class="flex flex-between flex-center mb12">
         <div><div class="section-title" style="margin-bottom:2px;">기업 재무 정보</div><div style="font-size:12px;color:var(--gray);">DART 전자공시 API · 최근 분기 기준</div></div>
         </div>
         <div class="grid3">
-        ${[['부채비율','38.2%','업종평균 72.1%','var(--green)'],['영업이익률','15.3%','전년동기 12.8%','var(--green)'],['유동비율','218%','업종평균 145%','var(--green)'],['ROE','12.5%','전년동기 9.2%','var(--blue)'],['매출액','79.1조원','YoY +8.3%','var(--dark)'],['영업이익','12.1조원','YoY +19.5%','var(--dark)']].map(([l,v,s2,c])=>`
+        ${[['부채비율', '38.2%', '업종평균 72.1%', 'var(--green)'], ['영업이익률', '15.3%', '전년동기 12.8%', 'var(--green)'], ['유동비율', '218%', '업종평균 145%', 'var(--green)'], ['ROE', '12.5%', '전년동기 9.2%', 'var(--blue)'], ['매출액', '79.1조원', 'YoY +8.3%', 'var(--dark)'], ['영업이익', '12.1조원', 'YoY +19.5%', 'var(--dark)']].map(([l, v, s2, c]) => `
         <div class="fin-card"><div class="fin-bar" style="background:${c};"></div><div class="fin-label">${l}</div><div class="fin-val" style="color:${c};">${v}</div><div class="fin-sub">${s2}</div></div>`).join('')}
         </div></div>
         <div class="flex gap12">
-        ${state.loggedIn?`
-        <button class="btn ${isFav?'btn-secondary':'btn-outline'} btn-full" onclick="openFavAdd('${s.name}','${s.code}')">${isFav?'✅ 관심종목 추가됨':'⭐ 관심종목 추가'}</button>
-        <button class="btn btn-primary btn-full" onclick="navigate('alert_add',{alertStock:{code:'${s.code}',name:'${s.name}',price:${s.price}}})">🔔 알림 설정</button>`
-    :`<div class="notice btn-full" style="text-align:center;">로그인 후 관심종목 추가 및 알림 설정이 가능합니다. <span style="color:var(--blue);cursor:pointer;font-weight:600;" onclick="navigate('login')">로그인 →</span></div>`}
+        ${state.loggedIn ? `
+        <button class="btn ${isFav ? 'btn-secondary' : 'btn-outline'} btn-full" onclick="openFavAdd('${s.name}','${s.code}')">${isFav ? '✅ 관심종목 추가됨' : '⭐ 관심종목 추가'}</button>
+        <button class="btn btn-primary btn-full" onclick="state._alertFromDetail=true;navigate('alert_add',{alertStock:{code:'${s.code}',name:'${s.name}',price:${s.price}}})">🔔 알림 설정</button>`
+    : `<div class="notice btn-full" style="text-align:center;">로그인 후 관심종목 추가 및 알림 설정이 가능합니다. <span style="color:var(--blue);cursor:pointer;font-weight:600;" onclick="navigate('login')">로그인 →</span></div>`}
         </div>`;}
 
 function detailAI(s){
@@ -266,4 +359,13 @@ function sendAiMsg(code, name){
         navigate('stock_detail',{currentStock:code,detailTab:'ai'});
     },800);
     navigate('stock_detail',{currentStock:code,detailTab:'ai'});
+}
+
+function formatMktcap(val) {
+    if (!val) return '-';
+    const n = Number(val);  // 이미 억 단위
+    const jo = Math.floor(n / 10000);
+    const eok = n % 10000;
+    if (jo > 0) return `${fmt(jo)}조 ${fmt(eok)}억`;
+    return `${fmt(n)}억`;
 }
