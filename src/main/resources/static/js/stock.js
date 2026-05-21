@@ -199,8 +199,12 @@ async function pgStockDetail(){
 
 async function loadStockDetail(stockCode) {
     try {
-        const res = await fetch(`/api/stock/detail?stockCode=${stockCode}`);
-        const data = await res.json();
+        const [stockRes, finRes] = await Promise.all([
+            fetch(`/api/stock/detail?stockCode=${stockCode}`),
+            fetch(`/api/financial/${stockCode}`)
+        ]);
+        const data = await stockRes.json();
+        const fin = finRes.ok ? await finRes.json() : null;
 
         const s = {
             code: data.srtnCd,
@@ -232,7 +236,7 @@ async function loadStockDetail(stockCode) {
         <div class="inner-tab ${tab==='ai'?'active':''}" onclick="navigate('stock_detail',{currentStock:'${s.code}',detailTab:'ai'})">AI 신호등</div>
         </div>
         <div class="page-wrap">
-        ${tab==='info'?detailInfo(s,isFav):detailAI(s)}
+        ${tab==='info'?detailInfo(s,isFav,fin):detailAI(s)}
         </div>`;
 
     } catch(e) {
@@ -261,7 +265,7 @@ async function refreshStockPrice(stockCode) {
     }
 }
 
-function detailInfo(s,isFav){return `
+function detailInfo(s,isFav,fin){return `
         <div class="grid3 mb16">
         ${[
     ['현재가', `${fmt(s.price)}원`],
@@ -282,9 +286,24 @@ function detailInfo(s,isFav){return `
         <div><div class="section-title" style="margin-bottom:2px;">기업 재무 정보</div><div style="font-size:12px;color:var(--gray);">DART 전자공시 API · 최근 분기 기준</div></div>
         </div>
         <div class="grid3">
-        ${[['부채비율', '38.2%', '업종평균 72.1%', 'var(--green)'], ['영업이익률', '15.3%', '전년동기 12.8%', 'var(--green)'], ['유동비율', '218%', '업종평균 145%', 'var(--green)'], ['ROE', '12.5%', '전년동기 9.2%', 'var(--blue)'], ['매출액', '79.1조원', 'YoY +8.3%', 'var(--dark)'], ['영업이익', '12.1조원', 'YoY +19.5%', 'var(--dark)']].map(([l, v, s2, c]) => `
+        ${(fin ? [
+            ['부채비율', fin.debtRatio === -1 ? '자본잠식' : fin.debtRatio !== null ? fin.debtRatio + '%' : 'N/A', fin.bsnsYear + '년 기준', fin.debtRatio !== null && fin.debtRatio !== -1 && fin.debtRatio < 100 ? 'var(--green)' : 'var(--red-err)'],
+            ['영업이익률', fin.operatingMargin !== null ? fin.operatingMargin + '%' : 'N/A', fin.bsnsYear + '년 기준', fin.operatingMargin !== null && fin.operatingMargin > 0 ? 'var(--green)' : 'var(--red-err)'],
+            ['유동비율', fin.currentRatio !== null ? fin.currentRatio + '%' : 'N/A', fin.bsnsYear + '년 기준', fin.currentRatio !== null && fin.currentRatio > 100 ? 'var(--green)' : 'var(--red-err)'],
+            ['매출액', formatFinAmt(fin.revenue), fin.bsnsYear + '년 기준', 'var(--dark)'],
+            ['영업이익', formatFinAmt(fin.operatingProfit), fin.bsnsYear + '년 기준', 'var(--dark)'],
+            ['당기순이익', formatFinAmt(fin.netIncome), fin.bsnsYear + '년 기준', 'var(--dark)']
+        ] : [
+            ['부채비율','N/A','데이터 없음','var(--gray)'],
+            ['영업이익률','N/A','데이터 없음','var(--gray)'],
+            ['유동비율','N/A','데이터 없음','var(--gray)'],
+            ['매출액','N/A','데이터 없음','var(--gray)'],
+            ['영업이익','N/A','데이터 없음','var(--gray)'],
+            ['당기순이익','N/A','데이터 없음','var(--gray)']
+        ]).map(([l,v,s2,c])=>`
         <div class="fin-card"><div class="fin-bar" style="background:${c};"></div><div class="fin-label">${l}</div><div class="fin-val" style="color:${c};">${v}</div><div class="fin-sub">${s2}</div></div>`).join('')}
-        </div></div>
+        </div>
+        </div>
         <div class="flex gap12">
         ${state.loggedIn ? `
         <button class="btn ${isFav ? 'btn-secondary' : 'btn-outline'} btn-full" onclick="openFavAdd('${s.name}','${s.code}')">${isFav ? '✅ 관심종목 추가됨' : '⭐ 관심종목 추가'}</button>
@@ -751,4 +770,13 @@ async function deleteSimulator(simId) {
             await loadPortfolio();
         }
     } catch(e) { showToast('서버 오류가 발생했습니다.'); }
+}
+
+function formatFinAmt(val) {
+    if (val === null || val === undefined) return 'N/A';
+    const n = Math.abs(Number(val));
+    const sign = Number(val) < 0 ? '-' : '';
+    if (n >= 1000000000000) return sign + (n / 1000000000000).toFixed(1) + '조원';
+    if (n >= 100000000) return sign + (n / 100000000).toFixed(0) + '억원';
+    return sign + fmt(n) + '원';
 }
