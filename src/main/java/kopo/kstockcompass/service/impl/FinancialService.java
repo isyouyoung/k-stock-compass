@@ -69,37 +69,37 @@ public class FinancialService implements IFinancialService {
                     continue;
                 }
 
-                // 유동자산
-                if (accountId.contains("CurrentAssets") || accountNm.equals("유동자산")) {
+                // 유동자산 - 정확히 매칭
+                if ("ifrs-full_CurrentAssets".equals(accountId) || "유동자산".equals(accountNm)) {
                     currentAsset = amount;
                 }
-                // 유동부채
-                else if (accountId.contains("CurrentLiabilities") || accountNm.equals("유동부채")) {
+                // 유동부채 - 정확히 매칭
+                else if ("ifrs-full_CurrentLiabilities".equals(accountId) || "유동부채".equals(accountNm)) {
                     currentLiab = amount;
                 }
-                // 부채총계
-                else if (accountId.contains("Liabilities") && !accountId.contains("Current")
-                        || accountNm.equals("부채총계")) {
+                // 부채총계 - 정확히 매칭
+                else if ("ifrs-full_Liabilities".equals(accountId) || "부채총계".equals(accountNm)) {
                     totalLiab = amount;
                 }
-                // 자본총계
-                else if (accountId.contains("Equity") && !accountId.contains("Non")
-                        || accountNm.equals("자본총계")) {
-                    totalEquity = amount;
+                // 자본총계 - 처음 잡힌 값만 사용 (첫 번째가 자본총계)
+                else if ("ifrs-full_Equity".equals(accountId) && "자본총계".equals(accountNm)) {
+                    if (totalEquity == null) totalEquity = amount; // 처음 한 번만!
                 }
                 // 매출액
-                else if (accountId.contains("Revenue") || accountId.contains("Sales")
-                        || accountNm.contains("매출액") || accountNm.contains("수익")) {
+                else if ("ifrs-full_Revenue".equals(accountId)
+                        || "dart_Revenues".equals(accountId)
+                        || "매출액".equals(accountNm)) {
                     if (revenue == null) revenue = amount;
                 }
                 // 영업이익
-                else if (accountId.contains("OperatingIncomeLoss") || accountId.contains("OperatingProfit")
-                        || accountNm.contains("영업이익")) {
+                else if ("dart_OperatingIncomeLoss".equals(accountId)
+                        || "ifrs-full_ProfitLossFromOperatingActivities".equals(accountId)
+                        || "영업이익".equals(accountNm) || "영업이익(손실)".equals(accountNm)) {
                     operatingProfit = amount;
                 }
                 // 당기순이익
-                else if (accountId.contains("ProfitLoss") && !accountId.contains("Operating")
-                        || accountNm.contains("당기순이익")) {
+                else if ("ifrs-full_ProfitLoss".equals(accountId)
+                        || "당기순이익".equals(accountNm) || "당기순이익(손실)".equals(accountNm)) {
                     if (netIncome == null) netIncome = amount;
                 }
             }
@@ -160,23 +160,47 @@ public class FinancialService implements IFinancialService {
 
     private String getCorpCode(String stockCode) {
         try {
-            String response = webClient.get()
+            byte[] zipBytes = webClient.get()
                     .uri(uriBuilder -> uriBuilder
                             .scheme("https")
                             .host("opendart.fss.or.kr")
-                            .path("/api/company.json")
+                            .path("/api/corpCode.xml")
                             .queryParam("crtfc_key", dartApiKey)
-                            .queryParam("stock_code", stockCode)
                             .build())
                     .retrieve()
-                    .bodyToMono(String.class)
+                    .bodyToMono(byte[].class)
                     .block();
 
-            JsonNode root = objectMapper.readTree(response);
-            if ("000".equals(root.path("status").asText())) {
-                return root.path("corp_code").asText();
+            if (zipBytes == null) return null;
+
+            // ZIP 압축 해제
+            String xmlContent = null;
+            try (java.util.zip.ZipInputStream zis = new java.util.zip.ZipInputStream(
+                    new java.io.ByteArrayInputStream(zipBytes))) {
+                java.util.zip.ZipEntry entry;
+                while ((entry = zis.getNextEntry()) != null) {
+                    if (entry.getName().endsWith(".xml")) {
+                        xmlContent = new String(zis.readAllBytes(), "UTF-8");
+                        break;
+                    }
+                }
             }
-            return null;
+
+            if (xmlContent == null) return null;
+
+            // XML에서 stock_code로 corp_code 찾기
+            String searchStr = "<stock_code>" + stockCode + "</stock_code>";
+            int idx = xmlContent.indexOf(searchStr);
+            if (idx == -1) return null;
+
+            int start = xmlContent.lastIndexOf("<corp_code>", idx);
+            int end = xmlContent.indexOf("</corp_code>", start);
+            if (start == -1 || end == -1) return null;
+
+            String corpCode = xmlContent.substring(start + "<corp_code>".length(), end);
+            log.info("corp_code 조회 성공: {} → {}", stockCode, corpCode);
+            return corpCode;
+
         } catch (Exception e) {
             log.error("corp_code 조회 실패: {}", e.getMessage());
             return null;
@@ -202,8 +226,10 @@ public class FinancialService implements IFinancialService {
 
             JsonNode root = objectMapper.readTree(response);
             if ("000".equals(root.path("status").asText())) {
-                return root.path("list");
+                JsonNode list = root.path("list");
+                return list;
             }
+
             // 연결재무제표 없으면 별도재무제표 시도
             response = webClient.get()
                     .uri(uriBuilder -> uriBuilder
