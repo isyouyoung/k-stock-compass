@@ -385,12 +385,14 @@ async function pgPortfolio() {
 async function loadPortfolio() {
     const token = localStorage.getItem('jwt');
     try {
-        const [portRes, accRes] = await Promise.all([
+        const [portRes, accRes, simRes] = await Promise.all([
             fetch('/api/portfolio', { headers: { 'Authorization': 'Bearer ' + token } }),
-            fetch('/api/portfolio/account', { headers: { 'Authorization': 'Bearer ' + token } })
+            fetch('/api/portfolio/account', { headers: { 'Authorization': 'Bearer ' + token } }),
+            fetch('/api/simulator', { headers: { 'Authorization': 'Bearer ' + token } })
         ]);
         const portfolio = await portRes.json();
         const account = await accRes.json();
+        const simData = await simRes.json();
 
         const totalEval = portfolio.reduce((sum, p) => sum + Number(p.evalAmt), 0);
         const totalInvest = portfolio.reduce((sum, p) => sum + Number(p.avgPrice) * Number(p.quantity), 0);
@@ -466,58 +468,66 @@ async function loadPortfolio() {
             </div>`;
             }).join('')}
         </div>
-
-        <!-- 시나리오 계산기 -->
+        
+        <!-- 수익 시뮬레이터 -->
         <div class="card">
-        <div class="section-title mb12">🧮 수익 시뮬레이터</div>
-        <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;align-items:end;">
-        <div><div class="label">종목 선택</div>
-        <select class="input" id="simStock">
-        <option value="">종목 선택</option>
-        ${portfolio.map(p=>`<option value="${p.stockCd}" data-avg="${p.avgPrice}" data-qty="${p.quantity}" data-current="${p.currentPrice}">${p.stockNm}</option>`).join('')}
-        </select></div>
-        <div><div class="label">목표 매도가</div>
-        <input class="input" id="simPrice" type="number" placeholder="목표가 입력" oninput="calcSimulator()"></div>
-        <div><div class="label">매도 수량</div>
-        <input class="input" id="simQty" type="number" placeholder="수량 입력" oninput="calcSimulator()"></div>
+        <div class="flex flex-between flex-center mb12">
+        <div class="section-title" style="margin-bottom:0;">🧮 수익 시뮬레이터</div>
+        <button class="btn btn-primary btn-sm" onclick="openSimulatorAdd()">+ 종목 추가</button>
         </div>
-        <div id="simResult" style="margin-top:16px;"></div>
+        <div id="simList">
+        ${simData.length === 0 ? `
+        <div class="empty"><div class="empty-icon">🧮</div>
+        <div class="empty-title">시뮬레이션 종목이 없습니다</div>
+        <div class="empty-sub">종목을 추가해서 수익을 예상해보세요</div></div>` :
+            simData.map(s => {
+                const profit = Number(s.expectedProfit);
+                const rate = Number(s.expectedProfitRate);
+                return `
+            <div style="padding:14px;border:1px solid var(--border);border-radius:10px;margin-bottom:10px;">
+            <div class="flex flex-between flex-center mb10">
+            <div>
+            <span style="font-size:15px;font-weight:600;">${s.stockNm}</span>
+            <span style="font-size:12px;color:var(--gray);margin-left:8px;">${s.stockCd}</span>
+            </div>
+            <div style="display:flex;gap:6px;">
+            <button class="btn btn-sm btn-outline" onclick="openSimulatorEdit(${s.simId},${s.avgPrice},${s.quantity},${s.targetPrice})">수정</button>
+            <button class="btn btn-sm" style="background:#FFF5F5;color:var(--red-err);border:1px solid var(--red-err);" onclick="deleteSimulator(${s.simId})">삭제</button>
+            </div>
+            </div>
+            <div style="display:grid;grid-template-columns:repeat(5,1fr);gap:8px;font-size:12px;">
+            <div><div style="color:var(--gray);margin-bottom:2px;">평단가</div><div style="font-weight:600;">${fmt(s.avgPrice)}원</div></div>
+            <div><div style="color:var(--gray);margin-bottom:2px;">수량</div><div style="font-weight:600;">${fmt(s.quantity)}주</div></div>
+            <div><div style="color:var(--gray);margin-bottom:2px;">목표가</div><div style="font-weight:600;">${fmt(s.targetPrice)}원</div></div>
+            <div><div style="color:var(--gray);margin-bottom:2px;">예상매도금</div><div style="font-weight:600;">${fmt(s.expectedRevenue)}원</div></div>
+            <div><div style="color:var(--gray);margin-bottom:2px;">예상손익</div>
+            <div style="font-weight:600;" class="${profit>=0?'up':'down'}">${profit>=0?'+':''}${fmt(Math.round(profit))}원</div>
+            <div style="font-size:11px;" class="${profit>=0?'up':'down'}">(${rate>=0?'+':''}${rate.toFixed(2)}%)</div>
+            </div>
+            </div>
+            </div>`;
+            }).join('')}
+        </div>
+        <!-- 예상 총 잔액 -->
+        ${simData.length > 0 ? `
+        <div style="margin-top:16px;background:var(--navy);border-radius:10px;padding:20px;color:white;">
+        <div style="font-size:13px;opacity:0.8;margin-bottom:12px;">💰 예상 총 잔액 계산</div>
+        <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:12px;text-align:center;margin-bottom:16px;">
+        <div><div style="font-size:11px;opacity:0.7;margin-bottom:4px;">예상 매도 합계</div><div style="font-weight:700;">${fmt(Math.round(simData.reduce((s,x)=>s+Number(x.expectedRevenue),0)))}원</div></div>
+        <div><div style="font-size:11px;opacity:0.7;margin-bottom:4px;">예수금</div><div style="font-weight:700;color:#86EFAC;">${fmt(cash)}원</div></div>
+        <div><div style="font-size:11px;opacity:0.7;margin-bottom:4px;">대출금</div><div style="font-weight:700;color:#FCA5A5;">${fmt(loan)}원</div></div>
+        <div><div style="font-size:11px;opacity:0.7;margin-bottom:4px;">예상 총 잔액</div>
+        <div style="font-size:18px;font-weight:900;color:#FDE047;">${fmt(Math.round(simData.reduce((s,x)=>s+Number(x.expectedRevenue),0) + cash - loan))}원</div>
+        </div>
+        </div>
+        </div>` : ''}
+        </div>
         </div>`;
 
     } catch(e) {
         console.error('포트폴리오 로드 실패', e);
         showToast('포트폴리오 조회에 실패했습니다.');
     }
-}
-
-function calcSimulator() {
-    const select = document.getElementById('simStock');
-    const priceEl = document.getElementById('simPrice');
-    const qtyEl = document.getElementById('simQty');
-    const resultEl = document.getElementById('simResult');
-    if (!select || !priceEl || !qtyEl || !resultEl) return;
-
-    const opt = select.options[select.selectedIndex];
-    if (!opt || !opt.value) { resultEl.innerHTML = ''; return; }
-
-    const avgPrice = Number(opt.dataset.avg);
-    const targetPrice = Number(priceEl.value);
-    const qty = Number(qtyEl.value);
-
-    if (!targetPrice || !qty) { resultEl.innerHTML = ''; return; }
-
-    const revenue = targetPrice * qty;
-    const cost = avgPrice * qty;
-    const profit = revenue - cost;
-    const rate = cost > 0 ? (profit / cost * 100) : 0;
-
-    resultEl.innerHTML = `
-    <div style="background:var(--bg);border-radius:10px;padding:16px;display:grid;grid-template-columns:repeat(4,1fr);gap:12px;text-align:center;">
-    <div><div style="font-size:11px;color:var(--gray);margin-bottom:4px;">매도 금액</div><div style="font-weight:700;">${fmt(revenue)}원</div></div>
-    <div><div style="font-size:11px;color:var(--gray);margin-bottom:4px;">투자 원금</div><div style="font-weight:700;">${fmt(Math.round(cost))}원</div></div>
-    <div><div style="font-size:11px;color:var(--gray);margin-bottom:4px;">예상 손익</div><div style="font-weight:700;" class="${profit>=0?'up':'down'}">${profit>=0?'+':''}${fmt(Math.round(profit))}원</div></div>
-    <div><div style="font-size:11px;color:var(--gray);margin-bottom:4px;">수익률</div><div style="font-weight:700;" class="${profit>=0?'up':'down'}">${rate>=0?'+':''}${rate.toFixed(2)}%</div></div>
-    </div>`;
 }
 
 function openPortfolioAdd() {
@@ -623,6 +633,121 @@ async function doUpdateAccount() {
         });
         if (res.ok) {
             showToast('계좌 정보가 저장되었습니다!');
+            await loadPortfolio();
+        }
+    } catch(e) { showToast('서버 오류가 발생했습니다.'); }
+}
+
+function openSimulatorAdd() {
+    const html = `<div class="card" style="max-width:480px;margin:0 auto;">
+    <div class="section-title mb16">🧮 시뮬레이터 종목 추가</div>
+    <div class="form-group"><div class="label">종목 검색</div>
+    <div class="search-bar"><input id="simStockInput" placeholder="종목명 입력" oninput="searchSimStock()"><button onclick="searchSimStock()">🔍</button></div>
+    <div id="simStockResults"></div>
+    <input type="hidden" id="simStockCd">
+    <input type="hidden" id="simStockNm">
+    </div>
+    <div class="form-group"><div class="label">평단가 (원)</div>
+    <input class="input" id="simAvgPrice" type="number" placeholder="평균 매수가 입력"></div>
+    <div class="form-group"><div class="label">수량 (주)</div>
+    <input class="input" id="simQtyInput" type="number" placeholder="보유 수량 입력"></div>
+    <div class="form-group"><div class="label">목표 매도가 (원)</div>
+    <input class="input" id="simTargetPrice" type="number" placeholder="목표 매도가 입력"></div>
+    <div style="display:flex;gap:8px;">
+    <button class="btn btn-primary btn-full" onclick="doAddSimulator()">추가</button>
+    <button class="btn btn-secondary btn-full" onclick="loadPortfolio()">취소</button>
+    </div></div>`;
+    document.getElementById('portfolioContent').innerHTML = html;
+}
+
+async function searchSimStock() {
+    const q = (document.getElementById('simStockInput')?.value || '').trim();
+    const container = document.getElementById('simStockResults');
+    if (!q || !container) return;
+    try {
+        const res = await fetch(`/api/stock/search?query=${encodeURIComponent(q)}&type=name`);
+        const results = await res.json();
+        if (!results.length) { container.innerHTML = ''; return; }
+        container.innerHTML = `<div class="card" style="padding:8px 0;margin-top:4px;">${results.slice(0,5).map(s=>`
+            <div style="padding:10px 16px;cursor:pointer;font-size:13px;display:flex;gap:10px;" onclick="selectSimStock('${s.stockCd}','${s.stockNm}')">
+            <span style="font-weight:600;">${s.stockNm}</span><span style="color:var(--gray);font-size:11px;">${s.stockCd}</span>
+            </div>`).join('')}</div>`;
+    } catch(e) { container.innerHTML = ''; }
+}
+
+function selectSimStock(code, name) {
+    document.getElementById('simStockInput').value = name;
+    document.getElementById('simStockCd').value = code;
+    document.getElementById('simStockNm').value = name;
+    document.getElementById('simStockResults').innerHTML = '';
+}
+
+async function doAddSimulator() {
+    const code = document.getElementById('simStockCd').value;
+    const name = document.getElementById('simStockNm').value;
+    const avgPrice = document.getElementById('simAvgPrice').value;
+    const qty = document.getElementById('simQtyInput').value;
+    const targetPrice = document.getElementById('simTargetPrice').value;
+    const token = localStorage.getItem('jwt');
+
+    if (!code || !avgPrice || !qty || !targetPrice) { showToast('모든 항목을 입력해 주세요.'); return; }
+
+    try {
+        const res = await fetch('/api/simulator', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token },
+            body: JSON.stringify({ stockCd: code, stockNm: name, avgPrice: parseInt(avgPrice), quantity: parseInt(qty), targetPrice: parseInt(targetPrice) })
+        });
+        if (res.ok) {
+            showToast('시뮬레이터에 추가되었습니다! 🧮');
+            await loadPortfolio();
+        } else { showToast('추가에 실패했습니다.'); }
+    } catch(e) { showToast('서버 오류가 발생했습니다.'); }
+}
+
+function openSimulatorEdit(simId, avgPrice, quantity, targetPrice) {
+    const html = `<div class="card" style="max-width:480px;margin:0 auto;">
+    <div class="section-title mb16">🧮 시뮬레이터 수정</div>
+    <div class="form-group"><div class="label">평단가 (원)</div>
+    <input class="input" id="editSimAvg" type="number" value="${avgPrice}"></div>
+    <div class="form-group"><div class="label">수량 (주)</div>
+    <input class="input" id="editSimQty" type="number" value="${quantity}"></div>
+    <div class="form-group"><div class="label">목표 매도가 (원)</div>
+    <input class="input" id="editSimTarget" type="number" value="${targetPrice}"></div>
+    <div style="display:flex;gap:8px;">
+    <button class="btn btn-primary btn-full" onclick="doUpdateSimulator(${simId})">수정 완료</button>
+    <button class="btn btn-secondary btn-full" onclick="loadPortfolio()">취소</button>
+    </div></div>`;
+    document.getElementById('portfolioContent').innerHTML = html;
+}
+
+async function doUpdateSimulator(simId) {
+    const avgPrice = document.getElementById('editSimAvg').value;
+    const qty = document.getElementById('editSimQty').value;
+    const targetPrice = document.getElementById('editSimTarget').value;
+    const token = localStorage.getItem('jwt');
+    try {
+        const res = await fetch(`/api/simulator/${simId}`, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token },
+            body: JSON.stringify({ avgPrice: parseInt(avgPrice), quantity: parseInt(qty), targetPrice: parseInt(targetPrice) })
+        });
+        if (res.ok) {
+            showToast('수정되었습니다!');
+            await loadPortfolio();
+        } else { showToast('수정에 실패했습니다.'); }
+    } catch(e) { showToast('서버 오류가 발생했습니다.'); }
+}
+
+async function deleteSimulator(simId) {
+    const token = localStorage.getItem('jwt');
+    try {
+        const res = await fetch(`/api/simulator/${simId}`, {
+            method: 'DELETE',
+            headers: { 'Authorization': 'Bearer ' + token }
+        });
+        if (res.ok) {
+            showToast('삭제되었습니다.');
             await loadPortfolio();
         }
     } catch(e) { showToast('서버 오류가 발생했습니다.'); }
