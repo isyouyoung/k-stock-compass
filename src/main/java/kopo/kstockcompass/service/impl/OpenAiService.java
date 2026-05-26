@@ -107,34 +107,34 @@ public class OpenAiService implements IOpenAiService {
     @Override
     public String chat(String stockName, FinancialDTO fin, String userMessage) {
         try {
-            String context = fin != null ? String.format("""
-                [%s 재무 정보 (%s년)]
+            String debtStr = fin != null && fin.getDebtRatio() != null ? fin.getDebtRatio() + "%" : "N/A";
+            String marginStr = fin != null && fin.getOperatingMargin() != null ? fin.getOperatingMargin() + "%" : "N/A";
+            String currentStr = fin != null && fin.getCurrentRatio() != null ? fin.getCurrentRatio() + "%" : "N/A";
+            String bsnsYear = fin != null ? fin.getBsnsYear() : "N/A";
+
+            String prompt = String.format("""
+                당신은 %s의 전문 재무/기업 분석 AI 에이전트입니다.
+                
+                [답변 규칙]
+                1. 제공된 실제 재무 데이터를 최우선으로 사용하세요.
+                2. 사용자가 기업의 제품, 사업, 공장, 기술력 등을 질문하면,
+                   당신이 알고 있는 일반적인 기업 정보를 활용해 답변하세요.
+                3. 재무 데이터에 없는 내용은 '일반적으로 알려진 정보 기준'이라고 자연스럽게 설명하세요.
+                4. 모르는 내용은 추측하지 말고 솔직하게 답하세요.
+                5. 답변은 너무 딱딱하지 않게, 실제 애널리스트처럼 자연스럽게 설명하세요.
+                6. 답변 길이는 3~6문장 정도로 간결하게 작성하세요.
+                
+                [실제 재무 데이터]
+                - 기업명: %s
+                - 사업연도: %s년
                 - 부채비율: %s
                 - 영업이익률: %s
                 - 유동비율: %s
-                - 매출액: %s원
-                - 영업이익: %s원
-                - 당기순이익: %s원
-                """,
-                    stockName, fin.getBsnsYear(),
-                    fin.getDebtRatio() != null ? fin.getDebtRatio() + "%" : "N/A",
-                    fin.getOperatingMargin() != null ? fin.getOperatingMargin() + "%" : "N/A",
-                    fin.getCurrentRatio() != null ? fin.getCurrentRatio() + "%" : "N/A",
-                    fin.getRevenue() != null ? fin.getRevenue() : "N/A",
-                    fin.getOperatingProfit() != null ? fin.getOperatingProfit() : "N/A",
-                    fin.getNetIncome() != null ? fin.getNetIncome() : "N/A"
-            ) : "";
-
-            String prompt = String.format("""
-                당신은 한국 주식 재무 분석 전문가입니다.
+                
+                사용자 질문:
                 %s
-                
-                사용자 질문: %s
-                
-                위 재무 데이터를 바탕으로 친절하고 전문적으로 답변해주세요.
-                답변은 3~5문장으로 간결하게 해주세요.
-                투자 조언은 제공하지 말고 재무 분석 정보만 제공하세요.
-                """, context, userMessage);
+                """,
+                    stockName, stockName, bsnsYear, debtStr, marginStr, currentStr, userMessage);
 
             Map<String, Object> requestBody = Map.of(
                     "contents", List.of(
