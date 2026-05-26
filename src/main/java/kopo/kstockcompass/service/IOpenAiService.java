@@ -7,4 +7,6 @@ public interface IOpenAiService {
     AiAnalysisResult analyze(String stockName, FinancialDTO fin);
 
     record AiAnalysisResult(int score, String summary) {}
+
+    String chat(String stockName, FinancialDTO fin, String userMessage);
 }

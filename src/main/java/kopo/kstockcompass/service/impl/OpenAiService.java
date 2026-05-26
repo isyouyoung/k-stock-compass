@@ -9,6 +9,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.web.reactive.function.client.WebClient;
+import reactor.core.publisher.Mono;
 
 import java.util.List;
 import java.util.Map;
@@ -18,8 +19,8 @@ import java.util.Map;
 @RequiredArgsConstructor
 public class OpenAiService implements IOpenAiService {
 
-    @Value("${openai.api.key}")
-    private String openAiKey;
+    @Value("${gemini.api.key}")
+    private String geminiApiKey;
 
     private final WebClient webClient;
     private final ObjectMapper objectMapper;
@@ -30,26 +31,32 @@ public class OpenAiService implements IOpenAiService {
             String prompt = buildPrompt(stockName, fin);
 
             Map<String, Object> requestBody = Map.of(
-                    "model", "gpt-4o-mini",
-                    "max_tokens", 500,
-                    "messages", List.of(
-                            Map.of("role", "system", "content",
-                                    "당신은 한국 주식 재무 분석 전문가입니다. 재무 데이터를 분석하여 JSON 형식으로만 응답하세요."),
-                            Map.of("role", "user", "content", prompt)
+                    "contents", List.of(
+                            Map.of("parts", List.of(
+                                    Map.of("text", prompt)
+                            ))
                     )
             );
 
             String response = webClient.post()
-                    .uri("https://api.openai.com/v1/chat/completions")
-                    .header("Authorization", "Bearer " + openAiKey)
+                    .uri("https://generativelanguage.googleapis.com/v1/models/gemini-2.5-flash:generateContent?key=" + geminiApiKey)
                     .header("Content-Type", "application/json")
                     .bodyValue(requestBody)
                     .retrieve()
+                    // 에러 발생 시 구글이 보낸 응답 바디를 로그로 찍음
+                    .onStatus(status -> status.isError(), clientResponse ->
+                            clientResponse.bodyToMono(String.class).flatMap(errorBody -> {
+                                log.error("🔴 구글 API 에러 응답 바디: {}", errorBody);
+                                return Mono.error(new RuntimeException("Google API Error: " + errorBody));
+                            })
+                    )
                     .bodyToMono(String.class)
                     .block();
 
             JsonNode root = objectMapper.readTree(response);
-            String content = root.path("choices").get(0).path("message").path("content").asText();
+            String content = root.path("candidates").get(0)
+                    .path("content").path("parts").get(0)
+                    .path("text").asText();
 
             // JSON 파싱
             content = content.replaceAll("```json", "").replaceAll("```", "").trim();
@@ -62,8 +69,11 @@ public class OpenAiService implements IOpenAiService {
             return new AiAnalysisResult(score, summary);
 
         } catch (Exception e) {
-            log.error("AI 분석 실패: {}", e.getMessage());
-            return new AiAnalysisResult(3, "AI 분석 중 오류가 발생했습니다.");
+            // 이 부분을 아래와 같이 수정하세요!
+            log.error("AI 분석 중 진짜 에러 발생! 원인: ", e);
+
+            // 사용자에게 보여줄 메시지도 조금 더 친절하게 바꿀 수 있습니다.
+            return new AiAnalysisResult(3, "현재 AI 분석 요청이 많아 기본 분석 결과를 표시합니다. 잠시 후 다시 시도해주세요.");
         }
     }
 
@@ -92,5 +102,70 @@ public class OpenAiService implements IOpenAiService {
                 {"score": 점수, "summary": "3~4문장 분석 요약"}
                 """,
                 stockName, fin.getBsnsYear(), debtStr, marginStr, currentStr);
+    }
+
+    @Override
+    public String chat(String stockName, FinancialDTO fin, String userMessage) {
+        try {
+            String context = fin != null ? String.format("""
+                [%s 재무 정보 (%s년)]
+                - 부채비율: %s
+                - 영업이익률: %s
+                - 유동비율: %s
+                - 매출액: %s원
+                - 영업이익: %s원
+                - 당기순이익: %s원
+                """,
+                    stockName, fin.getBsnsYear(),
+                    fin.getDebtRatio() != null ? fin.getDebtRatio() + "%" : "N/A",
+                    fin.getOperatingMargin() != null ? fin.getOperatingMargin() + "%" : "N/A",
+                    fin.getCurrentRatio() != null ? fin.getCurrentRatio() + "%" : "N/A",
+                    fin.getRevenue() != null ? fin.getRevenue() : "N/A",
+                    fin.getOperatingProfit() != null ? fin.getOperatingProfit() : "N/A",
+                    fin.getNetIncome() != null ? fin.getNetIncome() : "N/A"
+            ) : "";
+
+            String prompt = String.format("""
+                당신은 한국 주식 재무 분석 전문가입니다.
+                %s
+                
+                사용자 질문: %s
+                
+                위 재무 데이터를 바탕으로 친절하고 전문적으로 답변해주세요.
+                답변은 3~5문장으로 간결하게 해주세요.
+                투자 조언은 제공하지 말고 재무 분석 정보만 제공하세요.
+                """, context, userMessage);
+
+            Map<String, Object> requestBody = Map.of(
+                    "contents", List.of(
+                            Map.of("parts", List.of(
+                                    Map.of("text", prompt)
+                            ))
+                    )
+            );
+
+            String response = webClient.post()
+                    .uri("https://generativelanguage.googleapis.com/v1/models/gemini-2.5-flash:generateContent?key=" + geminiApiKey)
+                    .header("Content-Type", "application/json")
+                    .bodyValue(requestBody)
+                    .retrieve()
+                    .onStatus(status -> status.isError(), clientResponse ->
+                            clientResponse.bodyToMono(String.class).flatMap(errorBody -> {
+                                log.error("Gemini 채팅 에러: {}", errorBody);
+                                return Mono.error(new RuntimeException("Gemini Error: " + errorBody));
+                            })
+                    )
+                    .bodyToMono(String.class)
+                    .block();
+
+            JsonNode root = objectMapper.readTree(response);
+            return root.path("candidates").get(0)
+                    .path("content").path("parts").get(0)
+                    .path("text").asText("답변을 생성할 수 없습니다.");
+
+        } catch (Exception e) {
+            log.error("채팅 실패: {}", e.getMessage());
+            return "죄송합니다. 현재 AI 응답이 어렵습니다. 잠시 후 다시 시도해주세요.";
+        }
     }
 }
