@@ -224,6 +224,13 @@ async function loadStockDetail(stockCode) {
         const isFav = state.favorites.some(f => f.code === s.code);
         const tab = state.detailTab || 'info';
 
+        // AI 탭일 때만 Gemini 호출
+        let ai = null;
+        if (tab === 'ai') {
+            const aiRes = await fetch(`/api/ai/signal/${stockCode}?stockName=${encodeURIComponent(s.name)}`);
+            if (aiRes.ok) ai = await aiRes.json();
+        }
+
         document.getElementById('mainContent').innerHTML = `
         <div class="detail-header">
         <div><div class="detail-name">${s.name}</div><div class="detail-meta">${s.code} &nbsp;|&nbsp; <span class="badge badge-${s.market.toLowerCase()}">${s.market}</span></div></div>
@@ -236,7 +243,7 @@ async function loadStockDetail(stockCode) {
         <div class="inner-tab ${tab==='ai'?'active':''}" onclick="navigate('stock_detail',{currentStock:'${s.code}',detailTab:'ai'})">AI 신호등</div>
         </div>
         <div class="page-wrap">
-        ${tab==='info'?detailInfo(s,isFav,fin):detailAI(s)}
+        ${tab==='info'?detailInfo(s,isFav,fin):detailAI(s,ai)}
         </div>`;
 
     } catch(e) {
@@ -311,35 +318,46 @@ function detailInfo(s,isFav,fin){return `
     : `<div class="notice btn-full" style="text-align:center;">로그인 후 관심종목 추가 및 알림 설정이 가능합니다. <span style="color:var(--blue);cursor:pointer;font-weight:600;" onclick="navigate('login')">로그인 →</span></div>`}
         </div>`;}
 
-function detailAI(s){
+function detailAI(s, ai) {
     if(!state._aiMessages) state._aiMessages={};
     if(!state._aiMessages[s.code]) state._aiMessages[s.code]=[
         {role:'ai',text:`안녕하세요! ${s.name} 재무 분석 AI입니다. 궁금한 점을 질문해 주세요 😊`}
     ];
     const msgs=state._aiMessages[s.code];
+
+    const score = ai ? ai.score : 0;
+    const summary = ai ? ai.summary : '로딩 중...';
+
+    const signals = [
+        ['#DC2626','1점','매우위험'],
+        ['#F97316','2점','위험'],
+        ['#EAB308','3점','보통'],
+        ['#22C55E','4점','양호'],
+        ['#16A34A','5점','매우안전']
+    ];
+    const scoreLabels = ['','매우위험','위험','보통','양호','매우안전'];
+
     return `
         <div class="card mb16">
         <div class="flex flex-between flex-center mb12">
         <div><div class="section-title" style="margin-bottom:2px;">AI 재무 신호등</div>
-        <div style="font-size:12px;color:var(--gray);">OpenAI 기반 재무 안정성 분석</div></div>
+        <div style="font-size:12px;color:var(--gray);">Gemini AI 기반 재무 안정성 분석</div></div>
         </div>
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:24px;align-items:center;">
         <div>
         <div class="signal-wrap mb12">
-        ${[['#DC2626','1점','매우위험',false],['#F97316','2점','위험',false],['#EAB308','3점','보통',false],['#22C55E','4점','양호',true],['#16A34A','5점','매우안전',false]].map(([c,sc,lb,act])=>`
-        <div><div class="signal-dot ${act?'big':'small'}" style="background:${act?c:'#D1D5DB'};">${sc}</div>
-        <div class="signal-label" style="color:${act?'var(--dark)':'var(--gray)'};font-weight:${act?'700':'400'};">${lb}</div></div>`).join('')}
+        ${signals.map(([c,sc,lb],i)=>{
+        const act = (i+1) === score;
+        return `<div><div class="signal-dot ${act?'big':'small'}" style="background:${act?c:'#D1D5DB'};">${sc}</div>
+            <div class="signal-label" style="color:${act?'var(--dark)':'var(--gray)'};font-weight:${act?'700':'400'};">${lb}</div></div>`;
+    }).join('')}
         </div>
-        <div class="success-bar" style="font-size:13px;font-weight:600;">종합 평가: 양호 (4점/5점) — 재무 안정성이 우수한 기업입니다</div>
+        ${score > 0 ? `<div class="success-bar" style="font-size:13px;font-weight:600;">종합 평가: ${scoreLabels[score]} (${score}점/5점)</div>` : ''}
         </div>
         <div style="background:var(--bg);border-radius:10px;padding:20px;height:100%;box-sizing:border-box;">
         <div style="font-size:13px;font-weight:700;color:var(--navy);margin-bottom:10px;">📋 재무 분석 요약</div>
-        <div style="font-size:13px;color:var(--dark);line-height:1.9;">
-        최근 3개년(2022~2024) 기준으로 <strong>부채비율이 꾸준히 감소</strong>하는 추세이며, 재무 건전성이 개선되고 있습니다.<br><br>
-        영업이익률은 전년 대비 <strong>2.5%p 상승</strong>하여 수익성이 향상되고 있는 상황이며, 유동비율 218%로 단기 채무 상환 능력 또한 우수한 수준을 유지하고 있습니다.<br><br>
-        전반적으로 <strong>안정적인 재무 구조</strong>를 유지하면서 성장세를 이어가고 있어 긍정적으로 평가됩니다.
-        </div>
-        <div style="font-size:11px;color:var(--gray);margin-top:12px;">분석 기준: 2026.03.24 · DART 공시 기반 · Redis 캐싱 적용</div>
+        <div style="font-size:13px;color:var(--dark);line-height:1.9;">${summary}</div>
+        <div style="font-size:11px;color:var(--gray);margin-top:12px;">분석 기준: DART 공시 기반 · Gemini AI 분석</div>
         </div></div></div>
         <div class="card" style="display:flex;flex-direction:column;height:420px;">
         <div class="section-title mb12">💬 AI 에이전트에게 질문하기</div>
@@ -354,10 +372,11 @@ function detailAI(s){
         <input class="input" id="aiInput_${s.code}" placeholder="${s.name}에 대해 궁금한 점을 입력하세요..." style="flex:1;" onkeydown="if(event.key==='Enter')sendAiMsg('${s.code}','${s.name}')">
         <button class="btn btn-primary" onclick="sendAiMsg('${s.code}','${s.name}')">전송</button>
         </div>
-        <div style="font-size:11px;color:var(--gray);margin-top:6px;">※ AI 응답은 데모 버전입니다.</div>
-        </div>`;}
+        <div style="font-size:11px;color:var(--gray);margin-top:6px;">분석은 Gemini AI 기반이며 투자 조언이 아닙니다.</div>
+        </div>`;
+}
 
-function sendAiMsg(code, name){
+async function sendAiMsg(code, name){
     const input=document.getElementById(`aiInput_${code}`);
     if(!input) return;
     const text=input.value.trim();
@@ -366,17 +385,36 @@ function sendAiMsg(code, name){
     if(!state._aiMessages[code]) state._aiMessages[code]=[];
     state._aiMessages[code].push({role:'user',text});
     input.value='';
-    const responses=[
-        `${name}의 재무 안정성은 전반적으로 양호한 수준입니다.`,
-        `최근 ${name}의 영업이익률은 15.3%로 업종 평균 대비 높은 편입니다.`,
-        `${name}의 ROE는 12.5%로 적정 수준입니다.`,
-        `DART 공시 데이터 기준으로 ${name}의 재무제표를 분석한 결과, 건전한 재무 구조를 유지하고 있습니다.`,
-    ];
-    const reply=responses[Math.floor(Math.random()*responses.length)];
-    setTimeout(()=>{
-        state._aiMessages[code].push({role:'ai',text:reply});
-        navigate('stock_detail',{currentStock:code,detailTab:'ai'});
-    },800);
+
+    // 로딩 메시지
+    state._aiMessages[code].push({role:'ai',text:'분석 중... ⏳'});
+    navigate('stock_detail',{currentStock:code,detailTab:'ai'});
+
+    try {
+        const token = localStorage.getItem('jwt');
+        const res = await fetch(`/api/ai/chat/${code}?stockName=${encodeURIComponent(name)}`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                ...(token ? {'Authorization': 'Bearer ' + token} : {})
+            },
+            body: JSON.stringify({ message: text })
+        });
+
+        // 로딩 메시지 제거
+        state._aiMessages[code] = state._aiMessages[code].filter(m => m.text !== '분석 중... ⏳');
+
+        if (res.ok) {
+            const data = await res.json();
+            state._aiMessages[code].push({role:'ai', text: data.reply});
+        } else {
+            state._aiMessages[code].push({role:'ai', text:'죄송합니다. 답변을 생성하는 중 오류가 발생했습니다.'});
+        }
+    } catch(e) {
+        state._aiMessages[code] = state._aiMessages[code].filter(m => m.text !== '분석 중... ⏳');
+        state._aiMessages[code].push({role:'ai', text:'네트워크 오류가 발생했습니다.'});
+    }
+
     navigate('stock_detail',{currentStock:code,detailTab:'ai'});
 }
 
