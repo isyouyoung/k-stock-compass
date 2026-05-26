@@ -32,6 +32,15 @@ function closeModal(id){document.getElementById(id).classList.remove('open');}
 // 라우터
 // ══════════════════════════════════════
 function navigate(page, params={}) {
+    // 페이지 이동 시 기존 인터벌 전부 정리
+    if(window._stockDetailInterval) {
+        clearInterval(window._stockDetailInterval);
+        window._stockDetailInterval = null;
+    }
+    if(window._mainFavInterval) {
+        clearInterval(window._mainFavInterval);
+        window._mainFavInterval = null;
+    }
     state.currentPage = page;
     Object.assign(state, params);
     // 현재 페이지 저장 (새로고침 복원용)

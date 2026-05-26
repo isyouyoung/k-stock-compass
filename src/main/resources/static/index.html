@@ -270,6 +270,10 @@
     if(page==='stock_search') initSearch();
     if(page==='alert_add'||page==='alert_edit') initAlertForm();
     if(page==='signup') validateSignup();
+    // 메인 페이지면 관심종목 실시간 갱신 시작
+    if(page === 'main' && state.loggedIn && state.favorites.length > 0) {
+      setTimeout(() => startMainFavInterval(), 100);
+    }
   }
 
   function pgMain(){return `<div class="page-wrap">
@@ -927,6 +931,50 @@
     } catch (e) {
       console.error('알림 로드 실패', e);
     }
+  }
+
+  function startMainFavInterval() {
+    if(window._mainFavInterval) clearInterval(window._mainFavInterval);
+    window._mainFavInterval = setInterval(async () => {
+      if(state.currentPage !== 'main') {
+        clearInterval(window._mainFavInterval);
+        window._mainFavInterval = null;
+        return;
+      }
+      // 관심종목 최대 5개 가격 갱신
+      const favs = state.favorites.slice(0, 5);
+      const results = await Promise.all(
+              favs.map(f => fetch(`/api/stock/detail?stockCode=${f.code}`)
+                      .then(r => r.json())
+                      .catch(() => null))
+      );
+      results.forEach((d, i) => {
+        if (!d) return;
+        state.favorites[i].price = Number(d.clpr);
+        state.favorites[i].change = Number(d.vs);
+        state.favorites[i].pct = Number(d.fltRt);
+      });
+      // DOM 직접 업데이트 (재렌더링 없이)
+      favs.forEach((f, i) => {
+        if (!results[i]) return;
+        const price = state.favorites[i].price;
+        const change = state.favorites[i].change;
+        const pct = state.favorites[i].pct;
+        const rows = document.querySelectorAll('.stock-row');
+        // 해당 종목 row 찾아서 가격만 업데이트
+        rows.forEach(row => {
+          if(row.textContent.includes(f.code)) {
+            const sp = row.querySelector('.sp');
+            const sch = row.querySelector('.sch');
+            if(sp) sp.textContent = fmt(price) + '원';
+            if(sch) {
+              sch.className = `sch ${change>=0?'up':'down'}`;
+              sch.textContent = `${change>=0?'▲ +':'▼ -'}${fmt(Math.abs(change))} (${pct>=0?'+':''}${pct.toFixed(2)}%)`;
+            }
+          }
+        });
+      });
+    }, 1000);
   }
 
 </script>
