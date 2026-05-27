@@ -1017,7 +1017,7 @@ async function pgAssetChart() {
         <div class="section-title" style="margin-bottom:0;">총 자산 변동 추이</div>
         <div style="display:flex;gap:8px;">
         <button id="tabRealtime" class="btn btn-primary btn-sm" onclick="switchChartTab('realtime')">실시간</button>
-        <button id="tabSampled" class="btn btn-outline btn-sm" onclick="switchChartTab('sampled')">일별</button>
+        <button id="tabSampled" class="btn btn-outline btn-sm" onclick="switchChartTab('sampled')">1분 평균</button>
         </div>
         </div>
         <canvas id="assetChart" style="width:100%;height:300px;"></canvas>
