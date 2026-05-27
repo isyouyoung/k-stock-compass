@@ -57,6 +57,14 @@ function navigate(page, params={}) {
         clearInterval(window._portfolioInterval);
         window._portfolioInterval = null;
     }
+    if(window._assetSaveInterval) {
+        clearInterval(window._assetSaveInterval);
+        window._assetSaveInterval = null;
+    }
+    if(window._assetChartInterval) {
+        clearInterval(window._assetChartInterval);
+        window._assetChartInterval = null;
+    }
     state.currentPage = page;
     Object.assign(state, params);
     // 현재 페이지 저장 (새로고침 복원용)

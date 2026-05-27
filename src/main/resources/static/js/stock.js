@@ -691,6 +691,40 @@ async function loadPortfolio() {
             }, 1000);
         }
 
+        // 10초마다 총 자산 저장 (차트 그리기용)
+        if(window._assetSaveInterval) clearInterval(window._assetSaveInterval);
+        window._assetSaveInterval = setInterval(async () => {
+            if(state.currentPage !== 'portfolio') {
+                clearInterval(window._assetSaveInterval);
+                window._assetSaveInterval = null;
+                return;
+            }
+            try {
+                const token = localStorage.getItem('jwt');
+                const userEmail = state.user?.email;
+                if(!userEmail) return;
+
+                // 현재 총 자산 계산 (평가금 + 예수금 - 대출금)
+                const currentTotalEval = portfolio.reduce((sum, p) => {
+                    const priceEl = document.getElementById(`port-price-${p.stockCd}`);
+                    const currentPrice = priceEl ? Number(priceEl.textContent.replace(/[^0-9]/g, '')) : Number(p.currentPrice);
+                    return sum + currentPrice * Number(p.quantity);
+                }, 0);
+                const totalAsset = Math.round(currentTotalEval + cash - loan);
+
+                await fetch('/api/asset-history', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': 'Bearer ' + token
+                    },
+                    body: JSON.stringify({ userEmail, totalAsset })
+                });
+            } catch(e) {
+                console.error('자산 저장 실패', e);
+            }
+        }, 3000); // 차트 몇초마다 그릴건지
+
     } catch(e) {
         console.error('포트폴리오 로드 실패', e);
         showToast('포트폴리오 조회에 실패했습니다.');
@@ -927,4 +961,231 @@ function formatFinAmt(val) {
     if (n >= 1000000000000) return sign + (n / 1000000000000).toFixed(1) + '조원';
     if (n >= 100000000) return sign + (n / 100000000).toFixed(0) + '억원';
     return sign + fmt(n) + '원';
+}
+
+async function pgAssetChart() {
+    document.getElementById('mainContent').innerHTML = `<div class="page-wrap">
+        <div class="page-header"><div class="page-title">📈 자산 변동 그래프</div></div>
+        
+        <!-- 주요 지표 -->
+        <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:16px;margin-bottom:16px;">
+        <div class="card" style="text-align:center;">
+        <div style="font-size:12px;color:var(--gray);margin-bottom:8px;">현재 총 예상 자산</div>
+        <div id="currentAssetDisplay" style="font-size:24px;font-weight:900;color:var(--navy);">조회 중...</div>
+        </div>
+        <div class="card" style="text-align:center;">
+        <div style="font-size:12px;color:var(--gray);margin-bottom:8px;">금일 최고 자산</div>
+        <div id="todayHighDisplay" style="font-size:24px;font-weight:900;color:var(--green);">조회 중...</div>
+        </div>
+        <div class="card" style="text-align:center;">
+        <div style="font-size:12px;color:var(--gray);margin-bottom:8px;">금일 최저 자산</div>
+        <div id="todayLowDisplay" style="font-size:24px;font-weight:900;color:var(--red-err);">조회 중...</div>
+        </div>
+        </div>
+
+        <!-- 상세 통계 -->
+        <div class="card mb16">
+        <div class="flex flex-between flex-center" onclick="toggleAssetStats()" style="cursor:pointer;">
+        <div class="section-title" style="margin-bottom:0;">📊 상세 통계</div>
+        <span id="assetStatsToggle" style="font-size:12px;color:var(--blue);">▼ 펼치기</span>
+        </div>
+        <div id="assetStatsContent" style="display:none;margin-top:16px;">
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+        <div class="card" style="background:var(--bg);">
+        <div style="font-size:11px;color:var(--gray);margin-bottom:4px;">1주일 최고 자산</div>
+        <div id="weekHighDisplay" style="font-size:16px;font-weight:700;color:var(--green);">-</div>
+        </div>
+        <div class="card" style="background:var(--bg);">
+        <div style="font-size:11px;color:var(--gray);margin-bottom:4px;">1주일 최저 자산</div>
+        <div id="weekLowDisplay" style="font-size:16px;font-weight:700;color:var(--red-err);">-</div>
+        </div>
+        <div class="card" style="background:var(--bg);">
+        <div style="font-size:11px;color:var(--gray);margin-bottom:4px;">1년 최고 자산</div>
+        <div id="yearHighDisplay" style="font-size:16px;font-weight:700;color:var(--green);">-</div>
+        </div>
+        <div class="card" style="background:var(--bg);">
+        <div style="font-size:11px;color:var(--gray);margin-bottom:4px;">1년 최저 자산</div>
+        <div id="yearLowDisplay" style="font-size:16px;font-weight:700;color:var(--red-err);">-</div>
+        </div>
+        </div>
+        </div>
+        </div>
+
+        <!-- 차트 -->
+        <div class="card">
+        <div class="flex flex-between flex-center mb12">
+        <div class="section-title" style="margin-bottom:0;">총 자산 변동 추이</div>
+        <div style="display:flex;gap:8px;">
+        <button id="tabRealtime" class="btn btn-primary btn-sm" onclick="switchChartTab('realtime')">실시간</button>
+        <button id="tabSampled" class="btn btn-outline btn-sm" onclick="switchChartTab('sampled')">일별</button>
+        </div>
+        </div>
+        <canvas id="assetChart" style="width:100%;height:300px;"></canvas>
+        <div id="assetChartEmpty" style="display:none;text-align:center;padding:60px;color:var(--gray);">
+        <div style="font-size:36px;margin-bottom:12px;">📊</div>
+        <div>아직 데이터가 없습니다. 포트폴리오 페이지를 방문하면 자동으로 기록됩니다.</div>
+        </div>
+        </div>
+        </div>`;
+
+    const token = localStorage.getItem('jwt');
+    const userEmail = state.user?.email;
+    if (!userEmail) return;
+
+    const updateStats = (data) => {
+        if(!data || data.length === 0) return;
+        const now = new Date();
+        const todayStr = now.toISOString().slice(0, 10);
+        const weekAgo = new Date(now - 7 * 24 * 60 * 60 * 1000);
+        const yearAgo = new Date(now - 365 * 24 * 60 * 60 * 1000);
+
+        const todayData = data.filter(d => d.regDt.startsWith(todayStr));
+        const weekData = data.filter(d => new Date(d.regDt) >= weekAgo);
+        const yearData = data.filter(d => new Date(d.regDt) >= yearAgo);
+
+        const latest = data[data.length - 1];
+        const set = (id, val) => {
+            const el = document.getElementById(id);
+            if(el && val !== null) el.textContent = fmt(val) + '원';
+        };
+        set('currentAssetDisplay', latest.totalAsset);
+        set('todayHighDisplay', todayData.length ? Math.max(...todayData.map(d => d.totalAsset)) : null);
+        set('todayLowDisplay', todayData.length ? Math.min(...todayData.map(d => d.totalAsset)) : null);
+        set('weekHighDisplay', weekData.length ? Math.max(...weekData.map(d => d.totalAsset)) : null);
+        set('weekLowDisplay', weekData.length ? Math.min(...weekData.map(d => d.totalAsset)) : null);
+        set('yearHighDisplay', yearData.length ? Math.max(...yearData.map(d => d.totalAsset)) : null);
+        set('yearLowDisplay', yearData.length ? Math.min(...yearData.map(d => d.totalAsset)) : null);
+    };
+
+    const sampleData = (data) => {
+        const grouped = {};
+        data.forEach(d => {
+            const key = d.regDt.substring(0, 16); // HH:mm 단위
+            if(!grouped[key]) grouped[key] = [];
+            grouped[key].push(d.totalAsset);
+        });
+        return Object.keys(grouped).sort().map(key => ({
+            regDt: key,
+            totalAsset: Math.round(grouped[key].reduce((a,b) => a+b, 0) / grouped[key].length)
+        }));
+    };
+
+    try {
+        const res = await fetch(`/api/asset-history/${encodeURIComponent(userEmail)}`, {
+            headers: { 'Authorization': 'Bearer ' + token }
+        });
+        const data = await res.json();
+
+        if (!data || data.length === 0) {
+            document.getElementById('assetChart').style.display = 'none';
+            document.getElementById('assetChartEmpty').style.display = 'block';
+            return;
+        }
+
+        updateStats(data);
+
+        const ctx = document.getElementById('assetChart').getContext('2d');
+        const chart = new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: data.map(d => d.regDt.substring(11, 19)),
+                datasets: [{
+                    label: '총 자산 (원)',
+                    data: data.map(d => d.totalAsset),
+                    borderColor: '#1E3A5F',
+                    backgroundColor: 'rgba(30,58,95,0.1)',
+                    borderWidth: 2,
+                    pointRadius: 2,
+                    tension: 0.3,
+                    fill: true
+                }]
+            },
+            options: {
+                responsive: true,
+                plugins: {
+                    legend: { display: false },
+                    tooltip: { callbacks: { label: ctx => fmt(ctx.parsed.y) + '원' } }
+                },
+                scales: {
+                    y: {
+                        ticks: {
+                            callback: val => {
+                                if(val >= 100000000) return (val/100000000).toFixed(1) + '억';
+                                if(val >= 10000000) return (val/10000000).toFixed(0) + '천만';
+                                if(val >= 10000) return (val/10000).toFixed(0) + '만';
+                                return fmt(val);
+                            }
+                        }
+                    }
+                }
+            }
+        });
+
+        // 탭 전환 함수
+        window._chartData = data;
+        window._chart = chart;
+        window.switchChartTab = (tab) => {
+            const realtimeBtn = document.getElementById('tabRealtime');
+            const sampledBtn = document.getElementById('tabSampled');
+            if(tab === 'realtime') {
+                realtimeBtn.className = 'btn btn-primary btn-sm';
+                sampledBtn.className = 'btn btn-outline btn-sm';
+                chart.data.labels = window._chartData.map(d => d.regDt.substring(11, 19));
+                chart.data.datasets[0].data = window._chartData.map(d => d.totalAsset);
+                chart.options.elements = { point: { radius: 2 } };
+            } else {
+                realtimeBtn.className = 'btn btn-outline btn-sm';
+                sampledBtn.className = 'btn btn-primary btn-sm';
+                const sampled = sampleData(window._chartData);
+                chart.data.labels = sampled.map(d => d.regDt.substring(11, 16));
+                chart.data.datasets[0].data = sampled.map(d => d.totalAsset);
+            }
+            chart.update();
+        };
+
+        if(window._assetChartInterval) clearInterval(window._assetChartInterval);
+        window._assetChartInterval = setInterval(async () => {
+            if(state.currentPage !== 'asset_chart') {
+                clearInterval(window._assetChartInterval);
+                window._assetChartInterval = null;
+                return;
+            }
+            try {
+                const res2 = await fetch(`/api/asset-history/${encodeURIComponent(userEmail)}`, {
+                    headers: { 'Authorization': 'Bearer ' + token }
+                });
+                const newData = await res2.json();
+                if(!newData || newData.length === 0) return;
+
+                updateStats(newData);
+                window._chartData = newData;
+
+                const realtimeBtn = document.getElementById('tabRealtime');
+                if(realtimeBtn && realtimeBtn.className.includes('btn-primary')) {
+                    chart.data.labels = newData.map(d => d.regDt.substring(11, 19));
+                    chart.data.datasets[0].data = newData.map(d => d.totalAsset);
+                } else {
+                    const sampled = sampleData(newData);
+                    chart.data.labels = sampled.map(d => d.regDt.substring(11, 16));
+                    chart.data.datasets[0].data = sampled.map(d => d.totalAsset);
+                }
+                chart.update();
+            } catch(e) {}
+        }, 3000);
+
+    } catch(e) {
+        console.error('자산 히스토리 조회 실패', e);
+    }
+}
+
+function toggleAssetStats() {
+    const content = document.getElementById('assetStatsContent');
+    const toggle = document.getElementById('assetStatsToggle');
+    if(content.style.display === 'none') {
+        content.style.display = 'block';
+        toggle.textContent = '▲ 접기';
+    } else {
+        content.style.display = 'none';
+        toggle.textContent = '▼ 펼치기';
+    }
 }

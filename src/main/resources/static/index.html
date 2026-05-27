@@ -5,6 +5,7 @@
   <meta name="viewport" content="width=1920">
   <title>K-Stock Compass</title>
   <link rel="stylesheet" href="/css/common.css">
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </head>
 <body>
 
@@ -253,7 +254,7 @@
       stock_detail: pgStockDetail, fav_list: pgFavList, alert_list: pgAlertList,
       alert_add: pgAlertAdd, alert_edit: pgAlertEdit, alert_log: pgAlertLog,
       mypage: pgMypage, mypage_pw: pgMypagePw, mypage_leave: pgMypageLeave,
-      portfolio: pgPortfolio,
+      portfolio: pgPortfolio, asset_chart: pgAssetChart,
       err_404: pgErr404, err_500: pgErr500,
     };
     const fn = pages[page] || pgMain;
@@ -267,6 +268,8 @@
       pgStockSearch();
     } else if(page === 'fav_list') {
       pgFavList();
+    } else if(page === 'asset_chart') {
+      pgAssetChart();
     } else {
       document.getElementById('mainContent').innerHTML = fn();
     }
@@ -602,6 +605,9 @@
         <div class="card" style="padding:8px 0;">
         <div class="nav-item" style="padding:16px 20px;font-size:13px;" onclick="navigate('portfolio')">
         <span class="nav-icon">💼</span>내 포트폴리오
+        </div>
+        <div class="nav-item" style="padding:16px 20px;font-size:13px;" onclick="navigate('asset_chart')">
+        <span class="nav-icon">📈</span>자산 변동 그래프
         </div>
         <div class="nav-item" style="padding:16px 20px;font-size:13px;" onclick="navigate('mypage_pw')">
         <span class="nav-icon">👤</span>회원정보 수정
