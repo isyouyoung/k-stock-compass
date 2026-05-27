@@ -1,26 +1,18 @@
 package kopo.kstockcompass.dto;
 
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Getter;
-import lombok.NoArgsConstructor;
+import com.fasterxml.jackson.annotation.JsonProperty;
 
-@Getter
-@Builder
-@NoArgsConstructor
-@AllArgsConstructor
-public class StockItemDTO {
-    private String srtnCd;   // 종목코드
-    private String itmsNm;   // 종목명
-    private String clpr;     // 종가
-    private String fltRt;    // 등락률
-    private String vs;       // 전일대비
-    private String mrktCtg;  // 시장구분 (코스피/코스닥)
-
-    private String oprc;     // 시가
-    private String hgpr;     // 고가
-    private String lwpr;     // 저가
-    private String acmlVol;  // 거래량
-    private String htsMktcap; // 시가총액
-    private String w52Hgpr;  // 52주 최고
-}
+public record StockItemDTO(
+        @JsonProperty("srtnCd") String srtnCd,
+        @JsonProperty("itmsNm") String itmsNm,
+        @JsonProperty("clpr") String clpr,
+        @JsonProperty("fltRt") String fltRt,
+        @JsonProperty("vs") String vs,
+        @JsonProperty("mrktCtg") String mrktCtg,
+        @JsonProperty("oprc") String oprc,
+        @JsonProperty("hgpr") String hgpr,
+        @JsonProperty("lwpr") String lwpr,
+        @JsonProperty("acmlVol") String acmlVol,
+        @JsonProperty("htsMktcap") String htsMktcap,
+        @JsonProperty("w52Hgpr") String w52Hgpr
+) {}
