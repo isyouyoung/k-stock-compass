@@ -34,13 +34,13 @@ public class FavoriteService implements IFavoriteService {
                             .map(StockEntity::getStockNm)
                             .orElse(fav.getStockCd());
 
-                    return FavoriteDTO.builder()
-                            .favId(fav.getFavId())
-                            .userEmail(fav.getUserEmail())
-                            .stockCd(fav.getStockCd())
-                            .stockNm(stockNm)
-                            .addDt(fav.getAddDt().format(DATE_FMT))
-                            .build();
+                    return new FavoriteDTO(
+                            fav.getFavId(),
+                            fav.getUserEmail(),
+                            fav.getStockCd(),
+                            stockNm,
+                            fav.getAddDt().format(DATE_FMT)
+                    );
                 })
                 .toList();
     }
@@ -52,9 +52,10 @@ public class FavoriteService implements IFavoriteService {
             throw new IllegalStateException("이미 관심종목에 추가된 종목입니다.");
         }
 
-        FavoriteEntity entity = new FavoriteEntity();
-        entity.setUserEmail(userEmail);
-        entity.setStockCd(stockCd);
+        FavoriteEntity entity = FavoriteEntity.builder()
+                .userEmail(userEmail)
+                .stockCd(stockCd)
+                .build();
         favoriteRepository.save(entity);
         log.info("관심종목 추가: {} - {}", userEmail, stockCd);
     }

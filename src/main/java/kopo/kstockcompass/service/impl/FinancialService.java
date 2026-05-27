@@ -137,20 +137,21 @@ public class FinancialService implements IFinancialService {
 
             log.info("DART 재무 조회 성공: {} ({}년)", stockCode, bsnsYear);
 
-            return FinancialDTO.builder()
-                    .stockCd(stockCode)
-                    .bsnsYear(bsnsYear)
-                    .currentAsset(currentAsset)
-                    .currentLiab(currentLiab)
-                    .totalLiab(totalLiab)
-                    .totalEquity(totalEquity)
-                    .revenue(revenue)
-                    .operatingProfit(operatingProfit)
-                    .netIncome(netIncome)
-                    .debtRatio(debtRatio)
-                    .operatingMargin(operatingMargin)
-                    .currentRatio(currentRatio)
-                    .build();
+            return new FinancialDTO(
+                    stockCode,
+                    null,               // corpName
+                    bsnsYear,
+                    currentAsset,
+                    currentLiab,
+                    totalLiab,
+                    totalEquity,
+                    revenue,
+                    operatingProfit,
+                    netIncome,
+                    debtRatio,
+                    operatingMargin,
+                    currentRatio
+            );
 
         } catch (Exception e) {
             log.error("DART 재무 조회 실패: {} - {}", stockCode, e.getMessage());
