@@ -25,8 +25,14 @@ public class SecurityConfig {
         http
                 .csrf(AbstractHttpConfigurer::disable) // // CSRF라는 보안 기능인데, 이걸 켜두면 Postman이나 프론트에서 API 쏠 때
                 // 자꾸 가짜 아니야? 하고 막음. 그래서 개발 단계인 지금은 일단 꺼두었음
+
                 .sessionManagement(session -> session
                         .sessionCreationPolicy(SessionCreationPolicy.STATELESS)
+                        // 세션도 쓰고 JWT도 쓰면 의미가 없는 이유
+                        // 세션 방식은 서버 메모리에 로그인 상태를 저장하는 방식(Stateful)이고, JWT는 토큰 자체에 회원 정보를 담아
+                        // 서버를 가볍게 유지하는 방식(Stateless)인대
+                        // 두 개를 동시에 켜두면 JWT의 장점인 '서버의 무상태성(가벼움)'을 전혀 살리지 못하고 리소스만 낭비됨
+                        // 따라서 Spring Session 사용 안 하고 JWT만 사용하게 함
                 )
                 .authorizeHttpRequests(auth -> auth
                         .anyRequest().permitAll() // 모든 요청을 인증 없이 허용
