@@ -82,13 +82,14 @@ public class StockService implements IStockService {
                 for (JsonNode node : itemNode) {
                     String currentSrtnCd = node.path("srtnCd").asText();
                     if (stockCode.equals(currentSrtnCd)) {
-                        StockItemDTO result = StockItemDTO.builder()
-                                .srtnCd(currentSrtnCd)
-                                .itmsNm(node.path("itmsNm").asText())
-                                .clpr(node.path("clpr").asText())
-                                .fltRt(node.path("fltRt").asText())
-                                .vs(node.path("vs").asText())
-                                .build();
+                        StockItemDTO result = new StockItemDTO(
+                                currentSrtnCd,
+                                node.path("itmsNm").asText(),
+                                node.path("clpr").asText(),
+                                node.path("fltRt").asText(),
+                                node.path("vs").asText(),
+                                null, null, null, null, null, null, null
+                        );
 
                         // 3. Redis 저장 (TTL 900초)
                         redisTemplate.opsForValue().set(
@@ -155,10 +156,11 @@ public class StockService implements IStockService {
                 // 묶음 저장 (성능 최적화)
                 List<StockEntity> stockList = new ArrayList<>();
                 for (JsonNode node : items) {
-                    StockEntity stock = new StockEntity();
-                    stock.setStockCd(node.path("srtnCd").asText());
-                    stock.setStockNm(node.path("itmsNm").asText());
-                    stock.setMktType(node.path("mrktCtg").asText());
+                    StockEntity stock = StockEntity.builder()
+                            .stockCd(node.path("srtnCd").asText())
+                            .stockNm(node.path("itmsNm").asText())
+                            .mktType(node.path("mrktCtg").asText())
+                            .build();
                     stockList.add(stock);
                 }
 
@@ -257,15 +259,15 @@ public class StockService implements IStockService {
                 JsonNode node = item.get(0);
                 log.info("{}기준일 {}데이터 조회 성공", targetDate, idxNm);
 
-                return MarketIndexDTO.builder()
-                        .idxNm(node.path("idxNm").asText())
-                        .clpr(node.path("clpr").asText())
-                        .vs(node.path("vs").asText())
-                        .fltRt(node.path("fltRt").asText())
-                        .mkp(node.path("mkp").asText())
-                        .hipr(node.path("hipr").asText())
-                        .lopr(node.path("lopr").asText())
-                        .build();
+                return new MarketIndexDTO(
+                        node.path("idxNm").asText(),
+                        node.path("clpr").asText(),
+                        node.path("vs").asText(),
+                        node.path("fltRt").asText(),
+                        node.path("mkp").asText(),
+                        node.path("hipr").asText(),
+                        node.path("lopr").asText()
+                );
 
             } catch (Exception e) {
                 log.warn("{}일 조회 실패, 재시도: {}", i, e.getMessage());

@@ -41,20 +41,20 @@ public class SimulatorService implements ISimulatorService {
                             .multiply(BigDecimal.valueOf(100))
                             : BigDecimal.ZERO;
 
-                    return SimulatorDTO.builder()
-                            .simId(s.getSimId())
-                            .userEmail(s.getUserEmail())
-                            .stockCd(s.getStockCd())
-                            .stockNm(s.getStockNm())
-                            .avgPrice(avg)
-                            .quantity(s.getQuantity())
-                            .targetPrice(target)
-                            .regDt(s.getRegDt().format(DATE_FMT))
-                            .expectedRevenue(expectedRevenue)
-                            .investAmt(investAmt)
-                            .expectedProfit(expectedProfit)
-                            .expectedProfitRate(expectedProfitRate)
-                            .build();
+                    return new SimulatorDTO(
+                            s.getSimId(),
+                            s.getUserEmail(),
+                            s.getStockCd(),
+                            s.getStockNm(),
+                            avg,
+                            s.getQuantity(),
+                            target,
+                            s.getRegDt().format(DATE_FMT),
+                            expectedRevenue,
+                            investAmt,
+                            expectedProfit,
+                            expectedProfitRate
+                    );
                 })
                 .toList();
     }

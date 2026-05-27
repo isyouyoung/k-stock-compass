@@ -6,6 +6,7 @@ import kopo.kstockcompass.repository.AlertLogRepository;
 import kopo.kstockcompass.repository.AlertRepository;
 import kopo.kstockcompass.repository.StockRepository;
 import kopo.kstockcompass.repository.entity.AlertEntity;
+import kopo.kstockcompass.repository.entity.AlertLogEntity;
 import kopo.kstockcompass.service.IAlertService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -36,15 +37,15 @@ public class AlertService implements IAlertService {
                     String stockNm = stockRepository.findById(alert.getStockCd())
                             .map(s -> s.getStockNm())
                             .orElse(alert.getStockCd());
-                    return AlertDTO.builder()
-                            .alertId(alert.getAlertId())
-                            .userEmail(alert.getUserEmail())
-                            .stockCd(alert.getStockCd())
-                            .stockNm(stockNm)
-                            .targetPrice(alert.getTargetPrice())
-                            .regDt(alert.getRegDt().format(DATE_FMT))
-                            .direction(alert.getDirection())
-                            .build();
+                    return new AlertDTO(
+                            alert.getAlertId(),
+                            alert.getUserEmail(),
+                            alert.getStockCd(),
+                            stockNm,
+                            alert.getTargetPrice(),
+                            alert.getRegDt().format(DATE_FMT),
+                            alert.getDirection()
+                    );
                 })
                 .toList();
     }
@@ -52,11 +53,12 @@ public class AlertService implements IAlertService {
     @Override
     @Transactional
     public void addAlert(String userEmail, String stockCd, Long targetPrice, String direction) {
-        AlertEntity entity = new AlertEntity();
-        entity.setUserEmail(userEmail);
-        entity.setStockCd(stockCd);
-        entity.setTargetPrice(BigDecimal.valueOf(targetPrice));
-        entity.setDirection(direction);
+        AlertEntity entity = AlertEntity.builder()
+                .userEmail(userEmail)
+                .stockCd(stockCd)
+                .targetPrice(BigDecimal.valueOf(targetPrice))
+                .direction(direction)
+                .build();
         alertRepository.save(entity);
         log.info("알림 등록: {} - {} (목표가: {}, 방향: {})", userEmail, stockCd, targetPrice, direction);
     }
@@ -88,15 +90,15 @@ public class AlertService implements IAlertService {
                     String stockNm = stockRepository.findById(stockCd)
                             .map(s -> s.getStockNm())
                             .orElse(stockCd);
-                    return AlertLogDTO.builder()
-                            .logId(log.getLogId())
-                            .alertId(log.getAlertId())
-                            .stockCd(stockCd)
-                            .stockNm(stockNm)
-                            .msg(log.getMsg())
-                            .isRead(log.getIsRead())
-                            .sendDt(log.getSendDt().format(DATE_FMT))
-                            .build();
+                    return new AlertLogDTO(
+                            log.getLogId(),
+                            log.getAlertId(),
+                            stockCd,
+                            stockNm,
+                            log.getMsg(),
+                            log.getIsRead(),
+                            log.getSendDt().format(DATE_FMT)
+                    );
                 })
                 .toList();
     }
@@ -104,13 +106,18 @@ public class AlertService implements IAlertService {
     @Override
     @Transactional
     public void markAsRead(Long logId, String userEmail) {
-        alertLogRepository.findById(logId).ifPresent(log -> {
-            // 내 알림인지 확인
-            alertRepository.findById(log.getAlertId())
+        alertLogRepository.findById(logId).ifPresent(entity -> {
+            alertRepository.findById(entity.getAlertId())
                     .filter(alert -> alert.getUserEmail().equals(userEmail))
                     .ifPresent(alert -> {
-                        log.setIsRead("Y");
-                        alertLogRepository.save(log);
+                        AlertLogEntity updated = AlertLogEntity.builder()
+                                .logId(entity.getLogId())
+                                .alertId(entity.getAlertId())
+                                .msg(entity.getMsg())
+                                .sendDt(entity.getSendDt())
+                                .isRead("Y")
+                                .build();
+                        alertLogRepository.save(updated);
                     });
         });
     }

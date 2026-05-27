@@ -78,11 +78,11 @@ public class OpenAiService implements IOpenAiService {
     }
 
     private String buildPrompt(String stockName, FinancialDTO fin) {
-        String debtStr = fin.getDebtRatio() == null ? "N/A" :
-                fin.getDebtRatio().compareTo(java.math.BigDecimal.valueOf(-1)) == 0 ? "자본잠식" :
-                        fin.getDebtRatio() + "%";
-        String marginStr = fin.getOperatingMargin() == null ? "N/A" : fin.getOperatingMargin() + "%";
-        String currentStr = fin.getCurrentRatio() == null ? "N/A" : fin.getCurrentRatio() + "%";
+        String debtStr = fin.debtRatio() == null ? "N/A" :
+                fin.debtRatio().compareTo(java.math.BigDecimal.valueOf(-1)) == 0 ? "자본잠식" :
+                        fin.debtRatio() + "%";
+        String marginStr = fin.operatingMargin() == null ? "N/A" : fin.operatingMargin() + "%";
+        String currentStr = fin.currentRatio() == null ? "N/A" : fin.currentRatio() + "%";
 
         return String.format("""
                 다음은 %s의 %s년 재무 데이터입니다:
@@ -101,16 +101,16 @@ public class OpenAiService implements IOpenAiService {
                 반드시 아래 JSON 형식으로만 응답하세요:
                 {"score": 점수, "summary": "3~4문장 분석 요약"}
                 """,
-                stockName, fin.getBsnsYear(), debtStr, marginStr, currentStr);
+                stockName, fin.bsnsYear(), debtStr, marginStr, currentStr);
     }
 
     @Override
     public String chat(String stockName, FinancialDTO fin, String userMessage) {
         try {
-            String debtStr = fin != null && fin.getDebtRatio() != null ? fin.getDebtRatio() + "%" : "N/A";
-            String marginStr = fin != null && fin.getOperatingMargin() != null ? fin.getOperatingMargin() + "%" : "N/A";
-            String currentStr = fin != null && fin.getCurrentRatio() != null ? fin.getCurrentRatio() + "%" : "N/A";
-            String bsnsYear = fin != null ? fin.getBsnsYear() : "N/A";
+            String debtStr = fin != null && fin.debtRatio() != null ? fin.debtRatio() + "%" : "N/A";
+            String marginStr = fin != null && fin.operatingMargin() != null ? fin.operatingMargin() + "%" : "N/A";
+            String currentStr = fin != null && fin.currentRatio() != null ? fin.currentRatio() + "%" : "N/A";
+            String bsnsYear = fin != null ? fin.bsnsYear() : "N/A";
 
             String prompt = String.format("""
                 당신은 %s의 전문 재무/기업 분석 AI 에이전트입니다.

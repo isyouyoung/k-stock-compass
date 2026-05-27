@@ -5,11 +5,13 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.web.reactive.function.client.WebClient;
 
 import java.time.LocalDateTime;
 import java.util.Map;
+import java.util.concurrent.TimeUnit;
 
 @Slf4j
 @Service
@@ -24,20 +26,33 @@ public class KisTokenService {
 
     private final WebClient webClient;
     private final ObjectMapper objectMapper;
-
-    // 토큰 캐싱 (매번 발급하면 낭비)
+    private final StringRedisTemplate redisTemplate;
     private String cachedToken = null;
     private LocalDateTime tokenExpiry = null;
 
+    private static final String REDIS_KEY = "kis:access_token";
+
     public synchronized String getAccessToken() {
-        // 캐싱된 토큰이 있고 만료 전이면 그대로 반환
+        // 1. 메모리 캐시 먼저 확인
         if (cachedToken != null && tokenExpiry != null
                 && LocalDateTime.now().isBefore(tokenExpiry)) {
             return cachedToken;
         }
 
-        log.info("KIS 액세스 토큰 새로 발급 중...");
+        // 2. Redis에서 확인 (실패해도 계속 진행)
+        try {
+            String redisToken = redisTemplate.opsForValue().get(REDIS_KEY);
+            if (redisToken != null) {
+                cachedToken = redisToken;
+                tokenExpiry = LocalDateTime.now().plusHours(23);
+                return cachedToken;
+            }
+        } catch (Exception e) {
+            log.warn("Redis 연결 실패, 메모리 캐시 사용: {}", e.getMessage());
+        }
 
+        // 3. 새로 발급
+        log.info("KIS 액세스 토큰 새로 발급 중...");
         try {
             String response = webClient.post()
                     .uri("https://openapi.koreainvestment.com:9443/oauth2/tokenP")
@@ -53,8 +68,14 @@ public class KisTokenService {
 
             JsonNode root = objectMapper.readTree(response);
             cachedToken = root.path("access_token").asText();
-            // 토큰 유효기간 23시간으로 설정 (실제는 24시간)
             tokenExpiry = LocalDateTime.now().plusHours(23);
+
+            // 4. Redis 저장 (실패해도 계속 진행)
+            try {
+                redisTemplate.opsForValue().set(REDIS_KEY, cachedToken, 23, TimeUnit.HOURS);
+            } catch (Exception e) {
+                log.warn("Redis 저장 실패, 메모리 캐시만 사용: {}", e.getMessage());
+            }
 
             log.info("KIS 액세스 토큰 발급 완료");
             return cachedToken;

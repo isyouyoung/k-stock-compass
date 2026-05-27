@@ -57,19 +57,19 @@ public class PortfolioService implements IPortfolioService {
                             ? profitAmt.divide(investAmt, 4, RoundingMode.HALF_UP).multiply(BigDecimal.valueOf(100))
                             : BigDecimal.ZERO;
 
-                    return PortfolioDTO.builder()
-                            .portId(p.getPortId())
-                            .userEmail(p.getUserEmail())
-                            .stockCd(p.getStockCd())
-                            .stockNm(stockNm)
-                            .avgPrice(p.getAvgPrice())
-                            .quantity(p.getQuantity())
-                            .regDt(p.getRegDt().format(DATE_FMT))
-                            .currentPrice(currentPrice)
-                            .evalAmt(evalAmt)
-                            .profitAmt(profitAmt)
-                            .profitRate(profitRate)
-                            .build();
+                    return new PortfolioDTO(
+                            p.getPortId(),
+                            p.getUserEmail(),
+                            p.getStockCd(),
+                            stockNm,
+                            p.getAvgPrice(),
+                            p.getQuantity(),
+                            p.getRegDt().format(DATE_FMT),
+                            currentPrice,
+                            evalAmt,
+                            profitAmt,
+                            profitRate
+                    );
                 })
                 .toList();
     }
@@ -97,16 +97,16 @@ public class PortfolioService implements IPortfolioService {
     @Override
     public AccountDTO getAccount(String userEmail) {
         return accountRepository.findById(userEmail)
-                .map(a -> AccountDTO.builder()
-                        .userEmail(a.getUserEmail())
-                        .cash(a.getCash())
-                        .loan(a.getLoan())
-                        .build())
-                .orElse(AccountDTO.builder()
-                        .userEmail(userEmail)
-                        .cash(BigDecimal.ZERO)
-                        .loan(BigDecimal.ZERO)
-                        .build());
+                .map(a -> new AccountDTO(
+                        a.getUserEmail(),
+                        a.getCash(),
+                        a.getLoan()
+                ))
+                .orElse(new AccountDTO(
+                        userEmail,
+                        BigDecimal.ZERO,
+                        BigDecimal.ZERO
+                ));
     }
 
     @Override
