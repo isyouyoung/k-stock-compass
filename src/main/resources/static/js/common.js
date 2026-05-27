@@ -41,6 +41,22 @@ function navigate(page, params={}) {
         clearInterval(window._mainFavInterval);
         window._mainFavInterval = null;
     }
+    if(window._stockIndexInterval) {
+        clearInterval(window._stockIndexInterval);
+        window._stockIndexInterval = null;
+    }
+    if(window._stockSearchInterval) {
+        clearInterval(window._stockSearchInterval);
+        window._stockSearchInterval = null;
+    }
+    if(window._favListInterval) {
+        clearInterval(window._favListInterval);
+        window._favListInterval = null;
+    }
+    if(window._portfolioInterval) {
+        clearInterval(window._portfolioInterval);
+        window._portfolioInterval = null;
+    }
     state.currentPage = page;
     Object.assign(state, params);
     // 현재 페이지 저장 (새로고침 복원용)

@@ -1,6 +1,6 @@
 async function pgStockIndex(){
     document.getElementById('mainContent').innerHTML = `<div class="page-wrap">
-        <div class="page-header"><div class="page-title">📊 시장 지수 조회</div><div class="page-sub">공공데이터포털 API 기반 전일 종가 기준</div></div>
+        <div class="page-header"><div class="page-title">📊 시장 지수 조회</div><div class="page-sub">KIS API 실시간 기준</div></div>
         <div class="grid2 mb16">
         <div class="card" style="border-top:4px solid var(--navy);" id="kospiCard">
         <div style="font-size:14px;font-weight:700;color:var(--navy);margin-bottom:12px;">KOSPI 코스피</div>
@@ -13,22 +13,31 @@ async function pgStockIndex(){
         <div class="skeleton" style="height:20px;width:60%;margin-bottom:6px;"></div>
         </div>
         </div>
-        <div class="notice mb16">ℹ 본 시세 정보는 공공데이터포털 API 기반 전일 종가 기준입니다.</div>
+        <div class="notice mb16">ℹ 본 시세 정보는 KIS API 실시간 기준입니다.</div>
+        <div class="page-wrap" style="padding-top:0;">
+        <div class="card">
+        <div class="section-title">주요 종목 시세</div>
+        <div id="majorStocks"><div style="font-size:13px;color:var(--gray);padding:20px 0;">시세 조회 중...</div></div>
+        </div></div>
         </div>`;
 
-    const getBaseDate = () => {
-        const d = new Date();
-        d.setDate(d.getDate() - 1);
-        return d.toISOString().slice(0,10).replace(/-/g,'');
-    };
-    const today = getBaseDate();
-    const token = localStorage.getItem('jwt');
-    const headers = token ? {'Authorization': 'Bearer ' + token} : {};
+    await refreshStockIndex();
 
+    window._stockIndexInterval = setInterval(async () => {
+        if(state.currentPage !== 'stock_index') {
+            clearInterval(window._stockIndexInterval);
+            window._stockIndexInterval = null;
+            return;
+        }
+        await refreshStockIndex();
+    }, 1000);
+}
+
+async function refreshStockIndex() {
     try {
         const [kospiRes, kosdaqRes] = await Promise.all([
-            fetch(`/api/stock/index?idxNm=코스피&baseDate=${today}`, {headers}),
-            fetch(`/api/stock/index?idxNm=코스닥&baseDate=${today}`, {headers})
+            fetch('/api/stock/index/realtime?indexCode=0001'),
+            fetch('/api/stock/index/realtime?indexCode=1001')
         ]);
         const kospi = await kospiRes.json();
         const kosdaq = await kosdaqRes.json();
@@ -42,24 +51,25 @@ async function pgStockIndex(){
             <div style="font-size:12px;color:var(--gray);margin-top:4px;">고가: ${Number(data.hipr).toLocaleString()} &nbsp;|&nbsp; 저가: ${Number(data.lopr).toLocaleString()}</div>`;
         };
 
-        document.getElementById('kospiCard').innerHTML = `<div style="font-size:14px;font-weight:700;color:var(--navy);margin-bottom:12px;">KOSPI 코스피</div>${renderCard(kospi)}`;
-        document.getElementById('kosdaqCard').innerHTML = `<div style="font-size:14px;font-weight:700;color:var(--blue);margin-bottom:12px;">KOSDAQ 코스닥</div>${renderCard(kosdaq)}`;
+        const kospiEl = document.getElementById('kospiCard');
+        const kosdaqEl = document.getElementById('kosdaqCard');
+        if(kospiEl) kospiEl.innerHTML = `<div style="font-size:14px;font-weight:700;color:var(--navy);margin-bottom:12px;">KOSPI 코스피</div>${renderCard(kospi)}`;
+        if(kosdaqEl) kosdaqEl.innerHTML = `<div style="font-size:14px;font-weight:700;color:var(--blue);margin-bottom:12px;">KOSDAQ 코스닥</div>${renderCard(kosdaq)}`;
 
-        document.getElementById('mainContent').innerHTML += `
-        <div class="page-wrap" style="padding-top:0;">
-        <div class="card">
-        <div class="section-title">주요 종목 시세</div>
-        <div id="majorStocks"><div style="font-size:13px;color:var(--gray);padding:20px 0;">시세 조회 중...</div></div>
-        </div></div>`;
+    } catch(e) {
+        console.error('지수 갱신 실패', e);
+    }
 
-        const majorCodes = [
-            {code:'005930', name:'삼성전자', market:'KOSPI'},
-            {code:'000660', name:'SK하이닉스', market:'KOSPI'},
-            {code:'373220', name:'LG에너지솔루션', market:'KOSPI'},
-            {code:'035420', name:'NAVER', market:'KOSPI'},
-            {code:'035720', name:'카카오', market:'KOSDAQ'}
-        ];
+    // 주요 종목 5개 갱신
+    const majorCodes = [
+        {code:'005930', name:'삼성전자', market:'KOSPI'},
+        {code:'000660', name:'SK하이닉스', market:'KOSPI'},
+        {code:'373220', name:'LG에너지솔루션', market:'KOSPI'},
+        {code:'035420', name:'NAVER', market:'KOSPI'},
+        {code:'035720', name:'카카오', market:'KOSDAQ'}
+    ];
 
+    try {
         const majorResults = await Promise.all(
             majorCodes.map(s => fetch(`/api/stock/detail?stockCode=${s.code}`)
                 .then(r=>r.json())
@@ -82,25 +92,22 @@ async function pgStockIndex(){
                 </div>`;
             }).join('');
         }
-
     } catch(e) {
-        showToast('시장 지수 조회에 실패했습니다.');
+        console.error('주요종목 갱신 실패', e);
     }
 }
 
 function pgStockSearch(){
     const stocks=[
-        {code:'005930',name:'삼성전자',market:'KOSPI',price:61200,change:1200,pct:2.00},
-        {code:'000660',name:'SK하이닉스',market:'KOSPI',price:182500,change:-1500,pct:-0.81},
-        {code:'373220',name:'LG에너지솔루션',market:'KOSPI',price:415000,change:3000,pct:0.73},
-        {code:'035420',name:'NAVER',market:'KOSPI',price:215000,change:3000,pct:1.41},
-        {code:'035720',name:'카카오',market:'KOSDAQ',price:45800,change:-200,pct:-0.43},
-        {code:'005380',name:'현대차',market:'KOSPI',price:231000,change:2500,pct:1.09},
-        {code:'006400',name:'삼성SDI',market:'KOSPI',price:298500,change:-2500,pct:-0.83},
-        {code:'207940',name:'삼성바이오로직스',market:'KOSPI',price:781000,change:5000,pct:0.64},
+        {code:'005930',name:'삼성전자',market:'KOSPI'},
+        {code:'000660',name:'SK하이닉스',market:'KOSPI'},
+        {code:'373220',name:'LG에너지솔루션',market:'KOSPI'},
+        {code:'035420',name:'NAVER',market:'KOSPI'},
+        {code:'035720',name:'카카오',market:'KOSDAQ'},
     ];
     window._allStocks = stocks;
-    return `<div class="page-wrap">
+
+    document.getElementById('mainContent').innerHTML = `<div class="page-wrap">
         <div class="page-header"><div class="page-title">🔍 종목 검색</div></div>
         <div class="card mb16">
         <div class="search-bar mb12"><input id="stockSearchInput" placeholder="종목명 또는 종목코드 입력 (예: 삼성전자, 005930)" oninput="doStockSearch()" onkeydown="if(event.key==='Enter')doStockSearch()"><button onclick="doStockSearch()">🔍 검색</button></div>
@@ -109,15 +116,45 @@ function pgStockSearch(){
         </div></div>
         <div id="searchResults">
         <div class="card"><div class="section-title">인기 종목 TOP 5</div>
-        ${stocks.slice(0,5).map((s,i)=>`
-        <div class="stock-row" onclick="navigate('stock_detail',{currentStock:'${s.code}'})">
-        <span style="font-size:16px;font-weight:700;color:${i<3?'var(--blue)':'var(--gray)'};min-width:28px;">${i+1}</span>
-        <span class="sn">${s.name}</span><span class="sc">${s.code}</span>
-        <span class="badge badge-${s.market.toLowerCase()}">${s.market}</span>
-        <span class="sp ${s.change>=0?'up':'down'}" style="margin-left:auto;">${fmt(s.price)}원</span>
-        <span class="sch ${s.change>=0?'up':'down'}">${s.change>=0?'▲ +':'▼ -'}${fmt(Math.abs(s.change))} (${s.pct>=0?'+':''}${s.pct.toFixed(2)}%)</span>
-        </div>`).join('')}
-        </div></div></div>`;}
+        <div id="topStockList"><div style="font-size:13px;color:var(--gray);padding:20px 0;">시세 조회 중...</div></div>
+        </div></div></div>`;
+
+    const loadTopStocks = () => {
+        Promise.all(
+            stocks.map(s => fetch(`/api/stock/detail?stockCode=${s.code}`)
+                .then(r => r.json())
+                .then(d => ({...s, ...d}))
+                .catch(() => s))
+        ).then(results => {
+            const el = document.getElementById('topStockList');
+            if(!el) return;
+            el.innerHTML = results.map((s, i) => {
+                const price = Number(s.clpr || 0);
+                const change = Number(s.vs || 0);
+                const pct = Number(s.fltRt || 0);
+                return `
+                <div class="stock-row" onclick="navigate('stock_detail',{currentStock:'${s.code}'})">
+                <span style="font-size:16px;font-weight:700;color:${i<3?'var(--blue)':'var(--gray)'};min-width:28px;">${i+1}</span>
+                <span class="sn">${s.name}</span><span class="sc">${s.code}</span>
+                <span class="badge badge-${s.market.toLowerCase()}">${s.market}</span>
+                <span class="sp ${change>=0?'up':'down'}" style="margin-left:auto;">${fmt(price)}원</span>
+                <span class="sch ${change>=0?'up':'down'}">${change>=0?'▲ +':'▼ -'}${fmt(Math.abs(change))} (${pct>=0?'+':''}${pct.toFixed(2)}%)</span>
+                </div>`;
+            }).join('');
+        });
+    };
+
+    loadTopStocks();
+
+    window._stockSearchInterval = setInterval(() => {
+        if(state.currentPage !== 'stock_search') {
+            clearInterval(window._stockSearchInterval);
+            window._stockSearchInterval = null;
+            return;
+        }
+        loadTopStocks();
+    }, 1000);
+}
 
 function initSearch(){}
 
@@ -386,9 +423,21 @@ async function sendAiMsg(code, name){
     state._aiMessages[code].push({role:'user',text});
     input.value='';
 
-    // 로딩 메시지
-    state._aiMessages[code].push({role:'ai',text:'분석 중... ⏳'});
-    navigate('stock_detail',{currentStock:code,detailTab:'ai'});
+    // 채팅창에 사용자 메시지 + 로딩 메시지 직접 추가
+    const chatBox = document.getElementById('aiChatBox');
+    if(chatBox) {
+        const userDiv = document.createElement('div');
+        userDiv.style.cssText = 'display:flex;justify-content:flex-end;';
+        userDiv.innerHTML = `<div style="max-width:75%;padding:10px 14px;border-radius:12px 12px 2px 12px;background:var(--navy);color:white;font-size:13px;line-height:1.6;">${text}</div>`;
+        chatBox.appendChild(userDiv);
+
+        const loadingDiv = document.createElement('div');
+        loadingDiv.id = 'aiLoadingMsg';
+        loadingDiv.style.cssText = 'display:flex;justify-content:flex-start;';
+        loadingDiv.innerHTML = `<div style="max-width:75%;padding:10px 14px;border-radius:12px 12px 12px 2px;background:var(--bg);color:var(--dark);font-size:13px;line-height:1.6;">분석 중... ⏳</div>`;
+        chatBox.appendChild(loadingDiv);
+        chatBox.scrollTop = chatBox.scrollHeight;
+    }
 
     try {
         const token = localStorage.getItem('jwt');
@@ -402,20 +451,41 @@ async function sendAiMsg(code, name){
         });
 
         // 로딩 메시지 제거
-        state._aiMessages[code] = state._aiMessages[code].filter(m => m.text !== '분석 중... ⏳');
+        const loadingEl = document.getElementById('aiLoadingMsg');
+        if(loadingEl) loadingEl.remove();
 
+        let replyText = '죄송합니다. 답변을 생성하는 중 오류가 발생했습니다.';
         if (res.ok) {
             const data = await res.json();
-            state._aiMessages[code].push({role:'ai', text: data.reply});
-        } else {
-            state._aiMessages[code].push({role:'ai', text:'죄송합니다. 답변을 생성하는 중 오류가 발생했습니다.'});
+            replyText = data.reply;
         }
-    } catch(e) {
-        state._aiMessages[code] = state._aiMessages[code].filter(m => m.text !== '분석 중... ⏳');
-        state._aiMessages[code].push({role:'ai', text:'네트워크 오류가 발생했습니다.'});
-    }
 
-    navigate('stock_detail',{currentStock:code,detailTab:'ai'});
+        state._aiMessages[code].push({role:'ai', text: replyText});
+
+        // 채팅창에 AI 답변 직접 추가
+        const chatBox2 = document.getElementById('aiChatBox');
+        if(chatBox2) {
+            const aiDiv = document.createElement('div');
+            aiDiv.style.cssText = 'display:flex;justify-content:flex-start;';
+            aiDiv.innerHTML = `<div style="max-width:75%;padding:10px 14px;border-radius:12px 12px 12px 2px;background:var(--bg);color:var(--dark);font-size:13px;line-height:1.6;">${replyText}</div>`;
+            chatBox2.appendChild(aiDiv);
+            chatBox2.scrollTop = chatBox2.scrollHeight;
+        }
+
+    } catch(e) {
+        const loadingEl = document.getElementById('aiLoadingMsg');
+        if(loadingEl) loadingEl.remove();
+        state._aiMessages[code].push({role:'ai', text:'네트워크 오류가 발생했습니다.'});
+
+        const chatBox2 = document.getElementById('aiChatBox');
+        if(chatBox2) {
+            const aiDiv = document.createElement('div');
+            aiDiv.style.cssText = 'display:flex;justify-content:flex-start;';
+            aiDiv.innerHTML = `<div style="max-width:75%;padding:10px 14px;border-radius:12px 12px 12px 2px;background:var(--bg);color:var(--dark);font-size:13px;line-height:1.6;">네트워크 오류가 발생했습니다.</div>`;
+            chatBox2.appendChild(aiDiv);
+            chatBox2.scrollTop = chatBox2.scrollHeight;
+        }
+    }
 }
 
 function formatMktcap(val) {
@@ -513,13 +583,14 @@ async function loadPortfolio() {
             </div>
             <button class="btn btn-sm" style="background:#FFF5F5;color:var(--red-err);border:1px solid var(--red-err);" onclick="deletePortfolio(${p.portId})">삭제</button>
             </div>
-            <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px;font-size:12px;">
+            <div style="display:grid;grid-template-columns:repeat(5,1fr);gap:8px;font-size:12px;">
             <div><div style="color:var(--gray);margin-bottom:2px;">평균매수가</div><div style="font-weight:600;">${fmt(p.avgPrice)}원</div></div>
-            <div><div style="color:var(--gray);margin-bottom:2px;">현재가</div><div style="font-weight:600;">${fmt(p.currentPrice)}원</div></div>
+            <div><div style="color:var(--gray);margin-bottom:2px;">현재가</div><div style="font-weight:600;" id="port-price-${p.stockCd}">${fmt(p.currentPrice)}원</div></div>
             <div><div style="color:var(--gray);margin-bottom:2px;">수량</div><div style="font-weight:600;">${fmt(p.quantity)}주</div></div>
+            <div><div style="color:var(--gray);margin-bottom:2px;">평가금</div><div style="font-weight:600;" id="port-eval-${p.stockCd}">${fmt(Math.round(Number(p.evalAmt)))}원</div></div>
             <div><div style="color:var(--gray);margin-bottom:2px;">손익</div>
-            <div style="font-weight:600;" class="${profit>=0?'up':'down'}">${profit>=0?'+':''}${fmt(Math.round(profit))}원</div>
-            <div style="font-size:11px;" class="${profit>=0?'up':'down'}">(${rate>=0?'+':''}${rate.toFixed(2)}%)</div>
+            <div style="font-weight:600;" id="port-profit-${p.stockCd}" class="${profit>=0?'up':'down'}">${profit>=0?'+':''}${fmt(Math.round(profit))}원</div>
+            <div style="font-size:11px;" id="port-rate-${p.stockCd}" class="${profit>=0?'up':'down'}">(${rate>=0?'+':''}${rate.toFixed(2)}%)</div>
             </div>
             </div>
             </div>`;
@@ -580,6 +651,45 @@ async function loadPortfolio() {
         </div>` : ''}
         </div>
         </div>`;
+
+        // 보유종목 실시간 가격 갱신
+        if(portfolio.length > 0) {
+            if(window._portfolioInterval) clearInterval(window._portfolioInterval);
+            window._portfolioInterval = setInterval(async () => {
+                if(state.currentPage !== 'portfolio') {
+                    clearInterval(window._portfolioInterval);
+                    window._portfolioInterval = null;
+                    return;
+                }
+                await Promise.all(portfolio.slice(0, 8).map(async p => {
+                    try {
+                        const res = await fetch(`/api/stock/detail?stockCode=${p.stockCd}`);
+                        const d = await res.json();
+                        const currentPrice = Number(d.clpr);
+                        const evalAmt = currentPrice * Number(p.quantity);
+                        const investAmt = Number(p.avgPrice) * Number(p.quantity);
+                        const profitAmt = evalAmt - investAmt;
+                        const profitRate = investAmt > 0 ? (profitAmt / investAmt * 100) : 0;
+
+                        const priceEl = document.getElementById(`port-price-${p.stockCd}`);
+                        const evalEl = document.getElementById(`port-eval-${p.stockCd}`);
+                        const profitEl = document.getElementById(`port-profit-${p.stockCd}`);
+                        const rateEl = document.getElementById(`port-rate-${p.stockCd}`);
+
+                        if(priceEl) priceEl.textContent = fmt(currentPrice) + '원';
+                        if(evalEl) evalEl.textContent = fmt(Math.round(evalAmt)) + '원';
+                        if(profitEl) {
+                            profitEl.className = profitAmt >= 0 ? 'up' : 'down';
+                            profitEl.textContent = `${profitAmt>=0?'+':''}${fmt(Math.round(profitAmt))}원`;
+                        }
+                        if(rateEl) {
+                            rateEl.className = profitRate >= 0 ? 'up' : 'down';
+                            rateEl.textContent = `(${profitRate>=0?'+':''}${profitRate.toFixed(2)}%)`;
+                        }
+                    } catch(e) {}
+                }));
+            }, 1000);
+        }
 
     } catch(e) {
         console.error('포트폴리오 로드 실패', e);

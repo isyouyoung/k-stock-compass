@@ -263,11 +263,14 @@
       pgStockDetail();
     } else if(page === 'portfolio') {
       pgPortfolio();
+    } else if(page === 'stock_search') {
+      pgStockSearch();
+    } else if(page === 'fav_list') {
+      pgFavList();
     } else {
       document.getElementById('mainContent').innerHTML = fn();
     }
     // 페이지별 초기화
-    if(page==='stock_search') initSearch();
     if(page==='alert_add'||page==='alert_edit') initAlertForm();
     if(page==='signup') validateSignup();
     // 메인 페이지면 관심종목 실시간 갱신 시작
@@ -357,31 +360,117 @@
         </div>`}
         </div>`;}
 
-  function pgFavList(){return `<div class="page-wrap">
+  function pgFavList(){
+    if(!state._favPage) state._favPage = 0;
+    const PAGE_SIZE = 8;
+    const total = state.favorites.length;
+    const totalPages = Math.ceil(total / PAGE_SIZE);
+
+    document.getElementById('mainContent').innerHTML = `<div class="page-wrap">
         <div class="flex flex-between flex-center mb24">
         <div class="page-title">⭐ 내 관심종목</div>
-        <span style="font-size:13px;color:var(--gray);">총 ${state.favorites.length}개 종목</span>
+        <span style="font-size:13px;color:var(--gray);">총 ${total}개 종목</span>
         </div>
-        ${state.favorites.length===0?`
+        ${total === 0 ? `
         <div class="card"><div class="empty"><div class="empty-icon">⭐</div><div class="empty-title">관심종목이 없습니다</div>
         <div class="empty-sub">관심있는 종목을 검색하여 추가해 보세요!</div>
-        <button class="btn btn-primary" onclick="navigate('stock_search')">🔍 종목 검색하러 가기</button></div></div>`:
-          state.favorites.map(f=>`
-        <div class="fav-row">
+        <button class="btn btn-primary" onclick="navigate('stock_search')">🔍 종목 검색하러 가기</button></div></div>` : `
+        <div id="favListContent"></div>
+        ${totalPages > 1 ? `
+        <div style="display:flex;justify-content:center;align-items:center;gap:12px;margin-top:16px;">
+        <button class="btn btn-outline btn-sm" onclick="favPageMove(-1)" id="favPrevBtn">◀ 이전</button>
+        <span id="favPageInfo" style="font-size:13px;color:var(--gray);"></span>
+        <button class="btn btn-outline btn-sm" onclick="favPageMove(1)" id="favNextBtn">다음 ▶</button>
+        </div>` : ''}
+        `}
+        </div>`;
+
+    if(total > 0) {
+      renderFavPage();
+
+      window._favListInterval = setInterval(() => {
+        if(state.currentPage !== 'fav_list') {
+          clearInterval(window._favListInterval);
+          window._favListInterval = null;
+          return;
+        }
+        refreshFavPrices();
+      }, 1000);
+    }
+  }
+
+  function favPageMove(dir) {
+    const total = state.favorites.length;
+    const totalPages = Math.ceil(total / 8);
+    state._favPage = Math.max(0, Math.min(totalPages - 1, state._favPage + dir));
+    renderFavPage();
+  }
+
+  function renderFavPage() {
+    const PAGE_SIZE = 8;
+    const page = state._favPage || 0;
+    const total = state.favorites.length;
+    const totalPages = Math.ceil(total / PAGE_SIZE);
+    const pageFavs = state.favorites.slice(page * PAGE_SIZE, (page + 1) * PAGE_SIZE);
+
+    const el = document.getElementById('favListContent');
+    if(!el) return;
+
+    el.innerHTML = pageFavs.map(f => `
+        <div class="fav-row" id="fav-row-${f.code}">
         <div style="flex:1;cursor:pointer;" onclick="navigate('stock_detail',{currentStock:'${f.code}'})">
         <div style="font-size:16px;font-weight:600;">${f.name}</div>
         <div style="font-size:12px;color:var(--gray);margin-top:4px;">${f.code} · ${f.market}</div>
         </div>
         <div style="text-align:right;margin-right:20px;cursor:pointer;" onclick="navigate('stock_detail',{currentStock:'${f.code}'})">
-        <div style="font-size:20px;font-weight:700;">${fmt(f.price)}원</div>
-        <div class="${f.change>=0?'up':'down'}" style="font-size:13px;margin-top:4px;">${f.change>=0?'▲ +':'▼ -'}${fmt(Math.abs(f.change))} (${f.pct>=0?'+':''}${f.pct.toFixed(2)}%)</div>
+        <div style="font-size:20px;font-weight:700;" id="fav-price-${f.code}">${fmt(f.price)}원</div>
+        <div id="fav-change-${f.code}" class="${f.change>=0?'up':'down'}" style="font-size:13px;margin-top:4px;">${f.change>=0?'▲ +':'▼ -'}${fmt(Math.abs(f.change))} (${f.pct>=0?'+':''}${f.pct.toFixed(2)}%)</div>
         </div>
         <div style="display:flex;gap:8px;">
-        <button class="btn btn-outline btn-sm" style="gap:4px;" onclick="navigate('stock_detail',{currentStock:'${f.code}',detailTab:'ai'})">🚦 신호등보기</button>
-        <button class="btn btn-sm" style="background:#FFF5F5;color:var(--red-err);border:1px solid var(--red-err);gap:4px;" onclick="openFavDel('${f.code}','${f.name}')">🗑 삭제하기</button>
+        <button class="btn btn-outline btn-sm" onclick="navigate('stock_detail',{currentStock:'${f.code}',detailTab:'ai'})">🚦 신호등보기</button>
+        <button class="btn btn-sm" style="background:#FFF5F5;color:var(--red-err);border:1px solid var(--red-err);" onclick="openFavDel('${f.code}','${f.name}')">🗑 삭제하기</button>
         </div>
-        </div>`).join('')}
-        </div>`;}
+        </div>`).join('');
+
+    const pageInfo = document.getElementById('favPageInfo');
+    const prevBtn = document.getElementById('favPrevBtn');
+    const nextBtn = document.getElementById('favNextBtn');
+    if(pageInfo) pageInfo.textContent = `${page + 1} / ${totalPages}`;
+    if(prevBtn) prevBtn.disabled = page === 0;
+    if(nextBtn) nextBtn.disabled = page === totalPages - 1;
+  }
+
+  async function refreshFavPrices() {
+    const PAGE_SIZE = 8;
+    const page = state._favPage || 0;
+    const pageFavs = state.favorites.slice(page * PAGE_SIZE, (page + 1) * PAGE_SIZE);
+
+    const results = await Promise.all(
+            pageFavs.map(f => fetch(`/api/stock/detail?stockCode=${f.code}`)
+                    .then(r => r.json())
+                    .catch(() => null))
+    );
+
+    results.forEach((d, i) => {
+      if(!d) return;
+      const f = pageFavs[i];
+      const price = Number(d.clpr);
+      const change = Number(d.vs);
+      const pct = Number(d.fltRt);
+
+      state.favorites.find(x => x.code === f.code).price = price;
+      state.favorites.find(x => x.code === f.code).change = change;
+      state.favorites.find(x => x.code === f.code).pct = pct;
+
+      const priceEl = document.getElementById(`fav-price-${f.code}`);
+      const changeEl = document.getElementById(`fav-change-${f.code}`);
+      if(priceEl) priceEl.textContent = fmt(price) + '원';
+      if(changeEl) {
+        changeEl.className = change >= 0 ? 'up' : 'down';
+        changeEl.textContent = `${change>=0?'▲ +':'▼ -'}${fmt(Math.abs(change))} (${pct>=0?'+':''}${pct.toFixed(2)}%)`;
+      }
+    });
+  }
 
   function pgAlertList(){return `<div class="page-wrap" style="padding-top:22px;">
         <div class="flex flex-between flex-center mb24">

@@ -13,7 +13,13 @@ import kopo.kstockcompass.repository.StockRepository;
 import java.util.List;
 
 // 이 컨트롤러는 주식 정보를 가져오고 검색하는 안내데스크
-// 교수님께서 강조하신 대로 모든 반환 값은 엔티티가 아니라 'DTO'로 전송
+// 교수님께서 강조하신 대로 모든 반환 값은 엔티티가 아니라 'DTO'로 전송함
+
+// DTO로 한 번 더 감싼 이유는
+// 데이터베이스의 엔티티 구조는 핵심 보안 사항이라
+// 이를 외부에 직접 노출하면 DB 구조가 유출될수도 있고
+// 나중에 DB 설계가 바뀌면 프론트엔드 코드까지 다 고쳐야 하는 의존성 문제가 생길수 있어
+// 유지보수와 보안을 위하여 DTO를 사용
 @RestController
 @RequiredArgsConstructor
 @RequestMapping("/api/stock")
@@ -93,27 +99,28 @@ public class StockController {
                 .map(s -> s.getMktType())
                 .orElse("KOSPI");
 
-        StockItemDTO result = StockItemDTO.builder()
-                .srtnCd(stockCode)
-                .itmsNm(stockNm)
-                .clpr(kisData.getClpr())
-                .vs(kisData.getVs())
-                .fltRt(kisData.getFltRt())
-                .mrktCtg(mrktCtg)
-                .oprc(kisData.getOprc())
-                .hgpr(kisData.getHgpr())
-                .lwpr(kisData.getLwpr())
-                .acmlVol(kisData.getAcmlVol())
-                .htsMktcap(kisData.getHtsMktcap())
-                .w52Hgpr(kisData.getW52Hgpr())
-                .build();
+        StockItemDTO result = new StockItemDTO(
+                stockCode,
+                stockNm,
+                kisData.clpr(),
+                kisData.fltRt(),
+                kisData.vs(),
+                mrktCtg,
+                kisData.oprc(),
+                kisData.hgpr(),
+                kisData.lwpr(),
+                kisData.acmlVol(),
+                kisData.htsMktcap(),
+                kisData.w52Hgpr()
+        );
 
         return ResponseEntity.ok(result);
     }
+
+    @GetMapping("/index/realtime")
+    public ResponseEntity<MarketIndexDTO> getRealtimeIndex(@RequestParam String indexCode) {
+        return ResponseEntity.ok(kisStockService.getIndexPrice(indexCode));
+    }
+
 }
 
-// DTO로 한 번 더 감싼 이유
-// 데이터베이스의 엔티티 구조는 핵심 보안 사항이라
-// 이를 외부에 직접 노출하면 DB 구조가 유출될수도 있고
-// 나중에 DB 설계가 바뀌면 프론트엔드 코드까지 다 고쳐야 하는 의존성 문제가 생길수 있어
-// 유지보수와 보안을 위하여 DTO를 사용
