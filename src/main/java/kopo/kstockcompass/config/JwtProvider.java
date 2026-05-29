@@ -17,15 +17,18 @@ public class JwtProvider {
 
     private final Key key;           // 우리만 아는 비밀 암호 키 (도장 디자인 같은 거)
     private final long expiration;   // 이 토큰이 언제까지 유효한지 유통기한
+    private final long refreshExpiration;
 
     // application.properties 파일에 미리 적어둔 비밀 키랑 유통기한을 가져와서 세팅하는 부분
     // 도장을 찍으려면 인감 도장이랑 인코 패드가 있어야 하니까 그걸 준비하는 과정
     public JwtProvider(
             @Value("${jwt.secret}") String secret,
-            @Value("${jwt.expiration}") long expiration) {
+            @Value("${jwt.expiration}") long expiration,
+            @Value("${jwt.refresh-expiration}") long refreshExpiration) {
         // 비밀 키를 컴퓨터가 이해할 수 있는 복잡한 해시 키 형태로 변환
         this.key = Keys.hmacShaKeyFor(secret.getBytes());
         this.expiration = expiration;
+        this.refreshExpiration = refreshExpiration;
     }
 
     // [토큰 생성] 로그인이 성공하면 이 메서드를 불러서 사용자의 '전자 출입증'을 발급
@@ -60,5 +63,15 @@ public class JwtProvider {
                 .build()
                 .parseClaimsJws(token) // 봉투를 뜯어서
                 .getBody(); // 내용물을 꺼냄
+    }
+
+    // Refresh Token 생성
+    public String createRefreshToken(String userEmail) {
+        return Jwts.builder()
+                .setSubject(userEmail)
+                .setIssuedAt(new Date())
+                .setExpiration(new Date(System.currentTimeMillis() + refreshExpiration))
+                .signWith(key, SignatureAlgorithm.HS256)
+                .compact();
     }
 }

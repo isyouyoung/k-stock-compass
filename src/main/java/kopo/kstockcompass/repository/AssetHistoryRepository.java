@@ -6,5 +6,5 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import java.util.List;
 
 public interface AssetHistoryRepository extends JpaRepository<AssetHistoryEntity, Long> {
-    List<AssetHistoryEntity> findByUserEmailOrderByRegDtAsc(String userEmail);
+    List<AssetHistoryEntity> findByUserEmailOrderByHistIdAsc(String userEmail);
 }

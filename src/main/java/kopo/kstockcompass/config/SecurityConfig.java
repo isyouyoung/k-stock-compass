@@ -6,6 +6,7 @@ package kopo.kstockcompass.config;
 //     **"일단 개발부터 편하게 하자"**는 전략으로 문을 열어두었음!
 //     결과: 로그에 비밀번호가 떠도 무시하고 브라우저에서 404 페이지를 볼 수 있게 되었음
 
+import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
@@ -15,19 +16,25 @@ import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
+import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 
 @Configuration
 @EnableWebSecurity
+@RequiredArgsConstructor
 public class SecurityConfig {
+
+    // JwtFilter를 new로 생성하지 않고 DI로 주입받음 (Spring 정석 IoC/DI 구조)
+    private final JwtFilter jwtFilter;
 
     @Bean
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
         http
-                .csrf(AbstractHttpConfigurer::disable) // // CSRF라는 보안 기능인데, 이걸 켜두면 Postman이나 프론트에서 API 쏠 때
+                .csrf(AbstractHttpConfigurer::disable)
+                // CSRF라는 보안 기능인데, 이걸 켜두면 Postman이나 프론트에서 API 쏠 때
                 // 자꾸 가짜 아니야? 하고 막음. 그래서 개발 단계인 지금은 일단 꺼두었음
 
                 .sessionManagement(session -> session
-                        .sessionCreationPolicy(SessionCreationPolicy.STATELESS)
+                                .sessionCreationPolicy(SessionCreationPolicy.STATELESS)
                         // 세션도 쓰고 JWT도 쓰면 의미가 없는 이유
                         // 세션 방식은 서버 메모리에 로그인 상태를 저장하는 방식(Stateful)이고, JWT는 토큰 자체에 회원 정보를 담아
                         // 서버를 가볍게 유지하는 방식(Stateless)인대
@@ -35,13 +42,18 @@ public class SecurityConfig {
                         // 따라서 Spring Session 사용 안 하고 JWT만 사용하게 함
                 )
                 .authorizeHttpRequests(auth -> auth
-                        .anyRequest().permitAll() // 모든 요청을 인증 없이 허용
+                                .anyRequest().permitAll()
                         // 지금은 .anyRequest().permitAll() 로 설정했음.
                         // 즉, "어떤 요청이든 일단 통과시켜라"라는 뜻임.
                         // 개발 초기에 API가 잘 작동하는지(Postman 테스트 등) 확인해야 하는데,
                         // 시큐리티가 사사건건 막으면 개발 진도가 너무 느리다고 해서 일단 대문을 활짝 열어둔 상태
                         // 나중에 개발이 다 끝나면 필요한 부분만 골라서 다시 막을 예정
-                );
+                )
+                // [JwtFilter 등록 - DI 방식]
+                // new JwtFilter() 대신 Spring이 관리하는 Bean을 주입받아 사용
+                // IoC/DI 원칙을 지킨 Spring Security 정석 구조
+                // 모든 요청에서 JWT 토큰을 검증하고 SecurityContext에 인증 정보를 저장함
+                .addFilterBefore(jwtFilter, UsernamePasswordAuthenticationFilter.class);
 
         return http.build();
     }

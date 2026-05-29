@@ -979,6 +979,15 @@
     curErr.textContent='';
     if(!nw){ nw2Err.textContent='새 비밀번호를 입력해 주세요.'; nw2Err.style.color='var(--red-err)'; return; }
     if(nw.length<8){ nw2Err.textContent='비밀번호는 8자 이상이어야 합니다.'; nw2Err.style.color='var(--red-err)'; return; }
+
+    // 비밀번호 패턴 검증 추가 ← 여기에!
+    const pwPattern = /^(?=.*[A-Za-z])(?=.*\d)(?=.*[@$!%*#?&])[A-Za-z\d@$!%*#?&]{4,20}$/;
+    if(!pwPattern.test(nw)){
+      nw2Err.textContent='영문, 숫자, 특수문자(@$!%*#?&)를 포함하여 입력해 주세요.';
+      nw2Err.style.color='var(--red-err)';
+      return;
+    }
+
     if(nw!==nw2){ openModal('modalPwMismatch'); return; }
     nw2Err.textContent='';
 
@@ -996,9 +1005,9 @@
       if(res.ok){
         openModal('modalPwSuccess');
       } else {
-        const errJson = await res.json(); // JSON으로 파싱
-        curErr.textContent = errJson.message; // message 필드만 추출
-        curErr.style.color='var(--red-err)';
+        const err = await res.text(); // json() → text()
+        curErr.textContent = err;
+        curErr.style.color = 'var(--red-err)';
       }
     } catch(e) {
       showToast('서버 오류가 발생했습니다.');

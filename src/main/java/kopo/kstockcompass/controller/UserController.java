@@ -9,6 +9,8 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.Map;
+
 // 유저 컨트롤러는 사용자 인증과 인가의 모든 입구를 관리
 // 데이터는 엔티티말고 DTO를 통함
 @RestController
@@ -28,8 +30,12 @@ public class UserController {
      */
     @PostMapping("/signup")
     public ResponseEntity<String> signUp(@Valid @RequestBody SignUpRequestDTO dto) {
-        userService.signUp(dto);
-        return ResponseEntity.ok("회원가입이 완료되었습니다.");
+        try {
+            userService.signUp(dto);
+            return ResponseEntity.ok("회원가입이 완료되었습니다.");
+        } catch (RuntimeException e) {
+            return ResponseEntity.badRequest().body(e.getMessage());
+        }
     }
 
     /**
@@ -39,9 +45,8 @@ public class UserController {
      * 특징: 세션을 서버에 저장하지 않는 'Stateless' 방식을 구현하여 서버 자원 효율을 극대화함.
      */
     @PostMapping("/login")
-    public ResponseEntity<String> login(@Valid @RequestBody LoginRequestDTO dto) {
-        // userService.login은 성공 시 JWT 문자열을 리턴하도록 설계됨
-        String result = userService.login(dto);
+    public ResponseEntity<Map<String, String>> login(@Valid @RequestBody LoginRequestDTO dto) {
+        Map<String, String> result = userService.login(dto);
         return ResponseEntity.ok(result);
     }
 
@@ -131,13 +136,24 @@ public class UserController {
             @RequestHeader("Authorization") String token,
             @RequestBody ChangePasswordRequestDTO dto) {
 
-        // 토큰 위변조 검사 및 사용자 식별 JWT
-        String pureToken = token.replace("Bearer ", "");
-        // 헤더에서 토큰을 꺼내서 이메일을 추출
-        String email = jwtProvider.getEmail(pureToken);
+        try {
+            // 토큰 위변조 검사 및 사용자 식별 JWT
+            // "Bearer " 접두사 제거 후 순수 토큰 추출
+            String pureToken = token.replace("Bearer ", "");
 
-        userService.changePassword(email, dto);
-        return ResponseEntity.ok("비밀번호 변경이 정상적으로 완료되었습니다.");
+            // 헤더에서 토큰을 꺼내서 이메일을 추출
+            // 별도의 ID 입력 없이도 현재 로그인한 본인 식별 가능
+            String email = jwtProvider.getEmail(pureToken);
+
+            // 비밀번호 변경 처리
+            userService.changePassword(email, dto);
+            return ResponseEntity.ok("비밀번호 변경이 정상적으로 완료되었습니다.");
+
+        } catch (RuntimeException e) {
+            // 현재 비밀번호 불일치 또는 새 비밀번호 동일 등 예외 발생 시
+            // 500 대신 400(Bad Request)으로 에러 메시지 반환
+            return ResponseEntity.badRequest().body(e.getMessage());
+        }
     }
 
 }

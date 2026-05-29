@@ -4,11 +4,13 @@ import kopo.kstockcompass.dto.ChangePasswordRequestDTO;
 import kopo.kstockcompass.dto.LoginRequestDTO;
 import kopo.kstockcompass.dto.SignUpRequestDTO;
 
+import java.util.Map;
+
 public interface IUserService {
 
     void signUp(SignUpRequestDTO dto);
 
-    String login(LoginRequestDTO dto);
+    Map<String, String> login(LoginRequestDTO dto);
 
     boolean checkEmail(String email);
 

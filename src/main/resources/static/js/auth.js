@@ -194,8 +194,9 @@ async function doLogin(){
         });
 
         if(res.ok){
-            const token = await res.text();
-            localStorage.setItem('jwt', token);
+            const data = await res.json(); // text() → json()으로 변경
+            localStorage.setItem('jwt', data.accessToken); // accessToken 저장
+            localStorage.setItem('refreshToken', data.refreshToken); // refreshToken도 저장
             localStorage.setItem('userEmail', email);
             state.loggedIn = true;
             state.user = {email: email, nickname: email.split('@')[0]};
@@ -345,7 +346,15 @@ async function doSignup(){
         } else {
             const err = await res.text();
             console.log('회원가입 실패:', err);
-            showToast('회원가입 실패: ' + err);
+            if(err.includes('전화번호')) {
+                document.getElementById('regPhoneErr').textContent = err;
+                document.getElementById('regPhoneErr').style.color = 'var(--red-err)';
+            } else if(err.includes('이메일')) {
+                document.getElementById('regEmailErr').textContent = err;
+                document.getElementById('regEmailErr').style.color = 'var(--red-err)';
+            } else {
+                showToast('회원가입 실패: ' + err);
+            }
         }
     } catch(e) {
         showToast('서버 오류가 발생했습니다.');
@@ -435,6 +444,7 @@ function doLogout() {
     state.loggedIn=false;
     state.user=null;
     localStorage.removeItem('jwt');
+    localStorage.removeItem('refreshToken');
     localStorage.removeItem('userEmail');
     closeModal('modalLogout');
     showToast('로그아웃되었습니다.');

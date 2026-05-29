@@ -537,16 +537,16 @@ async function loadPortfolio() {
         <div class="grid3 mb16">
         <div class="card" style="text-align:center;">
         <div style="font-size:11px;color:var(--gray);margin-bottom:6px;">총 평가금액</div>
-        <div style="font-size:18px;font-weight:700;">${fmt(totalEval)}원</div>
+        <div id="totalEvalDisplay" style="font-size:18px;font-weight:700;">${fmt(totalEval)}원</div>
         </div>
         <div class="card" style="text-align:center;">
         <div style="font-size:11px;color:var(--gray);margin-bottom:6px;">총 손익</div>
-        <div style="font-size:18px;font-weight:700;" class="${totalProfit>=0?'up':'down'}">${totalProfit>=0?'+':''}${fmt(Math.round(totalProfit))}원</div>
-        <div style="font-size:12px;" class="${totalProfit>=0?'up':'down'}">(${totalProfitRate>=0?'+':''}${totalProfitRate.toFixed(2)}%)</div>
+        <div id="totalProfitDisplay" style="font-size:18px;font-weight:700;" class="${totalProfit>=0?'up':'down'}">${totalProfit>=0?'+':''}${fmt(Math.round(totalProfit))}원</div>
+        <div id="totalProfitRateDisplay" style="font-size:12px;" class="${totalProfit>=0?'up':'down'}">(${totalProfitRate>=0?'+':''}${totalProfitRate.toFixed(2)}%)</div>
         </div>
         <div class="card" style="text-align:center;">
         <div style="font-size:11px;color:var(--gray);margin-bottom:6px;">순자산</div>
-        <div style="font-size:18px;font-weight:700;">${fmt(Math.round(netAsset))}원</div>
+        <div id="netAssetDisplay" style="font-size:18px;font-weight:700;">${fmt(Math.round(netAsset))}원</div>
         </div>
         </div>
 
@@ -688,6 +688,34 @@ async function loadPortfolio() {
                         }
                     } catch(e) {}
                 }));
+
+                // 상단 요약 카드 갱신
+                const newTotalEval = portfolio.reduce((sum, p) => {
+                    const evalEl = document.getElementById(`port-eval-${p.stockCd}`);
+                    const evalAmt = evalEl ? Number(evalEl.textContent.replace(/[^0-9]/g, '')) : 0;
+                    return sum + evalAmt;
+                }, 0);
+                const newTotalInvest = portfolio.reduce((sum, p) => sum + Number(p.avgPrice) * Number(p.quantity), 0);
+                const newTotalProfit = newTotalEval - newTotalInvest;
+                const newTotalProfitRate = newTotalInvest > 0 ? (newTotalProfit / newTotalInvest * 100) : 0;
+                const newNetAsset = newTotalEval + cash - loan;
+
+                const totalEvalEl = document.getElementById('totalEvalDisplay');
+                const totalProfitEl = document.getElementById('totalProfitDisplay');
+                const totalProfitRateEl = document.getElementById('totalProfitRateDisplay');
+                const netAssetEl = document.getElementById('netAssetDisplay');
+
+                if(totalEvalEl) totalEvalEl.textContent = fmt(Math.round(newTotalEval)) + '원';
+                if(totalProfitEl) {
+                    totalProfitEl.className = newTotalProfit >= 0 ? 'up' : 'down';
+                    totalProfitEl.textContent = `${newTotalProfit>=0?'+':''}${fmt(Math.round(newTotalProfit))}원`;
+                }
+                if(totalProfitRateEl) {
+                    totalProfitRateEl.className = newTotalProfitRate >= 0 ? 'up' : 'down';
+                    totalProfitRateEl.textContent = `(${newTotalProfitRate>=0?'+':''}${newTotalProfitRate.toFixed(2)}%)`;
+                }
+                if(netAssetEl) netAssetEl.textContent = fmt(Math.round(newNetAsset)) + '원';
+
             }, 1000);
         }
 
@@ -704,7 +732,6 @@ async function loadPortfolio() {
                 const userEmail = state.user?.email;
                 if(!userEmail) return;
 
-                // 현재 총 자산 계산 (평가금 + 예수금 - 대출금)
                 const currentTotalEval = portfolio.reduce((sum, p) => {
                     const priceEl = document.getElementById(`port-price-${p.stockCd}`);
                     const currentPrice = priceEl ? Number(priceEl.textContent.replace(/[^0-9]/g, '')) : Number(p.currentPrice);
