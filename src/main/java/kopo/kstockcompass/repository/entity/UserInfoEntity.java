@@ -2,16 +2,17 @@ package kopo.kstockcompass.repository.entity;
 
 import jakarta.persistence.*;
 import lombok.*;
-import org.hibernate.annotations.CreationTimestamp; // 추가
+import org.hibernate.annotations.CreationTimestamp;
 import java.time.LocalDateTime;
 
 @Entity
 @Table(name = "USER_INFO")
-// 교수님 PPT6장 9페이지 참고
-@Getter @Setter @NoArgsConstructor
+@Getter
+@NoArgsConstructor
 @AllArgsConstructor
-@Builder // 교수님 PPT6장 8페이지 참고
+@Builder
 public class UserInfoEntity {
+
     @Id
     @Column(name = "USER_EMAIL", length = 100)
     private String userEmail;
@@ -25,7 +26,13 @@ public class UserInfoEntity {
     @Column(name = "USER_PNUM", nullable = false, unique = true, length = 20)
     private String userPnum;
 
-    @CreationTimestamp // 자동으로 현재 시간 입력
-    @Column(name = "REG_DT", nullable = false, updatable = false) // 수정 방지
+    @CreationTimestamp
+    @Column(name = "REG_DT", nullable = false, updatable = false)
     private LocalDateTime regDt;
+
+    // 비밀번호 변경 전용 메서드 (setter 대신 명시적 메서드 사용)
+    // Entity 불변성 원칙을 지키면서 비밀번호만 선택적으로 변경 가능
+    public void updatePassword(String newPwd) {
+        this.userPwd = newPwd;
+    }
 }
