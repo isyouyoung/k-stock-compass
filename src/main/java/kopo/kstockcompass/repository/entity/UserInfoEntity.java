@@ -14,7 +14,7 @@ import java.time.LocalDateTime;
 public class UserInfoEntity {
 
     @Id
-    @Column(name = "USER_EMAIL", length = 100)
+    @Column(name = "USER_EMAIL", length = 255)
     private String userEmail;
 
     @Column(name = "USER_PWD", nullable = false, length = 255)
@@ -23,7 +23,7 @@ public class UserInfoEntity {
     @Column(name = "USER_NAME", nullable = false, length = 50)
     private String userName;
 
-    @Column(name = "USER_PNUM", nullable = false, unique = true, length = 20)
+    @Column(name = "USER_PNUM", nullable = false, unique = true, length = 255)
     private String userPnum;
 
     @CreationTimestamp
