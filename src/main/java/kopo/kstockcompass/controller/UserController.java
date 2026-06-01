@@ -165,4 +165,25 @@ public class UserController {
             return ResponseEntity.internalServerError().body("서버 오류가 발생했습니다.");
         }
     }
+
+    /**
+     * [9. 회원 탈퇴 API]
+     * JWT 토큰에서 이메일 추출 후 관련 데이터 전체 삭제
+     * 삭제 순서: 알림로그 → 알림 → 관심종목 → 포트폴리오 → 계좌 → 시뮬레이터 → 자산히스토리 → 회원정보
+     */
+    @DeleteMapping("/delete")
+    public ResponseEntity<String> deleteUser(
+            @RequestHeader("Authorization") String token) {
+        try {
+            String pureToken = token.replace("Bearer ", "");
+            String email = jwtProvider.getEmail(pureToken);
+            userService.deleteUser(email);
+            return ResponseEntity.ok("회원 탈퇴가 완료되었습니다.");
+        } catch (RuntimeException e) {
+            return ResponseEntity.badRequest().body(e.getMessage());
+        } catch (Exception e) {
+            return ResponseEntity.internalServerError().body("서버 오류가 발생했습니다.");
+        }
+    }
+
 }
