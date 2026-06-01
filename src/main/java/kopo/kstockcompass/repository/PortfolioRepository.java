@@ -11,4 +11,7 @@ public interface PortfolioRepository extends JpaRepository<PortfolioEntity, Long
 
     @Transactional
     void deleteByPortIdAndUserEmail(Long portId, String userEmail);
+
+    @Transactional
+    void deleteByUserEmail(String userEmail);
 }

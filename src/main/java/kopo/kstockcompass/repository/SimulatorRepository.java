@@ -11,4 +11,7 @@ public interface SimulatorRepository extends JpaRepository<SimulatorEntity, Long
 
     @Transactional
     void deleteBySimIdAndUserEmail(Long simId, String userEmail);
+
+    @Transactional
+    void deleteByUserEmail(String userEmail);
 }

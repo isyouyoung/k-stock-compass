@@ -1,6 +1,7 @@
 package kopo.kstockcompass.repository;
 import kopo.kstockcompass.repository.entity.FavoriteEntity;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 import java.util.Optional;
@@ -15,4 +16,7 @@ public interface FavoriteRepository extends JpaRepository<FavoriteEntity, Long> 
 
     // 관심종목 삭제
     void deleteByUserEmailAndStockCd(String userEmail, String stockCd);
+
+    @Transactional
+    void deleteByUserEmail(String userEmail);
 }

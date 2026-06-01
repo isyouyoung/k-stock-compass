@@ -2,6 +2,7 @@ package kopo.kstockcompass.repository;
 
 import kopo.kstockcompass.repository.entity.AlertEntity;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 
@@ -15,4 +16,7 @@ public interface AlertRepository extends JpaRepository<AlertEntity, Long> {
 
     // 알림 삭제
     void deleteByAlertIdAndUserEmail(Long alertId, String userEmail);
+
+    @Transactional
+    void deleteByUserEmail(String userEmail);
 }
