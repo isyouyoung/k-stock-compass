@@ -7,6 +7,7 @@ import kopo.kstockcompass.dto.SignUpRequestDTO;
 import kopo.kstockcompass.repository.entity.UserInfoEntity;
 import kopo.kstockcompass.repository.UserInfoRepository;
 import kopo.kstockcompass.service.IUserService;
+import kopo.kstockcompass.util.EncryptUtil;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.redis.core.StringRedisTemplate;
@@ -30,105 +31,123 @@ public class UserService implements IUserService {
     private final JavaMailSender mailSender;
     private final StringRedisTemplate redisTemplate;
 
-    // 회원가입 기능 (이메일 중복 체크 후 사용자 저장)
+    // 회원가입 기능
+    // 이메일, 전화번호는 AES-128 CBC 양방향 암호화 후 저장
+    // 비밀번호는 BCrypt 단방향 암호화 후 저장
     @Override
-    public void signUp(SignUpRequestDTO dto) {
-        if (userInfoRepository.existsByUserEmail(dto.getUserEmail())) {
+    public void signUp(SignUpRequestDTO dto) throws Exception {
+
+        // 이메일 AES-128 CBC 암호화 후 중복 체크
+        String encEmail = EncryptUtil.encAES128CBC(dto.getUserEmail());
+
+        if (userInfoRepository.existsByUserEmail(encEmail)) {
             throw new RuntimeException("이미 사용중인 이메일입니다.");
         }
 
         try {
-            // 사용자 엔티티 생성 후 DB 저장
-            // 비밀번호는 BCrypt 단방향 암호화 적용 (복호화 불가)
+            // 전화번호 AES-128 CBC 암호화
+            String encPnum = EncryptUtil.encAES128CBC(dto.getUserPnum());
+
             UserInfoEntity user = UserInfoEntity.builder()
-                    .userEmail(dto.getUserEmail())
-                    .userPwd(passwordEncoder.encode(dto.getUserPwd()))
-                    .userName(dto.getUserName())
-                    .userPnum(dto.getUserPnum())
+                    .userEmail(encEmail)                              // 암호화된 이메일 저장
+                    .userPwd(passwordEncoder.encode(dto.getUserPwd())) // BCrypt 암호화
+                    .userName(dto.getUserName())                       // 이름은 평문 저장
+                    .userPnum(encPnum)                                // 암호화된 전화번호 저장
                     .build();
 
             userInfoRepository.save(user);
 
         } catch (org.springframework.dao.DataIntegrityViolationException e) {
-            // 전화번호 UNIQUE 제약 위반 시 (이미 가입된 전화번호)
-            // DB 에러를 그대로 던지지 않고 사용자 친화적 메시지로 변환
+            // 전화번호 UNIQUE 제약 위반 시
             throw new RuntimeException("이미 사용중인 전화번호입니다.");
         }
     }
 
-    // 로그인 기능 (JWT Access + Refresh Token 발급 구조)
+    // 로그인 기능 (JWT Access + Refresh Token 발급)
+    // 입력받은 이메일을 암호화하여 DB 조회
+    // 토큰에는 복호화된 실제 이메일 저장
     @Override
-    public Map<String, String> login(LoginRequestDTO dto) {
+    public Map<String, String> login(LoginRequestDTO dto) throws Exception {
 
-        // 이메일 기준 사용자 조회
-        UserInfoEntity user = userInfoRepository.findByUserEmail(dto.getUserEmail())
+        // 입력 이메일 암호화 후 DB 조회
+        String encEmail = EncryptUtil.encAES128CBC(dto.getUserEmail());
+
+        UserInfoEntity user = userInfoRepository.findByUserEmail(encEmail)
                 .orElseThrow(() -> new RuntimeException("이메일이 존재하지 않습니다."));
 
-        // 비밀번호 검증 (BCrypt matches 사용)
+        // 비밀번호 검증
         if (!passwordEncoder.matches(dto.getUserPwd(), user.getUserPwd())) {
             throw new RuntimeException("비밀번호가 일치하지 않습니다.");
         }
 
-        // Access Token 생성 (API 인증용, 단기 유효)
-        String accessToken = jwtProvider.createToken(user.getUserEmail());
+        // DB에서 꺼낸 이메일 복호화 (JWT 토큰에 실제 이메일 저장)
+        String decEmail = EncryptUtil.decAES128CBC(user.getUserEmail());
 
-        // Refresh Token 생성 (재발급용, 장기 유효)
-        String refreshToken = jwtProvider.createRefreshToken(user.getUserEmail());
+        // Access Token 생성
+        String accessToken = jwtProvider.createToken(decEmail);
 
-        // Refresh Token Redis 저장 (서버측 세션 역할)
+        // Refresh Token 생성
+        String refreshToken = jwtProvider.createRefreshToken(decEmail);
+
+        // Refresh Token Redis 저장
         try {
             redisTemplate.opsForValue().set(
-                    "refresh:" + user.getUserEmail(),
+                    "refresh:" + decEmail,
                     refreshToken,
                     7, TimeUnit.DAYS
             );
-            log.info("Refresh Token Redis 저장 완료: {}", user.getUserEmail());
+            log.info("Refresh Token Redis 저장 완료: {}", decEmail);
         } catch (Exception e) {
-            // Redis 장애 시에도 로그인은 유지되도록 예외 처리
             log.warn("Refresh Token Redis 저장 실패: {}", e.getMessage());
         }
 
-        // 클라이언트에 Access + Refresh Token 반환
         return Map.of("accessToken", accessToken, "refreshToken", refreshToken);
     }
 
-    // 이메일 중복 확인
+    // 이메일 중복 확인 (암호화 후 DB 조회)
     @Override
-    public boolean checkEmail(String email) {
-        return userInfoRepository.existsByUserEmail(email);
+    public boolean checkEmail(String email) throws Exception {
+        String encEmail = EncryptUtil.encAES128CBC(email);
+        return userInfoRepository.existsByUserEmail(encEmail);
     }
 
-    // 아이디 찾기 (마스킹 처리하여 일부 정보만 반환)
+    // 아이디 찾기 (이름 + 전화번호 암호화 후 조회, 이메일 복호화 + 마스킹)
     @Override
-    public String findEmail(String userName, String userPnum) {
-        UserInfoEntity user = userInfoRepository.findByUserNameAndUserPnum(userName, userPnum)
+    public String findEmail(String userName, String userPnum) throws Exception {
+
+        // 전화번호 암호화 후 DB 조회
+        String encPnum = EncryptUtil.encAES128CBC(userPnum);
+
+        UserInfoEntity user = userInfoRepository.findByUserNameAndUserPnum(userName, encPnum)
                 .orElseThrow(() -> new RuntimeException("일치하는 회원 정보가 없습니다."));
 
-        String email = user.getUserEmail();
-        int atIndex = email.indexOf("@");
+        // DB에서 꺼낸 이메일 복호화
+        String email = EncryptUtil.decAES128CBC(user.getUserEmail());
 
-        // 앞 2자리만 노출 + 나머지 마스킹 처리
+        int atIndex = email.indexOf("@");
         String prefix = email.substring(0, Math.min(2, atIndex));
         return prefix + "**" + email.substring(atIndex);
     }
 
     // 비밀번호 초기화 (임시 비밀번호 이메일 발송)
     @Override
-    public void resetPassword(String userName, String userEmail) {
+    public void resetPassword(String userName, String userEmail) throws Exception {
 
-        // 사용자 검증 (이름 + 이메일 일치 확인)
-        UserInfoEntity user = userInfoRepository.findByUserEmail(userEmail)
+        // 이메일 암호화 후 DB 조회
+        String encEmail = EncryptUtil.encAES128CBC(userEmail);
+
+        UserInfoEntity user = userInfoRepository.findByUserEmail(encEmail)
                 .filter(u -> u.getUserName().equals(userName))
                 .orElseThrow(() -> new RuntimeException("입력하신 회원 정보가 일치하지 않습니다."));
 
-        // 임시 비밀번호 생성 (UUID 기반 8자리)
+        // 임시 비밀번호 생성
         String tempPassword = UUID.randomUUID().toString().replace("-", "").substring(0, 8);
 
-        // 비밀번호 암호화 후 저장
-        user.setUserPwd(passwordEncoder.encode(tempPassword));
+        // updatePassword 메서드로 비밀번호 변경 (setter 사용 금지)
+        user.updatePassword(passwordEncoder.encode(tempPassword));
         userInfoRepository.save(user);
 
-        // 이메일 발송
+        // 평문 이메일로 발송
         SimpleMailMessage message = new SimpleMailMessage();
         message.setTo(userEmail);
         message.setSubject("[K-Stock Compass] 임시 비밀번호 발급");
@@ -136,12 +155,14 @@ public class UserService implements IUserService {
         mailSender.send(message);
     }
 
-    // 비밀번호 변경 기능
+    // 비밀번호 변경
     @Override
-    public void changePassword(String email, ChangePasswordRequestDTO dto) {
+    public void changePassword(String email, ChangePasswordRequestDTO dto) throws Exception {
 
-        // 사용자 조회
-        UserInfoEntity user = userInfoRepository.findByUserEmail(email)
+        // JWT에서 추출한 이메일(복호화 상태) 암호화 후 DB 조회
+        String encEmail = EncryptUtil.encAES128CBC(email);
+
+        UserInfoEntity user = userInfoRepository.findByUserEmail(encEmail)
                 .orElseThrow(() -> new RuntimeException("사용자를 찾을 수 없습니다."));
 
         // 현재 비밀번호 검증
@@ -154,8 +175,8 @@ public class UserService implements IUserService {
             throw new RuntimeException("새 비밀번호가 현재 비밀번호와 동일합니다.");
         }
 
-        // 비밀번호 변경 (BCrypt 단방향 암호화)
-        user.setUserPwd(passwordEncoder.encode(dto.getNewPwd()));
+        // updatePassword 메서드로 비밀번호 변경 (setter 사용 금지)
+        user.updatePassword(passwordEncoder.encode(dto.getNewPwd()));
         userInfoRepository.save(user);
     }
 }
