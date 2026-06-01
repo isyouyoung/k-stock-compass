@@ -4,6 +4,7 @@ import kopo.kstockcompass.config.JwtProvider;
 import kopo.kstockcompass.dto.ChangePasswordRequestDTO;
 import kopo.kstockcompass.dto.LoginRequestDTO;
 import kopo.kstockcompass.dto.SignUpRequestDTO;
+import kopo.kstockcompass.repository.entity.AlertEntity;
 import kopo.kstockcompass.repository.entity.UserInfoEntity;
 import kopo.kstockcompass.repository.UserInfoRepository;
 import kopo.kstockcompass.service.IUserService;
@@ -15,6 +16,9 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.mail.SimpleMailMessage;
 import org.springframework.mail.javamail.JavaMailSender;
+import org.springframework.transaction.annotation.Transactional;
+import kopo.kstockcompass.repository.*;
+import java.util.List;
 
 import java.util.Map;
 import java.util.UUID;
@@ -30,6 +34,13 @@ public class UserService implements IUserService {
     private final JwtProvider jwtProvider;
     private final JavaMailSender mailSender;
     private final StringRedisTemplate redisTemplate;
+    private final AlertRepository alertRepository;
+    private final AlertLogRepository alertLogRepository;
+    private final FavoriteRepository favoriteRepository;
+    private final PortfolioRepository portfolioRepository;
+    private final AccountRepository accountRepository;
+    private final SimulatorRepository simulatorRepository;
+    private final AssetHistoryRepository assetHistoryRepository;
 
     // 회원가입 기능
     // 이메일, 전화번호는 AES-128 CBC 양방향 암호화 후 저장
@@ -178,5 +189,46 @@ public class UserService implements IUserService {
         // updatePassword 메서드로 비밀번호 변경 (setter 사용 금지)
         user.updatePassword(passwordEncoder.encode(dto.getNewPwd()));
         userInfoRepository.save(user);
+    }
+
+    // 회원 탈퇴 (관련 데이터 전체 삭제)
+    @Override
+    @Transactional
+    public void deleteUser(String email) throws Exception {
+
+        // JWT에서 추출한 이메일(복호화 상태) → 암호화 후 DB 조회
+        String encEmail = EncryptUtil.encAES128CBC(email);
+
+        // 1. 내 알림 목록 조회 (알림 로그 삭제를 위해)
+        List<AlertEntity> alerts = alertRepository.findByUserEmail(encEmail);
+        if (!alerts.isEmpty()) {
+            List<Long> alertIds = alerts.stream()
+                    .map(AlertEntity::getAlertId)
+                    .toList();
+            // 2. 알림 로그 삭제 (외래키 때문에 먼저 삭제)
+            alertLogRepository.deleteByAlertIdIn(alertIds);
+            // 3. 알림 삭제
+            alertRepository.deleteByUserEmail(encEmail);
+        }
+
+        // 4. 관심종목 삭제
+        favoriteRepository.deleteByUserEmail(encEmail);
+
+        // 5. 포트폴리오 삭제
+        portfolioRepository.deleteByUserEmail(encEmail);
+
+        // 6. 계좌 삭제
+        accountRepository.deleteById(encEmail);
+
+        // 7. 시뮬레이터 삭제
+        simulatorRepository.deleteByUserEmail(encEmail);
+
+        // 8. 자산 히스토리 삭제
+        assetHistoryRepository.deleteByUserEmail(encEmail);
+
+        // 9. 회원 정보 삭제 (마지막!)
+        userInfoRepository.deleteById(encEmail);
+
+        log.info("회원 탈퇴 완료: {}", email);
     }
 }
