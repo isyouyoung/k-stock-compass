@@ -847,7 +847,37 @@
     }
   }
 
-  function doLeave(){closeModal('modalLeave');state.loggedIn=false;state.user=null;showToast('탈퇴가 완료되었습니다.');navigate('main');}
+  async function doLeave(){
+    try {
+      const token = localStorage.getItem('jwt');
+      const res = await fetch('/api/user/delete', {
+        method: 'DELETE',
+        headers: {
+          'Authorization': 'Bearer ' + token
+        }
+      });
+
+      if(res.ok) {
+        closeModal('modalLeave');
+        state.loggedIn = false;
+        state.user = null;
+        state.favorites = [];
+        state.alerts = [];
+        localStorage.removeItem('jwt');
+        localStorage.removeItem('refreshToken');
+        localStorage.removeItem('userEmail');
+        sessionStorage.clear();
+        showToast('탈퇴가 완료되었습니다.');
+        navigate('main');
+      } else {
+        closeModal('modalLeave');
+        showToast('탈퇴 처리 중 오류가 발생했습니다.');
+      }
+    } catch(e) {
+      closeModal('modalLeave');
+      showToast('서버 오류가 발생했습니다.');
+    }
+  }
 
   function selectDir(dir){
     document.getElementById('alertDir').value=dir;
