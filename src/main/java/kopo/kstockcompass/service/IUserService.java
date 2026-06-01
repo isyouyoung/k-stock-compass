@@ -19,4 +19,7 @@ public interface IUserService {
     void resetPassword(String userName, String userEmail) throws Exception;
 
     void changePassword(String email, ChangePasswordRequestDTO dto) throws Exception;
+
+    // 회원 탈퇴 (관련 데이터 전체 삭제)
+    void deleteUser(String email) throws Exception;
 }
