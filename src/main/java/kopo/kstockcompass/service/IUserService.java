@@ -22,4 +22,6 @@ public interface IUserService {
 
     // 회원 탈퇴 (관련 데이터 전체 삭제)
     void deleteUser(String email) throws Exception;
+
+    String refreshAccessToken(String refreshToken) throws Exception;
 }

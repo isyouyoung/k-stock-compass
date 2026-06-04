@@ -465,3 +465,52 @@ function requireLogin(page){
     return false;
 }
 
+// Access Token 만료 시 자동 재발급
+async function refreshAccessToken() {
+    const refreshToken = localStorage.getItem('refreshToken');
+    if (!refreshToken) return null;
+
+    try {
+        const res = await fetch('/api/user/refresh', {
+            method: 'POST',
+            headers: { 'Authorization': 'Bearer ' + refreshToken }
+        });
+
+        if (res.ok) {
+            const data = await res.json();
+            localStorage.setItem('jwt', data.accessToken);
+            console.log('Access Token 재발급 성공');
+            return data.accessToken;
+        } else {
+            // Refresh Token도 만료 → 로그아웃
+            doLogout();
+            return null;
+        }
+    } catch(e) {
+        doLogout();
+        return null;
+    }
+}
+
+// 인증이 필요한 API 호출 (401 시 자동 재발급)
+async function authFetch(url, options = {}) {
+    const token = localStorage.getItem('jwt');
+    options.headers = {
+        ...options.headers,
+        'Authorization': 'Bearer ' + token
+    };
+
+    let res = await fetch(url, options);
+
+    // 401 → 토큰 재발급 후 재시도
+    if (res.status === 401) {
+        const newToken = await refreshAccessToken();
+        if (newToken) {
+            options.headers['Authorization'] = 'Bearer ' + newToken;
+            res = await fetch(url, options);
+        }
+    }
+
+    return res;
+}
+

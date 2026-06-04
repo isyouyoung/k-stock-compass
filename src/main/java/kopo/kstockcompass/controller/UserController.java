@@ -6,6 +6,7 @@ import kopo.kstockcompass.service.IEmailVerifyService;
 import kopo.kstockcompass.service.IUserService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -183,6 +184,24 @@ public class UserController {
             return ResponseEntity.badRequest().body(e.getMessage());
         } catch (Exception e) {
             return ResponseEntity.internalServerError().body("서버 오류가 발생했습니다.");
+        }
+    }
+
+    /**
+     * [Access Token 재발급 API]
+     * 역할: Refresh Token으로 새 Access Token 발급
+     * 흐름: Refresh Token 검증 → Redis 비교 → 새 Access Token 반환
+     */
+    @PostMapping("/refresh")
+    public ResponseEntity<?> refresh(@RequestHeader("Authorization") String token) {
+        try {
+            String refreshToken = token.replace("Bearer ", "").trim();
+            String newAccessToken = userService.refreshAccessToken(refreshToken);
+            return ResponseEntity.ok(Map.of("accessToken", newAccessToken));
+        } catch (RuntimeException e) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(Map.of("error", e.getMessage()));
+        } catch (Exception e) {
+            return ResponseEntity.internalServerError().body(Map.of("error", "서버 오류 발생"));
         }
     }
 

@@ -231,4 +231,34 @@ public class UserService implements IUserService {
 
         log.info("회원 탈퇴 완료: {}", email);
     }
+
+    /**
+     * [Access Token 재발급]
+     * 역할: 만료된 Access Token 대신 Refresh Token으로 새 Access Token 발급
+     * 흐름:
+     * 1. Refresh Token JWT 유효성 검사
+     * 2. 이메일 추출
+     * 3. Redis에 저장된 Refresh Token과 비교 (진짜 핵심!)
+     * 4. 일치하면 새 Access Token 발급
+     */
+    @Override
+    public String refreshAccessToken(String refreshToken) throws Exception {
+        // 1. Refresh Token 유효성 검사
+        if (!jwtProvider.validateToken(refreshToken)) {
+            throw new RuntimeException("유효하지 않은 Refresh Token입니다.");
+        }
+
+        // 2. 이메일 추출
+        String email = jwtProvider.getEmail(refreshToken);
+
+        // 3. Redis에 저장된 Refresh Token과 비교 (탈취 방지 핵심 장치)
+        String savedRefreshToken = redisTemplate.opsForValue().get("refresh:" + email);
+        if (savedRefreshToken == null || !savedRefreshToken.equals(refreshToken)) {
+            throw new RuntimeException("Refresh Token이 일치하지 않거나 만료되었습니다.");
+        }
+
+        // 4. 새 Access Token 발급
+        log.info("Access Token 재발급 완료: {}", email);
+        return jwtProvider.createToken(email);
+    }
 }
