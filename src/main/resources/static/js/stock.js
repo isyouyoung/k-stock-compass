@@ -440,13 +440,10 @@ async function sendAiMsg(code, name){
     }
 
     try {
-        const token = localStorage.getItem('jwt');
-        const res = await fetch(`/api/ai/chat/${code}?stockName=${encodeURIComponent(name)}`, {
+        const res = await authFetch(`/api/ai/chat/${code}?stockName=${encodeURIComponent(name)}`, {
             method: 'POST',
             headers: {
-                'Content-Type': 'application/json',
-                ...(token ? {'Authorization': 'Bearer ' + token} : {})
-            },
+                'Content-Type': 'application/json' },
             body: JSON.stringify({ message: text })
         });
 
@@ -510,12 +507,11 @@ async function pgPortfolio() {
 }
 
 async function loadPortfolio() {
-    const token = localStorage.getItem('jwt');
     try {
         const [portRes, accRes, simRes] = await Promise.all([
-            fetch('/api/portfolio', { headers: { 'Authorization': 'Bearer ' + token } }),
-            fetch('/api/portfolio/account', { headers: { 'Authorization': 'Bearer ' + token } }),
-            fetch('/api/simulator', { headers: { 'Authorization': 'Bearer ' + token } })
+            authFetch('/api/portfolio'),
+            authFetch('/api/portfolio/account'),
+            authFetch('/api/simulator')
         ]);
         const portfolio = await portRes.json();
         const account = await accRes.json();
@@ -728,7 +724,6 @@ async function loadPortfolio() {
                 return;
             }
             try {
-                const token = localStorage.getItem('jwt');
                 const userEmail = state.user?.email;
                 if(!userEmail) return;
 
@@ -739,12 +734,10 @@ async function loadPortfolio() {
                 }, 0);
                 const totalAsset = Math.round(currentTotalEval + cash - loan);
 
-                await fetch('/api/asset-history', {
+                await authFetch('/api/asset-history', {
                     method: 'POST',
                     headers: {
-                        'Content-Type': 'application/json',
-                        'Authorization': 'Bearer ' + token
-                    },
+                        'Content-Type': 'application/json' },
                     body: JSON.stringify({ userEmail, totalAsset })
                 });
             } catch(e) {
@@ -802,14 +795,13 @@ async function doAddPortfolio() {
     const code = document.getElementById('portStockCd').value;
     const avgPrice = document.getElementById('portAvgPrice').value;
     const qty = document.getElementById('portQty').value;
-    const token = localStorage.getItem('jwt');
 
     if (!code || !avgPrice || !qty) { showToast('모든 항목을 입력해 주세요.'); return; }
 
     try {
-        const res = await fetch('/api/portfolio', {
+        const res = await authFetch('/api/portfolio', {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token },
+            headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ stockCd: code, avgPrice: parseInt(avgPrice), quantity: parseInt(qty) })
         });
         if (res.ok) {
@@ -822,11 +814,9 @@ async function doAddPortfolio() {
 }
 
 async function deletePortfolio(portId) {
-    const token = localStorage.getItem('jwt');
     try {
-        const res = await fetch(`/api/portfolio/${portId}`, {
+        const res = await authFetch(`/api/portfolio/${portId}`, {
             method: 'DELETE',
-            headers: { 'Authorization': 'Bearer ' + token }
         });
         if (res.ok) {
             showToast('삭제되었습니다.');
@@ -852,11 +842,10 @@ function openAccountEdit(cash, loan) {
 async function doUpdateAccount() {
     const cash = document.getElementById('editCash').value;
     const loan = document.getElementById('editLoan').value;
-    const token = localStorage.getItem('jwt');
     try {
-        const res = await fetch('/api/portfolio/account', {
+        const res = await authFetch('/api/portfolio/account', {
             method: 'PUT',
-            headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token },
+            headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ cash: parseInt(cash||0), loan: parseInt(loan||0) })
         });
         if (res.ok) {
@@ -916,14 +905,13 @@ async function doAddSimulator() {
     const avgPrice = document.getElementById('simAvgPrice').value;
     const qty = document.getElementById('simQtyInput').value;
     const targetPrice = document.getElementById('simTargetPrice').value;
-    const token = localStorage.getItem('jwt');
 
     if (!code || !avgPrice || !qty || !targetPrice) { showToast('모든 항목을 입력해 주세요.'); return; }
 
     try {
-        const res = await fetch('/api/simulator', {
+        const res = await authFetch('/api/simulator', {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token },
+            headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ stockCd: code, stockNm: name, avgPrice: parseInt(avgPrice), quantity: parseInt(qty), targetPrice: parseInt(targetPrice) })
         });
         if (res.ok) {
@@ -953,11 +941,10 @@ async function doUpdateSimulator(simId) {
     const avgPrice = document.getElementById('editSimAvg').value;
     const qty = document.getElementById('editSimQty').value;
     const targetPrice = document.getElementById('editSimTarget').value;
-    const token = localStorage.getItem('jwt');
     try {
-        const res = await fetch(`/api/simulator/${simId}`, {
+        const res = await authFetch(`/api/simulator/${simId}`, {
             method: 'PUT',
-            headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token },
+            headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ avgPrice: parseInt(avgPrice), quantity: parseInt(qty), targetPrice: parseInt(targetPrice) })
         });
         if (res.ok) {
@@ -968,11 +955,9 @@ async function doUpdateSimulator(simId) {
 }
 
 async function deleteSimulator(simId) {
-    const token = localStorage.getItem('jwt');
     try {
-        const res = await fetch(`/api/simulator/${simId}`, {
+        const res = await authFetch(`/api/simulator/${simId}`, {
             method: 'DELETE',
-            headers: { 'Authorization': 'Bearer ' + token }
         });
         if (res.ok) {
             showToast('삭제되었습니다.');
@@ -1055,7 +1040,6 @@ async function pgAssetChart() {
         </div>
         </div>`;
 
-    const token = localStorage.getItem('jwt');
     const userEmail = state.user?.email;
     if (!userEmail) return;
 
@@ -1098,9 +1082,8 @@ async function pgAssetChart() {
     };
 
     try {
-        const res = await fetch(`/api/asset-history/${encodeURIComponent(userEmail)}`, {
-            headers: { 'Authorization': 'Bearer ' + token }
-        });
+        const res = await authFetch(`/api/asset-history/${encodeURIComponent(userEmail)}`
+        );
         const data = await res.json();
 
         if (!data || data.length === 0) {
@@ -1178,9 +1161,8 @@ async function pgAssetChart() {
                 return;
             }
             try {
-                const res2 = await fetch(`/api/asset-history/${encodeURIComponent(userEmail)}`, {
-                    headers: { 'Authorization': 'Bearer ' + token }
-                });
+                const res2 = await authFetch(`/api/asset-history/${encodeURIComponent(userEmail)}`
+                );
                 const newData = await res2.json();
                 if(!newData || newData.length === 0) return;
 
