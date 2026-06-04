@@ -22,4 +22,10 @@ public interface IAlertService {
     // 알림 로그 읽음 처리
     void markAsRead(Long logId, String userEmail);
 
+    // 알림 로그 삭제
+    void deleteAlertLog(Long logId, String userEmail);
+
+    // 알림 수정
+    void updateAlert(Long alertId, String userEmail, Long targetPrice, String direction);
+
 }

@@ -148,4 +148,38 @@ public class AlertController {
     private String getEmail(String token) {
         return jwtProvider.getEmail(token.replace("Bearer ", "").trim());
     }
+
+
+
+    /**
+     * [알림 로그 삭제 API]
+     * 기능: 알림 내역에서 특정 로그 삭제
+     * 보안: 본인 알림 로그만 삭제 가능
+     */
+    @DeleteMapping("/log/{logId}")
+    public ResponseEntity<String> deleteAlertLog(
+            @RequestHeader("Authorization") String token,
+            @PathVariable Long logId) {
+        String userEmail = getEmail(token);
+        alertService.deleteAlertLog(logId, userEmail);
+        return ResponseEntity.ok("알림 내역이 삭제되었습니다.");
+    }
+
+    /**
+     * [알림 수정 API]
+     * 기능: 목표가 및 조건(이상/이하) 수정
+     * 보안: 본인 알림만 수정 가능
+     */
+    @PutMapping("/{alertId}")
+    public ResponseEntity<String> updateAlert(
+            @RequestHeader("Authorization") String token,
+            @PathVariable Long alertId,
+            @RequestBody @Valid AlertRequestDTO dto) {
+        String userEmail = getEmail(token);
+        alertService.updateAlert(alertId, userEmail, dto.getTargetPrice(), dto.getDirection());
+        return ResponseEntity.ok("알림이 수정되었습니다.");
+    }
+
+
+
 }

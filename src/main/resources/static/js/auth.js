@@ -205,6 +205,8 @@ async function doLogin(){
             setTimeout(() => {
                 document.getElementById('loginSuccessBtn').focus();
             }, 100);
+            requestNotificationPermission();
+            startAlertPolling();
         } else {
             openModal('modalLoginFail');
         }

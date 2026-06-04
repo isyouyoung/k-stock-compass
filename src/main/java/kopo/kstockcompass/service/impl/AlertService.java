@@ -206,4 +206,50 @@ public class AlertService implements IAlertService {
                     });
         });
     }
+
+    /**
+     * [알림 로그 삭제]
+     * 역할: 알림 내역에서 특정 로그를 삭제합니다.
+     * 보안: 본인 알림 로그만 삭제 가능하도록 검증합니다.
+     */
+    @Override
+    @Transactional
+    public void deleteAlertLog(Long logId, String userEmail) {
+        alertLogRepository.findById(logId).ifPresent(entity -> {
+            // 현재 로그인 유저와 알림 소유자 검증
+            alertRepository.findById(entity.getAlertId())
+                    .filter(alert -> alert.getUserEmail().equals(userEmail))
+                    .ifPresent(alert -> {
+                        alertLogRepository.deleteById(logId);
+                        log.info("알림 로그 삭제 완료: logId={}, 유저={}", logId, userEmail);
+                    });
+        });
+    }
+
+    /**
+     * [알림 수정]
+     * 역할: 사용자가 설정한 목표가와 조건을 수정합니다.
+     * 보안: alertId + userEmail 검증으로 본인 알림만 수정 가능
+     */
+    @Override
+    @Transactional
+    public void updateAlert(Long alertId, String userEmail, Long targetPrice, String direction) {
+        alertRepository.findById(alertId)
+                .filter(alert -> alert.getUserEmail().equals(userEmail))
+                .ifPresent(alert -> {
+                    AlertEntity updated = AlertEntity.builder()
+                            .alertId(alert.getAlertId())
+                            .userEmail(alert.getUserEmail())
+                            .stockCd(alert.getStockCd())
+                            .targetPrice(BigDecimal.valueOf(targetPrice))
+                            .direction(direction)
+                            .regDt(alert.getRegDt())
+                            .build();
+                    alertRepository.save(updated);
+                    log.info("알림 수정: alertId={}, 목표가={}, 방향={}", alertId, targetPrice, direction);
+                });
+    }
+
+
+
 }

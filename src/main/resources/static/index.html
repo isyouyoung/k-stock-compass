@@ -962,13 +962,39 @@
     }
   }
 
-  function doEditAlert(id){
-    const a=state.alerts.find(x=>x.id===id);
+  async function doEditAlert(id){
+    const a = state.alerts.find(x => x.id === id);
     if(!a) return;
-    a.target=parseInt(document.getElementById('editTarget').value)||a.target;
-    a.direction=document.getElementById('editDir').value;
-    showToast('알림이 수정되었습니다!');
-    navigate('alert_list');
+
+    const target = parseInt(document.getElementById('editTarget').value) || a.target;
+    const direction = document.getElementById('editDir').value;
+
+    try {
+      const token = localStorage.getItem('jwt');
+      const res = await fetch(`/api/alert/${id}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer ' + token
+        },
+        body: JSON.stringify({
+          stockCd: a.code,
+          targetPrice: target,
+          direction: direction
+        })
+      });
+
+      if(res.ok) {
+        a.target = target;
+        a.direction = direction;
+        showToast('알림이 수정되었습니다!');
+        navigate('alert_list');
+      } else {
+        showToast('수정 중 오류가 발생했습니다.');
+      }
+    } catch(e) {
+      showToast('서버 오류가 발생했습니다.');
+    }
   }
 
   async function markRead(id) {
@@ -1004,9 +1030,18 @@
     }
   }
 
-  function deleteLog(id){
-    state.alertLogs=state.alertLogs.filter(l=>l.id!==id);
-    renderPage('alert_log');
+  async function deleteLog(id) {
+    const token = localStorage.getItem('jwt');
+    try {
+      await fetch(`/api/alert/log/${id}`, {
+        method: 'DELETE',
+        headers: { 'Authorization': 'Bearer ' + token }
+      });
+      state.alertLogs = state.alertLogs.filter(l => l.id !== id);
+      renderPage('alert_log');
+    } catch(e) {
+      showToast('삭제 중 오류가 발생했습니다.');
+    }
   }
 
   function doEditProfile(){

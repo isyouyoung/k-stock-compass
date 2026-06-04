@@ -87,23 +87,119 @@ function navigate(page, params={}) {
     window.scrollTo(0, 0);
 }
 
-    // ══════════════════════════════════════
-    // 초기 실행
-    // ══════════════════════════════════════
-    document.getElementById('authArea').style.display='block';
+// ══════════════════════════════════════
+// 알림 체크 & 브라우저 알림
+// ══════════════════════════════════════
 
-    // JWT 복원
-    const savedToken = localStorage.getItem('jwt');
-    const savedEmail = localStorage.getItem('userEmail');
-    if(savedToken && savedEmail){
-        state.loggedIn = true;
-        state.user = { email: savedEmail, nickname: savedEmail.split('@')[0] };
-        const lastPage = sessionStorage.getItem('lastPage') || 'main';
-        if(lastPage === 'stock_detail') {
-            const lastStock = sessionStorage.getItem('lastStock');
-            if(lastStock) state.currentStock = lastStock;
-        }
-        Promise.all([loadFavorites(), loadAlerts(), loadAlertLogs()]).then(() => navigate(lastPage));
-    } else {
-        navigate('main');
+let _lastUnreadCount = 0;
+let _tabBlinkInterval = null;
+
+// 탭 깜빡임 시작
+function startTabBlink() {
+    if (_tabBlinkInterval) return; // 이미 깜빡이는 중이면 무시
+    let blink = true;
+    _tabBlinkInterval = setInterval(() => {
+        document.title = blink ? '🔔 새 알림!' : 'K-Stock Compass';
+        blink = !blink;
+    }, 1000);
+}
+
+// 탭 깜빡임 중지
+function stopTabBlink() {
+    if (_tabBlinkInterval) {
+        clearInterval(_tabBlinkInterval);
+        _tabBlinkInterval = null;
     }
+    document.title = 'K-Stock Compass';
+}
+
+// 브라우저 푸시 알림 권한 요청
+function requestNotificationPermission() {
+    if ('Notification' in window && Notification.permission === 'default') {
+        Notification.requestPermission();
+    }
+}
+
+// 브라우저 푸시 알림 발송
+function sendBrowserNotification(msg) {
+    if ('Notification' in window && Notification.permission === 'granted') {
+        const notification = new Notification('📬 K-Stock Compass 알림', {
+            body: msg,
+            icon: '/favicon.ico'
+        });
+        // 알림 클릭 시 창 포커스 + 알림 내역 페이지로 이동
+        notification.onclick = () => {
+            window.focus();
+            navigate('alert_log');
+        };
+        // 5초 후 자동 닫기
+        setTimeout(() => notification.close(), 5000);
+    }
+}
+
+// 30초마다 새 알림 체크
+function startAlertPolling() {
+    if (window._alertCheckInterval) return;
+    window._alertCheckInterval = setInterval(async () => {
+        if (!state.loggedIn) return;
+        try {
+            await loadAlertLogs();
+            const unread = state.alertLogs.filter(l => !l.read).length;
+
+            // 새 알림이 생겼을 때만 처리
+            if (unread > _lastUnreadCount) {
+                const newCount = unread - _lastUnreadCount;
+
+                // 1. 탭 깜빡이기
+                startTabBlink();
+
+                // 2. 토스트 메시지
+                showToast(`📬 읽지 않은 알림이 ${unread}개 있습니다!`, 4000);
+
+                // 3. 브라우저 푸시 알림
+                const latestLog = state.alertLogs.filter(l => !l.read).slice(-1)[0];
+                if (latestLog) {
+                    sendBrowserNotification(latestLog.msg);
+                }
+
+                // 4. 사이드바 갱신
+                if (state.loggedIn) renderSidebar();
+            }
+
+            // 모두 읽으면 깜빡임 중지
+            if (unread === 0) {
+                stopTabBlink();
+            }
+
+            _lastUnreadCount = unread;
+
+        } catch(e) {
+            console.error('알림 체크 실패', e);
+        }
+    }, 30000);
+}
+
+// ══════════════════════════════════════
+// 초기 실행
+// ══════════════════════════════════════
+document.getElementById('authArea').style.display='block';
+
+// JWT 복원
+const savedToken = localStorage.getItem('jwt');
+const savedEmail = localStorage.getItem('userEmail');
+if(savedToken && savedEmail){
+    state.loggedIn = true;
+    state.user = { email: savedEmail, nickname: savedEmail.split('@')[0] };
+    const lastPage = sessionStorage.getItem('lastPage') || 'main';
+    if(lastPage === 'stock_detail') {
+        const lastStock = sessionStorage.getItem('lastStock');
+        if(lastStock) state.currentStock = lastStock;
+    }
+    Promise.all([loadFavorites(), loadAlerts(), loadAlertLogs()]).then(() => {
+        navigate(lastPage);
+        requestNotificationPermission(); // 푸시 알림 권한 요청
+        startAlertPolling(); // 알림 폴링 시작
+    });
+} else {
+    navigate('main');
+}
