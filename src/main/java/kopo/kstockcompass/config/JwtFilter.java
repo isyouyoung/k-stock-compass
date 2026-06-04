@@ -35,25 +35,35 @@ public class JwtFilter extends OncePerRequestFilter {
         String header = request.getHeader("Authorization");
 
         if (header != null && header.startsWith("Bearer ")) {
-            String token = header.substring(7); // "Bearer " 제거
+            String token = header.substring(7);
 
-            // 2. 토큰 유효성 검사
-            if (jwtProvider.validateToken(token)) {
-                String email = jwtProvider.getEmail(token);
+            try {
+                // 2. 토큰 유효성 검사
+                if (jwtProvider.validateToken(token)) {
+                    String email = jwtProvider.getEmail(token);
 
-                // 3. SecurityContext에 인증 정보 저장
-                // 이후 컨트롤러에서 @AuthenticationPrincipal로 꺼낼 수 있음
-                UsernamePasswordAuthenticationToken authentication =
-                        new UsernamePasswordAuthenticationToken(email, null, List.of());
-                SecurityContextHolder.getContext().setAuthentication(authentication);
+                    // 3. SecurityContext에 인증 정보 저장
+                    // 이후 컨트롤러에서 @AuthenticationPrincipal로 꺼낼 수 있음
+                    UsernamePasswordAuthenticationToken authentication =
+                            new UsernamePasswordAuthenticationToken(email, null, List.of());
+                    SecurityContextHolder.getContext().setAuthentication(authentication);
 
-                log.debug("JWT 인증 성공: {}", email);
-            } else {
-                log.warn("JWT 토큰 유효하지 않음");
+                    log.debug("JWT 인증 성공: {}", email);
+                } else {
+                    log.warn("JWT 토큰 유효하지 않음");
+                }
+            } catch (io.jsonwebtoken.ExpiredJwtException e) {
+                // 만료된 토큰 → 401 반환 (프론트의 authFetch가 refresh 시도하도록)
+                log.warn("JWT 토큰 만료됨");
+                response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
+                response.getWriter().write("Token expired");
+                return;
+            } catch (Exception e) {
+                log.warn("JWT 처리 중 오류: {}", e.getMessage());
             }
         }
-
         // 4. 다음 필터로 넘김 (인증 실패해도 통과 - permitAll 설정이므로)
         filterChain.doFilter(request, response);
     }
 }
+

@@ -730,12 +730,9 @@
   }
 
   async function loadFavorites() {
-    const token = localStorage.getItem('jwt');
-    if (!token) return;
     try {
-      const res = await fetch('/api/favorite', {
-        headers: { 'Authorization': 'Bearer ' + token }
-      });
+      const res = await authFetch('/api/favorite');
+
       if (res.ok) {
         const data = await res.json();
         state.favorites = data.map(f => ({
@@ -747,7 +744,7 @@
           pct: 0
         }));
 
-        // 가격 실시간 연동 추가
+        // 가격 실시간 연동 (공용 API → fetch 유지)
         const priceResults = await Promise.all(
                 state.favorites.map(f =>
                         fetch(`/api/stock/detail?stockCode=${f.code}`)
@@ -765,7 +762,9 @@
           }
         });
 
-        if (state.currentPage === 'fav_list') renderPage('fav_list');
+        if (state.currentPage === 'fav_list') {
+          renderPage('fav_list');
+        }
       }
     } catch (e) {
       console.error('관심종목 로드 실패', e);
@@ -774,13 +773,12 @@
 
   async function doFavAdd() {
     const code = state._pendingFavCode;
-    const token = localStorage.getItem('jwt');
+
     try {
-      const res = await fetch('/api/favorite', {
+      const res = await authFetch('/api/favorite', {
         method: 'POST',
         headers: {
-          'Content-Type': 'application/json',
-          'Authorization': 'Bearer ' + token
+          'Content-Type': 'application/json'
         },
         body: JSON.stringify({ stockCd: code })
       });
@@ -805,11 +803,9 @@
 
   async function doFavDel() {
     const code = state._pendingFavCode;
-    const token = localStorage.getItem('jwt');
     try {
-      const res = await fetch(`/api/favorite/${code}`, {
-        method: 'DELETE',
-        headers: { 'Authorization': 'Bearer ' + token }
+      const res = await authFetch(`/api/favorite/${code}`, {
+        method: 'DELETE'
       });
       if (res.ok) {
         state.favorites = state.favorites.filter(f => f.code !== code);
@@ -832,11 +828,9 @@
 
   async function doAlertDel(){
     const id = state._pendingAlertId;
-    const token = localStorage.getItem('jwt');
     try {
-      const res = await fetch(`/api/alert/${id}`, {
-        method: 'DELETE',
-        headers: { 'Authorization': 'Bearer ' + token }
+      const res = await authFetch(`/api/alert/${id}`, {
+        method: 'DELETE'
       });
       if(res.ok){
         state.alerts = state.alerts.filter(a => a.id !== id);
@@ -853,12 +847,8 @@
 
   async function doLeave(){
     try {
-      const token = localStorage.getItem('jwt');
-      const res = await fetch('/api/user/delete', {
-        method: 'DELETE',
-        headers: {
-          'Authorization': 'Bearer ' + token
-        }
+      const res = await authFetch('/api/user/delete', {
+        method: 'DELETE'
       });
 
       if(res.ok) {
@@ -932,16 +922,14 @@
     const name = document.getElementById('alertStockName').value || (state.alertStock && state.alertStock.name);
     const target = document.getElementById('alertTarget').value;
     const dir = document.getElementById('alertDir').value;
-    const token = localStorage.getItem('jwt');
 
     if(!code || !target){ showToast('종목과 목표가를 입력해 주세요.'); return; }
 
     try {
-      const res = await fetch('/api/alert', {
+      const res = await authFetch('/api/alert', {
         method: 'POST',
         headers: {
-          'Content-Type': 'application/json',
-          'Authorization': 'Bearer ' + token
+          'Content-Type': 'application/json'
         },
         body: JSON.stringify({
           stockCd: code,
@@ -970,13 +958,10 @@
     const direction = document.getElementById('editDir').value;
 
     try {
-      const token = localStorage.getItem('jwt');
-      const res = await fetch(`/api/alert/${id}`, {
+      const res = await authFetch(`/api/alert/${id}`, {
         method: 'PUT',
         headers: {
-          'Content-Type': 'application/json',
-          'Authorization': 'Bearer ' + token
-        },
+          'Content-Type': 'application/json' },
         body: JSON.stringify({
           stockCd: a.code,
           targetPrice: target,
@@ -998,11 +983,9 @@
   }
 
   async function markRead(id) {
-    const token = localStorage.getItem('jwt');
     try {
-      await fetch(`/api/alert/log/${id}/read`, {
-        method: 'PATCH',
-        headers: { 'Authorization': 'Bearer ' + token }
+      await authFetch(`/api/alert/log/${id}/read`, {
+        method: 'PATCH'
       });
       const l = state.alertLogs.find(x => x.id === id);
       if (l) l.read = true;
@@ -1013,13 +996,11 @@
   }
 
   async function markAllRead() {
-    const token = localStorage.getItem('jwt');
     const unreadLogs = state.alertLogs.filter(l => !l.read);
     try {
       await Promise.all(unreadLogs.map(l =>
-              fetch(`/api/alert/log/${l.id}/read`, {
-                method: 'PATCH',
-                headers: { 'Authorization': 'Bearer ' + token }
+              authFetch(`/api/alert/log/${l.id}/read`, {
+                method: 'PATCH'
               })
       ));
       state.alertLogs.forEach(l => l.read = true);
@@ -1031,11 +1012,9 @@
   }
 
   async function deleteLog(id) {
-    const token = localStorage.getItem('jwt');
     try {
-      await fetch(`/api/alert/log/${id}`, {
+      await authFetch(`/api/alert/log/${id}`, {
         method: 'DELETE',
-        headers: { 'Authorization': 'Bearer ' + token }
       });
       state.alertLogs = state.alertLogs.filter(l => l.id !== id);
       renderPage('alert_log');
@@ -1083,12 +1062,10 @@
     nw2Err.textContent='';
 
     try {
-      const token = localStorage.getItem('jwt');
-      const res = await fetch('/api/user/change-password', {
+      const res = await authFetch('/api/user/change-password', {
         method: 'POST',
         headers: {
-          'Content-Type': 'application/json',
-          'Authorization': 'Bearer ' + token
+          'Content-Type': 'application/json'
         },
         body: JSON.stringify({ currentPwd: cur, newPwd: nw })
       });
@@ -1106,12 +1083,9 @@
   }
 
   async function loadAlerts() {
-    const token = localStorage.getItem('jwt');
-    if (!token) return;
     try {
-      const res = await fetch('/api/alert', {
-        headers: { 'Authorization': 'Bearer ' + token }
-      });
+      const res = await authFetch('/api/alert');
+
       if (res.ok) {
         const data = await res.json();
         state.alerts = data.map(a => ({
@@ -1173,12 +1147,9 @@
   }
 
   async function loadAlertLogs() {
-    const token = localStorage.getItem('jwt');
-    if (!token) return;
     try {
-      const res = await fetch('/api/alert/log', {
-        headers: { 'Authorization': 'Bearer ' + token }
-      });
+      const res = await authFetch('/api/alert/log');
+
       if (res.ok) {
         const data = await res.json();
         state.alertLogs = data.map(l => ({

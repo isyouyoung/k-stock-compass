@@ -50,9 +50,11 @@ public class JwtProvider {
     public boolean validateToken(String token) {
         try {
             getClaims(token); // 토큰 뚜껑을 열어보는 시도
-            return true;      // 아무 문제 없으면 통과
+            return true; // 아무 문제 없으면 통과
+        } catch (io.jsonwebtoken.ExpiredJwtException e) {
+            throw e; // 만료 예외는 다시 던져서 JwtFilter가 잡게!
         } catch (Exception e) {
-            return false;     // 뚜껑 열다가 에러 나면(가짜거나 만료거나) 막아버림
+            return false; // 뚜껑 열다가 에러 나면(가짜거나 만료거나) 막아버림
         }
     }
 
