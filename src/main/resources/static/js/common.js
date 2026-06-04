@@ -103,7 +103,7 @@ function navigate(page, params={}) {
             const lastStock = sessionStorage.getItem('lastStock');
             if(lastStock) state.currentStock = lastStock;
         }
-        Promise.all([loadFavorites(), loadAlerts()]).then(() => navigate(lastPage));
+        Promise.all([loadFavorites(), loadAlerts(), loadAlertLogs()]).then(() => navigate(lastPage));
     } else {
         navigate('main');
     }
