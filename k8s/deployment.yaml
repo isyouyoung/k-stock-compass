@@ -1,0 +1,55 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: my-notice-dep
+  namespace: notice
+  labels:
+    app: my-notice
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: my-notice
+      tier: backend
+  template:
+    metadata:
+      name: my-notice
+      labels:
+        app: my-notice
+        tier: backend
+    spec:
+      containers:
+        - name: my-notice
+          image: docker.io/hyeopgeonlee/notice-jdk17:0.0.1
+          imagePullPolicy: IfNotPresent
+          resources:
+            requests:
+              memory: "256Mi"
+              cpu: "50m"
+            limits:
+              memory: "1Gi"
+              cpu: "500m"
+          ports:
+            - containerPort: 11000
+          env:
+            - name: MARIADB_IP
+              valueFrom:
+                configMapKeyRef:
+                  name: poly-config
+                  key: mariadb-ip
+            - name: MARIADB_PORT
+              valueFrom:
+                configMapKeyRef:
+                  name: mariadb-config
+                  key: mariadb-port
+            - name: MARIADB_USER
+              valueFrom:
+                secretKeyRef:
+                  name: mariadb-secret
+                  key: username
+            - name: MARIADB_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: mariadb-secret
+                  key: password
+      restartPolicy: Always
