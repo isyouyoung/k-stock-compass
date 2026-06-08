@@ -34,8 +34,11 @@ import java.util.concurrent.TimeUnit;
  * 4. 메모리 + Redis 모두 저장
  */
 @Slf4j
+// 로그 출력을 위한 Lombok 어노테이션 (log.info, log.warn 등 사용 가능)
 @Service
+// 비즈니스 로직을 담당하는 서비스 계층임을 스프링에 알림
 @RequiredArgsConstructor
+// final 필드들을 자동으로 생성자 주입 (IoC/DI 원칙)
 public class KisTokenService {
 
     /**

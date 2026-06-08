@@ -67,7 +67,10 @@ public class JwtProvider {
                 .getBody(); // 내용물을 꺼냄
     }
 
-    // Refresh Token 생성
+    // [Refresh Token 생성]
+    // Access Token이 만료되었을 때 재발급을 위해 사용하는 장기 토큰 생성
+    // Access Token(10분)보다 만료 시간이 길며(예: 7일),
+    // 생성 후에는 Redis에 저장하여 유효성을 관리한다.
     public String createRefreshToken(String userEmail) {
         return Jwts.builder()
                 .setSubject(userEmail)
