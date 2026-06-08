@@ -20,11 +20,13 @@ import java.util.concurrent.TimeUnit;
  * 빠른 조회와 자동 만료 처리를 구현했습니다.
  */
 @Service
+// 비즈니스 로직을 담당하는 서비스 계층임을 스프링에 알림
 @RequiredArgsConstructor
+// final 필드(redisTemplate, mailSender)를 자동으로 생성자 주입 (IoC/DI 원칙)
 public class EmailVerifyService implements IEmailVerifyService {
 
-    private final StringRedisTemplate redisTemplate;
-    private final JavaMailSender mailSender;
+    private final StringRedisTemplate redisTemplate; // Redis 접근 도구 (인증번호 저장/조회용)
+    private final JavaMailSender mailSender; // 이메일 발송 도구 (SMTP 서버 연동)
 
     /**
      * [인증번호 발송]

@@ -621,40 +621,6 @@
         </div>
         </div>
         </div>
-        <!-- 오른쪽 -->
-        <div>
-        <!-- 관심종목 -->
-        <div class="card mb16">
-        <div class="flex flex-between flex-center mb14">
-        <div class="section-title" style="margin-bottom:0;">⭐ 관심종목</div>
-        <span style="font-size:12px;color:var(--gray);">총 ${state.favorites.length}개 · <span style="color:var(--blue);cursor:pointer;" onclick="navigate('fav_list')">전체보기 →</span></span>
-        </div>
-        ${state.favorites.length>0?state.favorites.slice(0,3).map(f=>`
-        <div class="stock-row" onclick="navigate('stock_detail',{currentStock:'${f.code}'})">
-        <span class="sn">${f.name}</span><span class="sc">${f.code}</span>
-        <span class="badge badge-${f.market.toLowerCase()}">${f.market}</span>
-        <span class="sp ${f.change>=0?'up':'down'}" style="margin-left:auto;">${fmt(f.price)}원</span>
-        <span class="sch ${f.change>=0?'up':'down'}">${f.change>=0?'▲ +':'▼ -'}${fmt(Math.abs(f.change))} (${f.pct>=0?'+':''}${f.pct.toFixed(2)}%)</span>
-        </div>`).join(''):`
-        <div style="text-align:center;padding:20px;color:var(--gray);font-size:13px;">등록된 관심종목이 없습니다.</div>`}
-        </div>
-        <!-- 알림 -->
-        <div class="card">
-        <div class="flex flex-between flex-center mb14">
-        <div class="section-title" style="margin-bottom:0;">🔔 설정한 알림</div>
-        <span style="font-size:12px;color:var(--gray);">총 ${state.alerts.length}개 · <span style="color:var(--blue);cursor:pointer;" onclick="navigate('alert_list')">전체보기 →</span></span>
-        </div>
-        ${state.alerts.length>0?state.alerts.slice(0,3).map(a=>`
-        <div style="padding:12px 16px;border:1px solid var(--border);border-radius:8px;margin-bottom:8px;display:flex;align-items:center;justify-content:space-between;">
-        <div>
-        <span style="font-size:14px;font-weight:600;">${a.name}</span>
-        <span style="font-size:12px;color:var(--gray);margin-left:8px;">${a.code}</span>
-        </div>
-        <span style="font-size:13px;color:${a.direction==='이상'?'var(--red-up)':'var(--blue-dn)'};font-weight:600;">${fmt(a.target)}원 ${a.direction}</span>
-        </div>`).join(''):`
-        <div style="text-align:center;padding:20px;color:var(--gray);font-size:13px;">설정된 알림이 없습니다.</div>`}
-        </div>
-        </div>
         </div>
         </div>`;}
 
