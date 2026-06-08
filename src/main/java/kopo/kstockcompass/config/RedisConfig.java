@@ -18,6 +18,8 @@ import org.springframework.data.redis.serializer.StringRedisSerializer;
  * Key와 Value 모두 String(문자열) 형태로 직렬화되도록 명시적으로 설정함.
  */
 @Configuration
+// Spring 설정 클래스임을 선언
+// 스프링이 시작될 때 이 파일을 읽어서 RedisTemplate Bean을 등록함
 public class RedisConfig {
 
     /**

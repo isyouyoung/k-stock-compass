@@ -13,13 +13,17 @@ import org.springframework.web.bind.annotation.*;
 import java.util.Map;
 
 @RestController
+// @RestController: @Controller + @ResponseBody 합친 것
+// 모든 메서드의 반환값을 JSON으로 자동 변환하여 응답
 @RequiredArgsConstructor
+// final 필드들을 자동으로 생성자 주입 (IoC/DI 원칙)
 @RequestMapping("/api/user")
+// 이 컨트롤러의 모든 API 앞에 "/api/user"가 붙음
 public class UserController {
 
-    private final IUserService userService;
-    private final IEmailVerifyService emailVerifyService;
-    private final JwtProvider jwtProvider;
+    private final IUserService userService;         // 구현체가 아닌 인터페이스로 주입 (DI 원칙)
+    private final IEmailVerifyService emailVerifyService; // 이메일 인증 서비스
+    private final JwtProvider jwtProvider;          // JWT 토큰에서 이메일 추출용
 
     /**
      * [1. 회원가입 API]
@@ -191,14 +195,20 @@ public class UserController {
      * [Access Token 재발급 API]
      * 역할: Refresh Token으로 새 Access Token 발급
      * 흐름: Refresh Token 검증 → Redis 비교 → 새 Access Token 반환
+     * Authorization 헤더에 Refresh Token을 담아서 요청
+     * 프론트의 authFetch()가 401 감지 시 자동으로 이 API를 호출함
+     * 성공 시 새 Access Token 반환, 실패 시 401 반환 → 프론트에서 로그아웃 처리
      */
     @PostMapping("/refresh")
     public ResponseEntity<?> refresh(@RequestHeader("Authorization") String token) {
         try {
+            // "Bearer " 제거 후 순수 Refresh Token 추출
             String refreshToken = token.replace("Bearer ", "").trim();
+            // UserService에서 Redis 검증 후 새 Access Token 발급
             String newAccessToken = userService.refreshAccessToken(refreshToken);
             return ResponseEntity.ok(Map.of("accessToken", newAccessToken));
         } catch (RuntimeException e) {
+            // Refresh Token 만료/불일치 시 401 반환 → 프론트에서 로그아웃 처리
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(Map.of("error", e.getMessage()));
         } catch (Exception e) {
             return ResponseEntity.internalServerError().body(Map.of("error", "서버 오류 발생"));

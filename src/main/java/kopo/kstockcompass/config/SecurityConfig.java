@@ -1,10 +1,10 @@
 package kopo.kstockcompass.config;
 
-// 역할: 애플리케이션의 출입 통제 시스템
-//     설정: permitAll()을 사용해 모든 API를 일시적으로 개방했음
-//     핵심 이유: 개발 초기 단계에서 스프링 시큐리티가 API 호출을 막아버리면 테스트(Postman 등)가 불가능하기 때문에,
-//     **"일단 개발부터 편하게 하자"**는 전략으로 문을 열어두었음!
-//     결과: 로그에 비밀번호가 떠도 무시하고 브라우저에서 404 페이지를 볼 수 있게 되었음
+// 역할: 애플리케이션의 보안 설정 (인증/인가 정책)
+// JWT + Stateless 구조에서는 실질적인 인증을 JwtFilter가 담당함
+// 따라서 현재 개발 단계에서는 Security 단을 permitAll()로 열어두고 사용함
+// 토큰 없거나 만료된 요청은 JwtFilter에서 401 반환,
+// SecurityContext가 비어있으면 컨트롤러에서 인증 실패 처리됨
 
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
@@ -19,8 +19,11 @@ import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 
 @Configuration
+// Spring 설정 클래스임을 선언 - 스프링이 시작될 때 이 파일을 읽어서 보안 규칙을 적용함
 @EnableWebSecurity
+// Spring Security를 활성화 - 이게 없으면 보안 설정이 아예 적용 안 됨
 @RequiredArgsConstructor
+// final 필드(JwtFilter)를 자동으로 생성자 주입해주는 Lombok 어노테이션
 public class SecurityConfig {
 
     // JwtFilter를 new로 생성하지 않고 DI로 주입받음 (Spring 정석 IoC/DI 구조)
@@ -30,8 +33,10 @@ public class SecurityConfig {
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
         http
                 .csrf(AbstractHttpConfigurer::disable)
-                // CSRF라는 보안 기능인데, 이걸 켜두면 Postman이나 프론트에서 API 쏠 때
-                // 자꾸 가짜 아니야? 하고 막음. 그래서 개발 단계인 지금은 일단 꺼두었음
+                // JWT + Stateless 구조에서는 CSRF를 비활성화하는 것이 정석
+                // CSRF 공격은 세션 쿠키를 자동 전송하는 방식을 악용하는데,
+                // 내 프로젝트는 세션 대신 Authorization 헤더에 JWT를 직접 담아 전송하므로
+                // 브라우저가 자동으로 인증 정보를 보내는 일이 없어 CSRF 위협이 존재하지 않음
 
                 .sessionManagement(session -> session
                                 .sessionCreationPolicy(SessionCreationPolicy.STATELESS)
@@ -43,17 +48,18 @@ public class SecurityConfig {
                 )
                 .authorizeHttpRequests(auth -> auth
                                 .anyRequest().permitAll()
-                        // 지금은 .anyRequest().permitAll() 로 설정했음.
-                        // 즉, "어떤 요청이든 일단 통과시켜라"라는 뜻임.
-                        // 개발 초기에 API가 잘 작동하는지(Postman 테스트 등) 확인해야 하는데,
-                        // 시큐리티가 사사건건 막으면 개발 진도가 너무 느리다고 해서 일단 대문을 활짝 열어둔 상태
-                        // 나중에 개발이 다 끝나면 필요한 부분만 골라서 다시 막을 예정
+                        // JWT 방식에서는 permitAll()이어도 보안에 문제없음
+                        // 실질적인 인증은 앞단의 JwtFilter에서 담당하기 때문
+                        // 토큰이 없거나 만료된 요청은 JwtFilter에서 401을 반환하거나
+                        // SecurityContext가 비어있어 컨트롤러에서 인증 실패 처리됨
                 )
                 // [JwtFilter 등록 - DI 방식]
                 // new JwtFilter() 대신 Spring이 관리하는 Bean을 주입받아 사용
                 // IoC/DI 원칙을 지킨 Spring Security 정석 구조
                 // 모든 요청에서 JWT 토큰을 검증하고 SecurityContext에 인증 정보를 저장함
                 .addFilterBefore(jwtFilter, UsernamePasswordAuthenticationFilter.class);
+                // UsernamePasswordAuthenticationFilter보다 앞에 JwtFilter를 실행
+                // 즉, 스프링 시큐리티의 기본 로그인 필터보다 먼저 JWT 검증을 수행함
 
         return http.build();
     }
