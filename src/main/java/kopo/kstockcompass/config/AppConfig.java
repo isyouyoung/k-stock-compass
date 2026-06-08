@@ -5,6 +5,12 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.web.reactive.function.client.WebClient;
 
+// WebClient: 서버 내부에서 외부 API(KIS, DART, OpenAI)를 호출하는 HTTP 클라이언트
+// WebSocket(실시간 양방향 통신)과는 다른 개념임
+// RestTemplate 대신 WebClient를 사용한 이유:
+// RestTemplate은 Spring 6부터 deprecated 되었고
+// WebClient는 비동기/논블로킹 방식으로 더 효율적임
+
 // 이 클래스는 설정(Configuration) 파일
 // 스프링이 켜질 때 "아, 이건 미리 준비해둬야겠다" 싶은 도구들을 여기서 정의해놓음
 @Configuration
