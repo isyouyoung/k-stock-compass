@@ -7,12 +7,14 @@ import kopo.kstockcompass.service.IOpenAiService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.web.reactive.function.client.WebClient;
 import reactor.core.publisher.Mono;
 
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.TimeUnit;
 
 /**
  * [Gemini AI 분석 서비스]
@@ -34,6 +36,9 @@ public class OpenAiService implements IOpenAiService {
 
     private final WebClient webClient;
     private final ObjectMapper objectMapper;
+    private final StringRedisTemplate redisTemplate;
+    private static final String AI_ANLS_PREFIX = "AI_ANLS:";
+    private static final long AI_ANLS_TTL = 24;
 
     /**
      * [재무 분석 AI]
@@ -42,7 +47,23 @@ public class OpenAiService implements IOpenAiService {
      * - JSON 형태로 결과 파싱
      */
     @Override
-    public AiAnalysisResult analyze(String stockName, FinancialDTO fin) {
+    public AiAnalysisResult analyze(String stockCode, String stockName, FinancialDTO fin) {
+        // 1. Redis 캐시 먼저 확인 (추가한 부분)
+        String cacheKey = AI_ANLS_PREFIX + stockCode;
+        try {
+            String cached = redisTemplate.opsForValue().get(cacheKey);
+            if (cached != null) {
+                log.info("✅ Redis 캐시에서 AI 분석 반환: {}", stockCode);
+                JsonNode node = objectMapper.readTree(cached);
+                return new AiAnalysisResult(
+                        node.path("score").asInt(3),
+                        node.path("summary").asText()
+                );
+            }
+        } catch (Exception e) {
+            log.warn("Redis AI 캐시 조회 실패: {}", e.getMessage());
+        }
+
         try {
             // 1. AI에게 전달할 프롬프트 생성
             String prompt = buildPrompt(stockName, fin);
@@ -88,6 +109,17 @@ public class OpenAiService implements IOpenAiService {
             // 8. 결과 값 파싱 (기본값 포함)
             int score = result.path("score").asInt(3);
             String summary = result.path("summary").asText("분석 결과를 불러올 수 없습니다.");
+
+            // 2. Redis에 저장 (TTL 24시간) (추가한부분)
+            try {
+                String json = objectMapper.writeValueAsString(
+                        Map.of("score", score, "summary", summary));
+                redisTemplate.opsForValue().set(
+                        cacheKey, json, AI_ANLS_TTL, TimeUnit.HOURS);
+                log.info("💾 Redis AI 분석 캐시 저장: {}", stockCode);
+            } catch (Exception e) {
+                log.warn("Redis AI 캐시 저장 실패: {}", e.getMessage());
+            }
 
             log.info("AI 신호등 분석 완료: {} → {}점", stockName, score);
 

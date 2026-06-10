@@ -58,9 +58,9 @@ public class AiController {
                 ));
             }
 
-            // AI 분석 수행 (Gemini API 호출)
+            // AI 분석 수행 (Gemini API 호출) 추가한부분
             IOpenAiService.AiAnalysisResult result =
-                    openAiService.analyze(stockName, fin);
+                    openAiService.analyze(stockCode, stockName, fin);
 
             return ResponseEntity.ok(Map.of(
                     "score", result.score(),
