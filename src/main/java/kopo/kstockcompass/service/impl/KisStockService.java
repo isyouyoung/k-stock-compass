@@ -1,5 +1,7 @@
 package kopo.kstockcompass.service.impl;
 
+import org.springframework.data.redis.core.StringRedisTemplate;
+import java.util.concurrent.TimeUnit;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import kopo.kstockcompass.dto.MarketIndexDTO;
@@ -26,6 +28,11 @@ import kopo.kstockcompass.dto.StockItemDTO;
 @Service
 @RequiredArgsConstructor
 public class KisStockService {
+
+    private final StringRedisTemplate redisTemplate;
+
+    private static final String STK_CACHE_PREFIX = "STK_CACHE:";
+    private static final long STK_CACHE_TTL = 5; // 5초 (KIS API 전환으로 900초→5초 조정)
 
     /**
      * KIS Open API App Key
@@ -270,7 +277,27 @@ public class KisStockService {
      * - 고가
      * - 저가
      */
+    // STK_CACHE  Redis 추가했음!
     public MarketIndexDTO getIndexPrice(String indexCode) {
+
+        // Redis 키 생성
+        // 코스피: "STK_CACHE:0001"
+        // 코스닥: "STK_CACHE:1001"
+        String cacheKey = STK_CACHE_PREFIX + indexCode;
+        try {
+
+            String cached = redisTemplate.opsForValue().get(cacheKey);
+            // Redis에서 캐시 조회
+
+            if (cached != null) {
+                // 캐시 있으면 JSON → MarketIndexDTO로 변환 후 반환
+                log.info("✅ Redis 캐시에서 지수 반환: {}", indexCode);
+                // KIS API 호출 없이 바로 반환 (빠름!)
+                return objectMapper.readValue(cached, MarketIndexDTO.class);
+            }
+        } catch (Exception e) {
+            log.warn("Redis 캐시 조회 실패: {}", e.getMessage());
+        }
 
         try {
 
@@ -326,7 +353,8 @@ public class KisStockService {
              * MarketIndexDTO 생성
              * 프론트 메인 페이지 지수 카드 렌더링용
              */
-            return new MarketIndexDTO(
+            // 결과를 MarketIndexDTO에 담기
+            MarketIndexDTO result = new MarketIndexDTO(
 
                     // 코드값에 따른 지수명 변환
                     indexCode.equals("0001") ? "코스피" : "코스닥",
@@ -343,6 +371,20 @@ public class KisStockService {
 
                     output.path("bstp_nmix_lwpr").asText() // 저가
             );
+
+            // Redis 캐시 저장 (TTL 5초)
+            try {
+                // objectMapper로 DTO → JSON 문자열로 변환
+                String json = objectMapper.writeValueAsString(result);
+                redisTemplate.opsForValue().set(
+                        cacheKey, json, STK_CACHE_TTL, TimeUnit.SECONDS);
+                log.info("💾 Redis 지수 캐시 저장: {}", indexCode);
+
+            } catch (Exception e) {
+                log.warn("Redis 캐시 저장 실패: {}", e.getMessage());
+            }
+
+            return result;
 
         } catch (Exception e) {
 
