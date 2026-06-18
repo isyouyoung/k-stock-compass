@@ -6,12 +6,14 @@ import kopo.kstockcompass.service.IEmailVerifyService;
 import kopo.kstockcompass.service.IUserService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.Map;
 
+@Slf4j
 @RestController
 // @RestController: @Controller + @ResponseBody 합친 것
 // 모든 메서드의 반환값을 JSON으로 자동 변환하여 응답
@@ -39,6 +41,7 @@ public class UserController {
         } catch (RuntimeException e) {
             return ResponseEntity.badRequest().body(e.getMessage());
         } catch (Exception e) {
+            log.error("에러 발생: {}", e.getMessage());
             return ResponseEntity.internalServerError().body("서버 오류가 발생했습니다.");
         }
     }
@@ -57,6 +60,7 @@ public class UserController {
         } catch (RuntimeException e) {
             return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
         } catch (Exception e) {
+            log.error("에러 발생: {}", e.getMessage());
             return ResponseEntity.internalServerError().body(Map.of("error", "서버 오류가 발생했습니다."));
         }
     }
@@ -72,6 +76,7 @@ public class UserController {
             boolean isDuplicate = userService.checkEmail(userEmail);
             return ResponseEntity.ok(isDuplicate);
         } catch (Exception e) {
+            log.error("에러 발생: {}", e.getMessage());
             return ResponseEntity.internalServerError().build();
         }
     }
@@ -92,6 +97,7 @@ public class UserController {
             emailVerifyService.sendCode(dto.getUserEmail());
             return ResponseEntity.ok("해당 이메일로 인증번호가 발송되었습니다. 3분 이내에 입력해주세요.");
         } catch (Exception e) {
+            log.error("에러 발생: {}", e.getMessage());
             return ResponseEntity.internalServerError().body("서버 오류가 발생했습니다.");
         }
     }
@@ -126,6 +132,7 @@ public class UserController {
         } catch (RuntimeException e) {
             return ResponseEntity.badRequest().body(e.getMessage());
         } catch (Exception e) {
+            log.error("에러 발생: {}", e.getMessage());
             return ResponseEntity.internalServerError().body("서버 오류가 발생했습니다.");
         }
     }
@@ -145,6 +152,7 @@ public class UserController {
         } catch (RuntimeException e) {
             return ResponseEntity.badRequest().body(e.getMessage());
         } catch (Exception e) {
+            log.error("에러 발생: {}", e.getMessage());
             return ResponseEntity.internalServerError().body("서버 오류가 발생했습니다.");
         }
     }
@@ -167,6 +175,7 @@ public class UserController {
         } catch (RuntimeException e) {
             return ResponseEntity.badRequest().body(e.getMessage());
         } catch (Exception e) {
+            log.error("에러 발생: {}", e.getMessage());
             return ResponseEntity.internalServerError().body("서버 오류가 발생했습니다.");
         }
     }
@@ -187,6 +196,7 @@ public class UserController {
         } catch (RuntimeException e) {
             return ResponseEntity.badRequest().body(e.getMessage());
         } catch (Exception e) {
+            log.error("에러 발생: {}", e.getMessage());
             return ResponseEntity.internalServerError().body("서버 오류가 발생했습니다.");
         }
     }
@@ -211,6 +221,7 @@ public class UserController {
             // Refresh Token 만료/불일치 시 401 반환 → 프론트에서 로그아웃 처리
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(Map.of("error", e.getMessage()));
         } catch (Exception e) {
+            log.error("에러 발생: {}", e.getMessage());
             return ResponseEntity.internalServerError().body(Map.of("error", "서버 오류 발생"));
         }
     }
