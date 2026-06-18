@@ -48,19 +48,40 @@ public class OpenAiService implements IOpenAiService {
      */
     @Override
     public AiAnalysisResult analyze(String stockCode, String stockName, FinancialDTO fin) {
-        // 1. Redis 캐시 먼저 확인 (추가한 부분)
+        // AI_ANLS 8번
+        // Redis 캐시 키 생성
+        // 예: stockCode가 "005930"이면 → "AI_ANLS:005930"
+        // 즉 Redis에서 찾을 키 이름 생성
         String cacheKey = AI_ANLS_PREFIX + stockCode;
         try {
+            // Redis에서 해당 키로 저장된 값 조회
+            // 있으면 → JSON 문자열 반환
+            // 없으면 → null 반환
+            // 즉 Redis에서 해당 키 값 가져오기
             String cached = redisTemplate.opsForValue().get(cacheKey);
             if (cached != null) {
+                // cached가 null이 아니면 = Redis에 캐시가 있다는 뜻
+                // 즉 값이 있으면 redis에 이미 ai 분석된 상태고
+                // redis 값이 없으면 ai 다시 돌려야한다
+                // 여기로 왔다는건 있을때니까 아래에 로그 찍고
                 log.info("✅ Redis 캐시에서 AI 분석 반환: {}", stockCode);
                 JsonNode node = objectMapper.readTree(cached);
+                // Redis에서 꺼낸 JSON 문자열을 파싱 => redis는 문자열(JSON)으로 되어있어서
+                // cached = '{"score":4,"summary":"삼성전자는..."}'
+                // → node로 각 필드에 접근 가능하게 변환
                 return new AiAnalysisResult(
+                        // DTO로 변환해서 즉시 return 함
                         node.path("score").asInt(3),
+                        // node에서 "score" 필드 꺼냄
+                        // asInt(3) → 숫자로 변환, 없으면 기본값 3
                         node.path("summary").asText()
+                        // node에서 "summary" 필드 꺼냄
+                        // asText() → 문자열로 변환
                 );
             }
         } catch (Exception e) {
+            // 예외 처리임 Redis가 터져도 전체 기능 죽이지말자!!
+            // 로그만 찍고 계속 진행
             log.warn("Redis AI 캐시 조회 실패: {}", e.getMessage());
         }
 
@@ -110,12 +131,15 @@ public class OpenAiService implements IOpenAiService {
             int score = result.path("score").asInt(3);
             String summary = result.path("summary").asText("분석 결과를 불러올 수 없습니다.");
 
+            // AI_ANLS 9번
             // 2. Redis에 저장 (TTL 24시간) (추가한부분)
             try {
                 String json = objectMapper.writeValueAsString(
                         Map.of("score", score, "summary", summary));
+                // 자바 객체를 Redis에 못 넣으니까 JSON 문자열로 반환함
                 redisTemplate.opsForValue().set(
                         cacheKey, json, AI_ANLS_TTL, TimeUnit.HOURS);
+                // REDIS에 저장, AI_ANLKLS:005930, 저장할 데이터, TTL(24시간), 시간단위
                 log.info("💾 Redis AI 분석 캐시 저장: {}", stockCode);
             } catch (Exception e) {
                 log.warn("Redis AI 캐시 저장 실패: {}", e.getMessage());

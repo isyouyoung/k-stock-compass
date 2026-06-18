@@ -287,13 +287,15 @@ public class KisStockService {
         try {
 
             String cached = redisTemplate.opsForValue().get(cacheKey);
-            // Redis에서 캐시 조회
+            // Redis에서 캐시 조회 있는지 없는지!
 
             if (cached != null) {
                 // 캐시 있으면 JSON → MarketIndexDTO로 변환 후 반환
                 log.info("✅ Redis 캐시에서 지수 반환: {}", indexCode);
                 // KIS API 호출 없이 바로 반환 (빠름!)
                 return objectMapper.readValue(cached, MarketIndexDTO.class);
+                // 요게의미하는건 제이슨 문자열을 ㅁ마켓인덱스디티오로 변환해서 리턴해버림!
+                // 그럼 여기서 종료됨! 당연히 이 경우는 에이피아이 호출안함
             }
         } catch (Exception e) {
             log.warn("Redis 캐시 조회 실패: {}", e.getMessage());

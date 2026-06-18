@@ -120,6 +120,7 @@ public class StockController {
     @GetMapping("/index/realtime")
     public ResponseEntity<MarketIndexDTO> getRealtimeIndex(@RequestParam String indexCode) {
         return ResponseEntity.ok(kisStockService.getIndexPrice(indexCode));
+                                  // 실제 서비스의 getIndexPrice 메서드로 이동하면 됨
     }
 
 }

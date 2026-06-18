@@ -32,13 +32,22 @@ async function pgStockIndex(){
         await refreshStockIndex();
     }, 1000);
 }
-
+// front 프론트 지수 조회 시작 부분!!! STK_CACHE 1번
 async function refreshStockIndex() {
     try {
+        // 코스피랑 코스닥을 같이 요청하는대 응답을 한번에 받음 const로 했으면 하나씩 받음
         const [kospiRes, kosdaqRes] = await Promise.all([
+            // 패치는 브라우저에서 api를 호출하는 함수이고 옵션을 안주면 기본적으로 get요청을보냄
+            // 그럼이제 @GetMapping("/index/realtime") 로 가는것!
+            // 어웨잇 프로미스올은 응답올때까지 기다림 즉 다음줄로 안내려감 컨트롤러 => 서비스갓다올때까지
             fetch('/api/stock/index/realtime?indexCode=0001'),
             fetch('/api/stock/index/realtime?indexCode=1001')
+            // 오호 마지막에 다시 디티오를 제이슨으로 변환한 리턴값이 오면
+            // 처음에 받았던? fetch로 돌아옴
+            // 돌아오면 이제야 아랫줄이 실행됨
         ]);
+        // fetch 응답은 아직 Response 객체 상태임
+        // 서버에서 받은 JSON 문자열을 JavaScript 객체로 반환하기위해.json()을 사용~
         const kospi = await kospiRes.json();
         const kosdaq = await kosdaqRes.json();
 
@@ -261,10 +270,14 @@ async function loadStockDetail(stockCode) {
         const isFav = state.favorites.some(f => f.code === s.code);
         const tab = state.detailTab || 'info';
 
-        // AI 탭일 때만 Gemini 호출
+        // AI_ANLS 1번
+        // AI 탭일 때만 Gemini 호출 // 여기가 AI_ANLS 가장 첫 출발점
         let ai = null;
         if (tab === 'ai') {
             const aiRes = await fetch(`/api/ai/signal/${stockCode}?stockName=${encodeURIComponent(s.name)}`);
+            // 똑같이 fetch인대 post 같은거 따로 안적혀있으니 get 요청으로 보냄
+            // 그럼 Spring의 dispatcherServlet(프론트 컨트롤러)가 내부적으로 컨트롤러를 찾아서
+            // GetMapping의("/signal/{stockCode}") 으로 연결하고 stockCode 자리에 005930이 들어가서 매핑됨
             if (aiRes.ok) ai = await aiRes.json();
         }
 

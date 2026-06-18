@@ -57,6 +57,7 @@ public class FinancialService implements IFinancialService {
      * 4. 재무비율 계산
      * 5. DTO 반환
      */
+    // AI_ANLS 4번
     @Override
     public FinancialDTO getFinancialData(String stockCode) {
 

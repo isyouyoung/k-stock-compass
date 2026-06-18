@@ -23,6 +23,7 @@ import java.util.Map;
 @RequestMapping("/api/ai")
 public class AiController {
 
+    // AI_ANLS 3번
     private final IOpenAiService openAiService;
     private final IFinancialService financialService;
 
@@ -42,13 +43,25 @@ public class AiController {
      * - 프론트 UI에서 "투자 신호등"으로 사용됨
      * - 장애 발생 시에도 항상 3점 fallback 유지
      */
+    // AI_ANLS 2번
+    // /api/ai/signal/005930 이런식 URL을 받을거임
+    // stockCode = 변수 자리 => /signal/005930이면 stockcode는 005930
     @GetMapping("/signal/{stockCode}")
     public ResponseEntity<Map<String, Object>> getSignal(
             @PathVariable String stockCode,
+            // PathVariable은 stockCode = "005930" 이렇게 넣어주는 역활
             @RequestParam String stockName) {
+            // 요거는 URL뒤에 붙는값 stockName=삼성전자 여기서
+            // stockName = "삼성전자" 이렇게
 
-        try {
+        // 즉 스프링이 이렇게 바꿔줌
+        // stockCode = "005930"
+        // stockName = "삼성전자"
+
+        try {            // AI_ANLS 5번 다시 돌아옴 컨트롤러로
             FinancialDTO fin = financialService.getFinancialData(stockCode);
+            // DART / DB / API에서 재무정보를 가져옴
+            // AI 분석의 재료임!
 
             // 재무 데이터가 없는 경우 AI 호출 없이 기본 응답 반환
             if (fin == null) {
@@ -57,9 +70,11 @@ public class AiController {
                         "summary", "재무 데이터를 불러올 수 없어 분석이 어렵습니다."
                 ));
             }
+            // 재무 데이터가 없으면 여기서 그냥 종료함 분석할 데이터가 없기 때문임!
 
-            // AI 분석 수행 (Gemini API 호출) 추가한부분
+            // AI 분석 수행 (Gemini API 호출)
             IOpenAiService.AiAnalysisResult result =
+                    // 여기서 서비스로 넘어감!! AI_ANLS 6번
                     openAiService.analyze(stockCode, stockName, fin);
 
             return ResponseEntity.ok(Map.of(
