@@ -16,14 +16,35 @@ import org.springframework.web.reactive.function.client.WebClient;
 @Configuration
 public class AppConfig {
 
-    // WebClient라는 도구를 미리 만들어두는 거임.
-    // 내 프로젝트가 외부(공공 API 서버 같은 곳)랑 통신을 해야 하니까
-    // 매번 새로 만들기 귀찮아서 여기서 한 번 만들어놓고 필요할 때마다 빌려다 쓰려고 만들어놓음
-    // 예전에는 RestTemplate을 많이 썼는데 교수님께서 이제 지원이 끝났다고 하시고
-    // WebClient 이걸로 하였음
+//    // WebClient라는 도구를 미리 만들어두는 거임.
+//    // 내 프로젝트가 외부(공공 API 서버 같은 곳)랑 통신을 해야 하니까
+//    // 매번 새로 만들기 귀찮아서 여기서 한 번 만들어놓고 필요할 때마다 빌려다 쓰려고 만들어놓음
+//    // 예전에는 RestTemplate을 많이 썼는데 교수님께서 이제 지원이 끝났다고 하시고
+//    // WebClient 이걸로 하였음
+//    @Bean
+//    public WebClient webClient() {
+//        return WebClient.builder()
+//                .codecs(configurer -> configurer
+//                        .defaultCodecs()
+//                        .maxInMemorySize(10 * 1024 * 1024)) // 10MB
+//                .build();
+//    }
+
+    // SSL 인증서 우회 설정(InsecureTrustManagerFactory)을 추가하여 외부 API와의 SSL 통신 에러를 방지
     @Bean
-    public WebClient webClient() {
+    public WebClient webClient() throws javax.net.ssl.SSLException {
+        // 1. SSL 인증서 검증을 우회하는 SslContext 생성
+        io.netty.handler.ssl.SslContext sslContext = io.netty.handler.ssl.SslContextBuilder.forClient()
+                .trustManager(io.netty.handler.ssl.util.InsecureTrustManagerFactory.INSTANCE)
+                .build();
+
+        // 2. HttpClient에 SSL 설정 적용
+        reactor.netty.http.client.HttpClient httpClient = reactor.netty.http.client.HttpClient.create()
+                .secure(sslSpec -> sslSpec.sslContext(sslContext));
+
+        // 3. SSL 설정이 적용된 ReactorClientHttpConnector를 포함하여 WebClient 생성
         return WebClient.builder()
+                .clientConnector(new org.springframework.http.client.reactive.ReactorClientHttpConnector(httpClient))
                 .codecs(configurer -> configurer
                         .defaultCodecs()
                         .maxInMemorySize(10 * 1024 * 1024)) // 10MB
