@@ -5,6 +5,7 @@ function renderSidebar(){
         {icon:'🔍',label:'종목 검색',page:'stock_search'},
         {icon:'⭐',label:'관심종목',page:'fav_list',auth:true},
         {icon:'🔔',label:'알림',page:'alert_list',auth:true},
+        {icon:'🗣️',label:'자유게시판',page:'board',auth:true},
         {icon:'👤',label:'마이페이지',page:'mypage',auth:true},
     ];
     document.getElementById('navSection').innerHTML = navItems.map(item=>`

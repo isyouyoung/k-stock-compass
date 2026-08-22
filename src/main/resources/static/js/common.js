@@ -12,6 +12,9 @@ const state = {
     editAlertId: null,
     delFavCode: null,
     delAlertId: null,
+    editPostId: null,
+    editPostTitle: '',
+    editPostContent: '',
 };
 
 // ══════════════════════════════════════
@@ -202,4 +205,165 @@ if(savedToken && savedEmail){
     });
 } else {
     navigate('main');
+}
+
+// ══════════════════════════════════════
+// 자유게시판 API 및 페이지
+// ══════════════════════════════════════
+
+// 1. 게시글 목록 API 호출
+async function fetchBoardPosts() {
+    try {
+        const res = await fetch('/api/board');
+        if (!res.ok) throw new Error('목록 로드 실패');
+        return await res.json();
+    } catch (e) {
+        console.error('게시판 목록 로드 실패:', e);
+        return [];
+    }
+}
+
+// 게시글 수정 모드 진입 (인코딩된 값을 디코딩하여 상태 저장)
+function editPost(postId, encodedTitle, encodedContent) {
+    state.editPostId = postId;
+    state.editPostTitle = decodeURIComponent(encodedTitle);
+    state.editPostContent = decodeURIComponent(encodedContent);
+    navigate('board_write');
+}
+
+// 게시글 저장 (등록 및 수정 공용)
+async function doSavePost() {
+    const title = document.getElementById('boardTitle').value.trim();
+    const content = document.getElementById('boardContent').value.trim();
+
+    if (!title || !content) {
+        showToast('제목과 내용을 모두 입력해 주세요.');
+        return;
+    }
+
+    const isEdit = !!state.editPostId;
+    const url = isEdit ? `/api/board/${state.editPostId}` : '/api/board';
+    const method = isEdit ? 'PUT' : 'POST';
+
+    try {
+        const res = await authFetch(url, {
+            method: method,
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ title, content })
+        });
+
+        if (res.ok) {
+            showToast(isEdit ? '게시글이 수정되었습니다! ✏️' : '게시글이 등록되었습니다! 📝');
+            state.editPostId = null; // 수정 모드 초기화
+            navigate('board');
+        } else {
+            const err = await res.text();
+            showToast(err || '처리 중 오류가 발생했습니다.');
+        }
+    } catch (e) {
+        showToast('서버 오류가 발생했습니다.');
+    }
+}
+
+// 3. 게시글 삭제 API 호출
+async function doDeletePost(postId) {
+    if (!confirm('정말 이 게시글을 삭제하시겠습니까?')) return;
+
+    try {
+        const res = await authFetch(`/api/board/${postId}`, { method: 'DELETE' });
+        if (res.ok) {
+            showToast('게시글이 삭제되었습니다.');
+            navigate('board');
+        } else {
+            const err = await res.text();
+            showToast(err || '삭제 권한이 없거나 실패했습니다.');
+        }
+    } catch (e) {
+        showToast('서버 오류가 발생했습니다.');
+    }
+}
+
+// 4. 자유게시판 목록 페이지 UI
+// 4. 자유게시판 목록 페이지 UI
+function pgBoard() {
+    fetchBoardPosts().then(posts => {
+        const container = document.getElementById('boardListContainer');
+        if (!container) return;
+
+        if (posts.length === 0) {
+            container.innerHTML = `
+                <div class="card" style="padding:40px;text-align:center;">
+                    <div style="font-size:36px;margin-bottom:12px;">💬</div>
+                    <div style="font-size:16px;font-weight:700;color:var(--navy);margin-bottom:6px;">등록된 게시글이 없습니다</div>
+                    <div style="font-size:13px;color:var(--gray);">첫 번째 이야기를 자유게시판에 남겨보세요!</div>
+                </div>`;
+            return;
+        }
+
+        container.innerHTML = posts.map(p => `
+            <div class="card mb12" style="padding:20px 24px;">
+                <div class="flex flex-between flex-center mb8">
+                    <span style="font-size:16px;font-weight:700;color:var(--navy);">${p.title}</span>
+                    <span style="font-size:12px;color:var(--gray);">${p.regDt}</span>
+                </div>
+                <div style="font-size:14px;color:var(--dark);line-height:1.6;margin-bottom:12px;white-space:pre-wrap;">${p.content}</div>
+                <div class="flex flex-between flex-center" style="border-top:1px solid var(--border);padding-top:10px;margin-top:8px;">
+                    <span style="font-size:12px;color:var(--blue);font-weight:600;">✍️ ${p.authorName}</span>
+                    ${state.loggedIn && state.user?.email === p.authorEmail ? `
+                        <div style="display:flex;gap:6px;">
+                            <button class="btn btn-sm btn-outline" style="padding:4px 10px;" onclick="editPost(${p.postId}, '${encodeURIComponent(p.title)}', '${encodeURIComponent(p.content)}')">수정</button>
+                            <button class="btn btn-sm" style="background:#FFF5F5;color:var(--red-err);border:1px solid var(--red-err);padding:4px 10px;" onclick="doDeletePost(${p.postId})">삭제</button>
+                        </div>
+                    ` : ''}
+                </div>
+            </div>
+        `).join('');
+    });
+
+    return `
+        <div class="page-wrap">
+            <div class="flex flex-between flex-center mb24">
+                <div class="page-title">🗣️ 자유게시판</div>
+                ${state.loggedIn ? `
+                    <button class="btn btn-primary" onclick="state.editPostId=null;navigate('board_write')">✏️ 글쓰기</button>
+                ` : `
+                    <button class="btn btn-secondary btn-sm" onclick="openModal('modalNeedLogin')">🔒 글쓰기는 로그인 필요</button>
+                `}
+            </div>
+            <div id="boardListContainer">
+                <div class="card" style="padding:40px;text-align:center;color:var(--gray);">게시글을 불러오는 중입니다...</div>
+            </div>
+        </div>`;
+}
+
+// 5. 게시글 작성 페이지 UI
+function pgBoardWrite() {
+    const isEdit = !!state.editPostId;
+    const title = isEdit ? state.editPostTitle : '';
+    const content = isEdit ? state.editPostContent : '';
+
+    return `
+        <div class="page-wrap">
+            <div class="page-header"><div class="page-title">${isEdit ? '✏️ 게시글 수정' : '✏️ 게시글 작성'}</div></div>
+            <div style="display:flex;justify-content:center;">
+                <div class="card" style="width:100%;max-width:680px;">
+                    <div class="form-group">
+                        <div class="label">제목 <span class="req">*</span></div>
+                        <input class="input" id="boardTitle" 
+                               value="${title.replace(/"/g, '&quot;')}" 
+                               placeholder="제목을 입력하세요">
+                    </div>
+                    <div class="form-group">
+                        <div class="label">내용 <span class="req">*</span></div>
+                        <textarea class="input" id="boardContent" 
+                                  style="height:180px;resize:vertical;padding:12px;" 
+                                  placeholder="자유롭게 이야기를 작성해주세요.">${content}</textarea>
+                    </div>
+                    <div style="display:flex;gap:10px;margin-top:20px;">
+                        <button class="btn btn-primary flex-1" onclick="doSavePost()">${isEdit ? '수정 완료' : '등록하기'}</button>
+                        <button class="btn btn-secondary" onclick="state.editPostId=null;navigate('board')">취소</button>
+                    </div>
+                </div>
+            </div>
+        </div>`;
 }
