@@ -251,7 +251,6 @@ async function loadStockDetail(stockCode) {
         ]);
         const data = await stockRes.json();
         const fin = finRes.ok ? await finRes.json() : null;
-
         const s = {
             code: data.srtnCd,
             name: data.itmsNm,
@@ -296,8 +295,56 @@ async function loadStockDetail(stockCode) {
         ${tab==='info'?detailInfo(s,isFav,fin):detailAI(s,ai)}
         </div>`;
 
+        if (tab === 'info') {
+            loadNewsSection(s.name);
+        }
+
     } catch(e) {
         showToast('종목 정보 조회에 실패했습니다.');
+    }
+}
+
+// 뉴스는 종목 정보 렌더링과 별개로 비동기 로딩 (화면 즉시 표시를 위함)
+async function loadNewsSection(stockName) {
+    try {
+        const res = await fetch(`/api/news?query=${encodeURIComponent(stockName)}`);
+        const newsEl = document.getElementById('newsSection');
+        if (!newsEl) return; // 이미 다른 페이지로 이동했으면 중단
+
+        if (!res.ok) {
+            newsEl.innerHTML = `
+            <div class="section-title mb12">📰 관련 뉴스</div>
+            <div style="font-size:13px;color:var(--gray);padding:20px 0;text-align:center;">뉴스를 불러오지 못했습니다.</div>`;
+            return;
+        }
+
+        const news = await res.json();
+
+        if (!news || news.length === 0) {
+            newsEl.innerHTML = `
+            <div class="section-title mb12">📰 관련 뉴스</div>
+            <div style="font-size:13px;color:var(--gray);padding:20px 0;text-align:center;">관련 뉴스가 없습니다.</div>`;
+            return;
+        }
+
+        newsEl.innerHTML = `
+        <div class="section-title mb12">📰 관련 뉴스</div>
+        ${news.slice(0,5).map(n => `
+        <a href="${n.originallink}" target="_blank" rel="noopener noreferrer" style="display:block;text-decoration:none;color:inherit;padding:12px 0;border-bottom:1px solid var(--border);">
+        <div style="font-size:14px;font-weight:600;color:var(--navy);margin-bottom:4px;line-height:1.4;">${n.title}</div>
+        <div style="font-size:12px;color:var(--gray);line-height:1.5;margin-bottom:4px;">${n.description}</div>
+        <div style="font-size:11px;color:var(--gray);">${n.pubDate}</div>
+        </a>
+        `).join('')}`;
+
+    } catch(e) {
+        console.error('뉴스 로드 실패', e);
+        const newsEl = document.getElementById('newsSection');
+        if (newsEl) {
+            newsEl.innerHTML = `
+            <div class="section-title mb12">📰 관련 뉴스</div>
+            <div style="font-size:13px;color:var(--gray);padding:20px 0;text-align:center;">뉴스를 불러오지 못했습니다.</div>`;
+        }
     }
 }
 
@@ -361,6 +408,12 @@ function detailInfo(s,isFav,fin){return `
         <div class="fin-card"><div class="fin-bar" style="background:${c};"></div><div class="fin-label">${l}</div><div class="fin-val" style="color:${c};">${v}</div><div class="fin-sub">${s2}</div></div>`).join('')}
         </div>
         </div>
+        
+                <div class="card mb16" id="newsSection">
+        <div class="section-title mb12">📰 관련 뉴스</div>
+        <div style="font-size:13px;color:var(--gray);padding:20px 0;text-align:center;">뉴스를 불러오는 중...</div>
+        </div>
+        
         <div class="flex gap12">
         ${state.loggedIn ? `
         <button class="btn ${isFav ? 'btn-secondary' : 'btn-outline'} btn-full" onclick="openFavAdd('${s.name}','${s.code}')">${isFav ? '✅ 관심종목 추가됨' : '⭐ 관심종목 추가'}</button>
