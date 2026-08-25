@@ -595,6 +595,9 @@
         <div class="nav-item" style="padding:16px 20px;font-size:13px;" onclick="navigate('asset_chart')">
         <span class="nav-icon">📈</span>자산 변동 그래프
         </div>
+        <div class="nav-item" style="padding:16px 20px;font-size:13px;" onclick="navigate('trade_log')">
+        <span class="nav-icon">📝</span>매매일지 & 목표수익률
+        </div>
         <div class="nav-item" style="padding:16px 20px;font-size:13px;" onclick="navigate('mypage_pw')">
         <span class="nav-icon">👤</span>회원정보 수정
         </div>
@@ -669,7 +672,162 @@
         </div>
         </div>`;}
 
+  // ══════════════════════════════════════
+  // 매매일지 & 목표 수익률 페이지
+  // ══════════════════════════════════════
 
+  async function loadTradeLogPage() {
+    state.tradeLogs = state.tradeLogs || [];
+    state.goal = state.goal || null;
+    try {
+      const logRes = await authFetch('/api/trade-log');
+      state.tradeLogs = logRes.ok ? await logRes.json() : [];
+
+      const goalRes = await authFetch('/api/trade-log/goal');
+      state.goal = goalRes.ok ? await goalRes.json() : null;
+
+      if (state.goal && state.tradeLogs.length > 0) {
+        const rateRes = await authFetch('/api/trade-log/required-rate');
+        state.requiredRate = rateRes.ok ? await rateRes.json() : null;
+      } else {
+        state.requiredRate = null;
+      }
+    } catch (e) {
+      console.error('매매일지 데이터 로드 실패', e);
+    }
+    document.getElementById('mainContent').innerHTML = pgTradeLog();
+  }
+
+  function pgTradeLog() {
+    return `<div class="page-wrap">
+    <div class="page-header"><div class="page-title">📝 매매일지 & 목표 수익률</div></div>
+
+    <div class="card mb16">
+      <div class="section-title">🎯 목표 수익률</div>
+      <div style="display:flex;align-items:center;gap:10px;margin-top:12px;">
+        <input class="input" id="goalRateInput" type="number" placeholder="예: 10"
+          value="${state.goal ? state.goal.targetProfitRate : ''}" style="flex:1;">
+        <span style="font-size:14px;color:var(--gray);">%</span>
+        <button class="btn btn-primary" onclick="doSaveGoal()">저장</button>
+      </div>
+      ${state.goal ? `<div style="font-size:12px;color:var(--gray);margin-top:8px;">현재 설정: ${state.goal.targetProfitRate}%</div>` : `<div style="font-size:12px;color:var(--gray);margin-top:8px;">아직 목표가 설정되지 않았습니다.</div>`}
+    </div>
+
+    <div class="card mb16">
+      <div class="section-title">➕ 매매일지 등록</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr 1fr 1fr auto;gap:8px;margin-top:12px;align-items:center;">
+        <input class="input" id="tlStockCode" placeholder="종목코드 (예: 005930)">
+        <input class="input" id="tlStockName" placeholder="종목명 (예: 삼성전자)">
+        <input class="input" id="tlBuyPrice" type="number" placeholder="매수단가">
+        <input class="input" id="tlQuantity" type="number" placeholder="수량">
+        <button class="btn btn-primary" onclick="doAddTradeLog()">등록</button>
+      </div>
+    </div>
+
+    <div class="card mb16">
+      <div class="section-title">📋 등록된 매매일지</div>
+      ${state.tradeLogs.length === 0 ? `
+        <div class="empty" style="padding:24px 0;">
+          <div class="empty-sub">등록된 매매일지가 없습니다.</div>
+        </div>` : state.tradeLogs.map(t => `
+        <div class="stock-row">
+          <span class="sn">${t.stockName}</span><span class="sc">${t.stockCode}</span>
+          <span style="margin-left:auto;font-size:13px;color:var(--gray);">${fmt(t.buyPrice)}원 × ${t.quantity}주</span>
+          <button class="btn btn-sm" style="background:#FFF5F5;color:var(--red-err);border:1px solid var(--red-err);margin-left:12px;" onclick="doDeleteTradeLog(${t.id})">삭제</button>
+        </div>`).join('')}
+    </div>
+
+    ${state.requiredRate ? `
+    <div class="card">
+      <div class="section-title">📈 목표 달성까지 필요한 상승률</div>
+      <div style="background:var(--bg);border-radius:10px;padding:16px;margin:12px 0;text-align:center;">
+        <div style="font-size:12px;color:var(--gray);">전체 계좌 균등 필요 상승률</div>
+        <div style="font-size:28px;font-weight:800;color:var(--navy);margin-top:6px;">${state.requiredRate.overallRequiredRate}%</div>
+      </div>
+      ${state.requiredRate.stockRates.map(s => `
+        <div class="stock-row">
+          <span class="sn">${s.stockName}</span><span class="sc">${s.stockCode}</span>
+          <span style="margin-left:auto;font-size:13px;color:var(--gray);">현재 ${fmt(s.currentPrice)}원</span>
+          <span class="${s.requiredRate >= 0 ? 'up' : 'down'}" style="margin-left:12px;font-weight:700;">
+            ${s.requiredRate >= 0 ? '+' : ''}${s.requiredRate}%
+          </span>
+        </div>`).join('')}
+    </div>` : `
+    <div class="card">
+      <div class="empty" style="padding:24px 0;">
+        <div class="empty-sub">${!state.goal ? '목표 수익률을 먼저 설정해 주세요.' : '매매일지를 등록하면 필요 상승률을 계산해 드려요.'}</div>
+      </div>
+    </div>`}
+  </div>`;
+  }
+
+  async function doSaveGoal() {
+    const rate = document.getElementById('goalRateInput').value;
+    if (!rate) { showToast('목표 수익률을 입력해 주세요.'); return; }
+    try {
+      const res = await authFetch('/api/trade-log/goal', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ targetProfitRate: Number(rate) })
+      });
+      if (res.ok) {
+        showToast('목표 수익률이 저장되었습니다! 🎯');
+        await loadTradeLogPage();
+      } else {
+        const msg = await res.text();
+        showToast(msg);
+      }
+    } catch (e) {
+      showToast('서버 오류가 발생했습니다.');
+    }
+  }
+
+  async function doAddTradeLog() {
+    const stockCode = document.getElementById('tlStockCode').value.trim();
+    const stockName = document.getElementById('tlStockName').value.trim();
+    const buyPrice = document.getElementById('tlBuyPrice').value;
+    const quantity = document.getElementById('tlQuantity').value;
+
+    if (!stockCode || !stockName || !buyPrice || !quantity) {
+      showToast('모든 항목을 입력해 주세요.');
+      return;
+    }
+
+    try {
+      const res = await authFetch('/api/trade-log', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          stockCode, stockName,
+          buyPrice: Number(buyPrice),
+          quantity: Number(quantity)
+        })
+      });
+      if (res.ok) {
+        showToast('매매일지가 등록되었습니다! 📝');
+        await loadTradeLogPage();
+      } else {
+        const msg = await res.text();
+        showToast(msg);
+      }
+    } catch (e) {
+      showToast('서버 오류가 발생했습니다.');
+    }
+  }
+
+  async function doDeleteTradeLog(id) {
+    try {
+      const res = await authFetch(`/api/trade-log/${id}`, { method: 'DELETE' });
+      if (res.ok) {
+        showToast('매매일지가 삭제되었습니다.');
+        await loadTradeLogPage();
+      } else {
+        showToast('삭제에 실패했습니다.');
+      }
+    } catch (e) {
+      showToast('서버 오류가 발생했습니다.');
+    }
+  }
 
   function openFavAdd(name,code){
     document.getElementById('favAddName').textContent=`${name} (${code})`;
@@ -1165,6 +1323,7 @@
       board: pgBoard, board_write: pgBoardWrite,
       mypage: pgMypage, mypage_pw: pgMypagePw, mypage_leave: pgMypageLeave,
       portfolio: pgPortfolio, asset_chart: pgAssetChart,
+      trade_log: pgTradeLog,
       err_404: pgErr404, err_500: pgErr500,
     };
     const fn = pages[page] || pgMain;
@@ -1184,6 +1343,8 @@
       loadAlertLogs().then(() => {
         document.getElementById('mainContent').innerHTML = pgAlertLog();
       });
+    } else if(page === 'trade_log') {
+      loadTradeLogPage();
     } else {
       document.getElementById('mainContent').innerHTML = fn();
     }
