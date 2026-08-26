@@ -8,6 +8,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
+import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.web.reactive.function.client.WebClient;
 
 import java.time.LocalDate;
@@ -56,6 +57,15 @@ public class ExchangeRateService implements IExchangeRateService {
         }
 
         return rates;
+    }
+
+    /**
+     * 매일 오전 9시에 환율 캐시 자동 갱신
+     */
+    @Scheduled(cron = "0 0 9 * * *")
+    public void autoRefreshExchangeRateCache() {
+        log.info("\uD83D\uDCB1 오늘의 환율 정보가 새로 업데이트되었습니다.");
+        refreshExchangeRateCache();
     }
 
     /**
