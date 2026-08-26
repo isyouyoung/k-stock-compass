@@ -4,7 +4,7 @@ import lombok.Builder;
 
 @Builder
 public record ExchangeRateResponseDto(
-        String currency,      // 통화 코드 (USD, JPY, EUR, CNY)
+        String currency,      //
         String name,          // 통화 이름
         String rate,          // 환율
         String change,        // 전일 대비 (RISE, FALL, EVEN)
