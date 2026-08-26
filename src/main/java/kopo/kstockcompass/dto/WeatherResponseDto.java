@@ -5,7 +5,6 @@ import lombok.Builder;
 /**
  * [날씨 및 증시 멘트 응답 DTO]
  * - 프론트엔드(UI)에 전달할 날씨 정보 및 백엔드에서 조합한 증시 한줄평을 담는 객체
- * - Java 14+ Record 구조를 사용하여 불변성(Immutable) 보장 및 가독성 확보
  */
 @Builder
 public record WeatherResponseDto(
