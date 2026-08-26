@@ -578,36 +578,74 @@
         </div>`).join('')}
         </div>`;}
 
-  function pgMypage(){return `<div class="page-wrap">
-        <div class="page-header"><div class="page-title">👤 마이페이지</div></div>
-        <div style="display:grid;grid-template-columns:320px 1fr;gap:20px;">
-        <!-- 왼쪽 -->
-        <div>
-        <div class="card text-center mb12" style="padding:24px 20px;">
-        <div style="width:60px;height:60px;border-radius:50%;background:var(--blue);display:flex;align-items:center;justify-content:center;font-size:26px;color:white;margin:0 auto 12px;">👤</div>
-        <div style="font-size:16px;font-weight:700;">${(state.user?.email||'user@example.com').split('@')[0]}</div>
-        <div style="font-size:12px;color:var(--gray);margin-top:4px;">${state.user?.email||'user@example.com'}</div>
+  function pgMypage(){
+    return `
+        <div class="page-wrap">
+
+            <div class="page-header">
+                <div class="page-title">👤 마이페이지</div>
+            </div>
+
+            <div style="display:grid;grid-template-columns:320px 1fr;gap:20px;">
+
+                <!-- 왼쪽 -->
+                <div>
+
+                    <div class="card text-center mb12" style="padding:24px 20px;">
+                        <div style="width:60px;height:60px;border-radius:50%;background:var(--blue);display:flex;align-items:center;justify-content:center;font-size:26px;color:white;margin:0 auto 12px;">
+                            👤
+                        </div>
+
+                        <div style="font-size:16px;font-weight:700;">
+                            ${(state.user?.email||'user@example.com').split('@')[0]}
+                        </div>
+
+                        <div style="font-size:12px;color:var(--gray);margin-top:4px;">
+                            ${state.user?.email||'user@example.com'}
+                        </div>
+                    </div>
+
+                    <div class="card" style="padding:8px 0;">
+
+                        <div class="nav-item"
+                             style="padding:16px 20px;font-size:13px;"
+                             onclick="navigate('portfolio')">
+                            <span class="nav-icon">💼</span>내 포트폴리오
+                        </div>
+
+                        <div class="nav-item"
+                             style="padding:16px 20px;font-size:13px;"
+                             onclick="navigate('asset_chart')">
+                            <span class="nav-icon">📈</span>자산 변동 그래프
+                        </div>
+
+                        <div class="nav-item"
+                             style="padding:16px 20px;font-size:13px;"
+                             onclick="navigate('trade_log')">
+                            <span class="nav-icon">📝</span>매매일지 & 목표수익률
+                        </div>
+
+                        <div class="nav-item"
+                             style="padding:16px 20px;font-size:13px;"
+                             onclick="navigate('mypage_pw')">
+                            <span class="nav-icon">👤</span>회원정보 수정
+                        </div>
+
+                        <div class="nav-item"
+                             style="padding:16px 20px;font-size:13px;color:var(--red-err);"
+                             onclick="openModal('modalLeave')">
+                            <span class="nav-icon">⚠</span>서비스 탈퇴
+                        </div>
+
+                    </div>
+
+                </div>
+
+            </div>
+
         </div>
-        <div class="card" style="padding:8px 0;">
-        <div class="nav-item" style="padding:16px 20px;font-size:13px;" onclick="navigate('portfolio')">
-        <span class="nav-icon">💼</span>내 포트폴리오
-        </div>
-        <div class="nav-item" style="padding:16px 20px;font-size:13px;" onclick="navigate('asset_chart')">
-        <span class="nav-icon">📈</span>자산 변동 그래프
-        </div>
-        <div class="nav-item" style="padding:16px 20px;font-size:13px;" onclick="navigate('trade_log')">
-        <span class="nav-icon">📝</span>매매일지 & 목표수익률
-        </div>
-        <div class="nav-item" style="padding:16px 20px;font-size:13px;" onclick="navigate('mypage_pw')">
-        <span class="nav-icon">👤</span>회원정보 수정
-        </div>
-        <div class="nav-item" style="padding:16px 20px;font-size:13px;color:var(--red-err);" onclick="openModal('modalLeave')">
-        <span class="nav-icon">⚠</span>서비스 탈퇴
-        </div>
-        </div>
-        </div>
-        </div>
-        </div>`;}
+    `;
+  }
 
   function pgMypagePw(){return `<div class="page-wrap">
         <div class="page-header"><div class="page-title">👤 회원정보 수정</div></div>
@@ -1348,6 +1386,7 @@
       mypage: pgMypage, mypage_pw: pgMypagePw, mypage_leave: pgMypageLeave,
       portfolio: pgPortfolio, asset_chart: pgAssetChart,
       trade_log: pgTradeLog,
+      exchange_rate: pgExchangeRate,
       err_404: pgErr404, err_500: pgErr500,
     };
     const fn = pages[page] || pgMain;
@@ -1369,6 +1408,8 @@
       });
     } else if(page === 'trade_log') {
       loadTradeLogPage();
+    } else if(page === 'exchange_rate') { // 💡 이 부분을 추가해 주세요!
+      document.getElementById('mainContent').innerHTML = pgExchangeRate();
     } else {
       document.getElementById('mainContent').innerHTML = fn();
     }

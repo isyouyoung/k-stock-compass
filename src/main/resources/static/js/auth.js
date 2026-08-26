@@ -6,6 +6,7 @@ function renderSidebar(){
         {icon:'⭐',label:'관심종목',page:'fav_list',auth:true},
         {icon:'🔔',label:'알림',page:'alert_list',auth:true},
         {icon:'🗣️',label:'자유게시판',page:'board',auth:true},
+        {icon:'💱',label:'오늘의 환율',page:'exchange_rate',auth:true},
         {icon:'👤',label:'마이페이지',page:'mypage',auth:true},
     ];
     document.getElementById('navSection').innerHTML = navItems.map(item=>`

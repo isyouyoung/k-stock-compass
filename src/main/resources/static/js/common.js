@@ -284,7 +284,6 @@ async function doDeletePost(postId) {
 }
 
 // 4. 자유게시판 목록 페이지 UI
-// 4. 자유게시판 목록 페이지 UI
 function pgBoard() {
     fetchBoardPosts().then(posts => {
         const container = document.getElementById('boardListContainer');
@@ -366,4 +365,72 @@ function pgBoardWrite() {
                 </div>
             </div>
         </div>`;
+}
+
+function pgExchangeRate() {
+    return `
+        <div class="page-wrap">
+            <div class="page-header">
+                <div class="page-title">💱 오늘의 환율</div>
+            </div>
+
+            <div class="card" style="padding:40px;text-align:center;">
+                환율 페이지 테스트
+            </div>
+        </div>
+    `;
+}
+
+async function loadExchangeRates() {
+    try {
+        const res = await fetch('/api/exchange-rate');
+
+        if (!res.ok) {
+            throw new Error('환율 조회 실패');
+        }
+
+        const rates = await res.json();
+
+        const container = document.getElementById('exchangeRateList');
+
+        if (!container) return;
+
+        container.innerHTML = rates.map(rate => `
+            <div class="card mb12" style="padding:20px 24px;">
+                <div style="display:flex;justify-content:space-between;align-items:center;">
+                    <div>
+                        <div style="font-size:15px;font-weight:700;color:var(--navy);">
+                            ${rate.name}
+                        </div>
+                        <div style="font-size:12px;color:var(--gray);margin-top:4px;">
+                            기준환율
+                        </div>
+                    </div>
+
+                    <div style="text-align:right;">
+                        <div style="font-size:20px;font-weight:700;">
+                            ${rate.rate}
+                        </div>
+                        <div style="font-size:12px;">
+                            ${rate.changePrice}
+                            ${rate.changeRate}
+                        </div>
+                    </div>
+                </div>
+            </div>
+        `).join('');
+
+    } catch (e) {
+        console.error('환율 조회 실패:', e);
+
+        const container = document.getElementById('exchangeRateList');
+
+        if (container) {
+            container.innerHTML = `
+                <div class="card" style="padding:40px;text-align:center;color:var(--red-err);">
+                    환율 정보를 불러오지 못했습니다.
+                </div>
+            `;
+        }
+    }
 }
