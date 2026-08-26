@@ -31,13 +31,17 @@ public class ExchangeRateService implements IExchangeRateService {
     private final AtomicReference<List<ExchangeRateResponseDto>> cachedRates =
             new AtomicReference<>(new ArrayList<>());
 
-    // 조회할 통화 목록
+    // 조회할 통화 목록 (8개국으로 확장)
     // 이름, ECOS 통계표 코드, ECOS 항목 코드
     private static final List<CurrencyTarget> TARGETS = List.of(
             new CurrencyTarget("미국 달러", "731Y001", "0000001"),
             new CurrencyTarget("일본 엔 (100엔)", "731Y001", "0000002"),
             new CurrencyTarget("유로", "731Y001", "0000003"),
-            new CurrencyTarget("중국 위안", "731Y001", "0000053")
+            new CurrencyTarget("중국 위안", "731Y001", "0000053"),
+            new CurrencyTarget("영국 파운드", "731Y001", "0000012"),
+            new CurrencyTarget("호주 달러", "731Y001", "0000017"),
+            new CurrencyTarget("캐나다 달러", "731Y001", "0000013"),
+            new CurrencyTarget("스위스 프랑", "731Y001", "0000014")
     );
 
     @Override
@@ -76,7 +80,7 @@ public class ExchangeRateService implements IExchangeRateService {
             String startDateStr =
                     startDate.format(DateTimeFormatter.ofPattern("yyyyMMdd"));
 
-            // USD, JPY, EUR, CNY 순서대로 조회
+            // 8개 통화 순서대로 조회
             for (CurrencyTarget target : TARGETS) {
 
                 // ECOS StatisticSearch API URL

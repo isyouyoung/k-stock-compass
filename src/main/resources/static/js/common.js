@@ -368,69 +368,92 @@ function pgBoardWrite() {
 }
 
 function pgExchangeRate() {
-    return `
+    const html = `
         <div class="page-wrap">
+
             <div class="page-header">
                 <div class="page-title">💱 오늘의 환율</div>
             </div>
 
-            <div class="card" style="padding:40px;text-align:center;">
-                환율 페이지 테스트
+            <div id="exchangeRateList">
+                <div class="card" style="padding:40px;text-align:center;color:var(--gray);">
+                    환율 정보를 불러오는 중입니다...
+                </div>
             </div>
+
         </div>
     `;
+
+    setTimeout(() => {
+        loadExchangeRates();
+    }, 0);
+
+    return html;
 }
 
 async function loadExchangeRates() {
     try {
         const res = await fetch('/api/exchange-rate');
-
-        if (!res.ok) {
-            throw new Error('환율 조회 실패');
-        }
-
+        if (!res.ok) throw new Error('환율 조회 실패');
         const rates = await res.json();
 
         const container = document.getElementById('exchangeRateList');
-
         if (!container) return;
 
-        container.innerHTML = rates.map(rate => `
-            <div class="card mb12" style="padding:20px 24px;">
-                <div style="display:flex;justify-content:space-between;align-items:center;">
-                    <div>
-                        <div style="font-size:15px;font-weight:700;color:var(--navy);">
-                            ${rate.name}
-                        </div>
-                        <div style="font-size:12px;color:var(--gray);margin-top:4px;">
-                            기준환율
-                        </div>
-                    </div>
+        // 💡 8개국 확장형 깃발 및 단위 맵핑
+        const infoMap = {
+            '미국 달러': { flagUrl: 'https://flagcdn.com/w40/us.png', country: '미국', unit: '1 USD' },
+            '일본 엔 (100엔)': { flagUrl: 'https://flagcdn.com/w40/jp.png', country: '일본', unit: '100 JPY' },
+            '유로': { flagUrl: 'https://flagcdn.com/w40/eu.png', country: '유럽', unit: '1 EUR' },
+            '중국 위안': { flagUrl: 'https://flagcdn.com/w40/cn.png', country: '중국', unit: '1 CNY' },
+            '영국 파운드': { flagUrl: 'https://flagcdn.com/w40/gb.png', country: '영국', unit: '1 GBP' },
+            '호주 달러': { flagUrl: 'https://flagcdn.com/w40/au.png', country: '호주', unit: '1 AUD' },
+            '캐나다 달러': { flagUrl: 'https://flagcdn.com/w40/ca.png', country: '캐나다', unit: '1 CAD' },
+            '스위스 프랑': { flagUrl: 'https://flagcdn.com/w40/ch.png', country: '스위스', unit: '1 CHF' }
+        };
 
-                    <div style="text-align:right;">
-                        <div style="font-size:20px;font-weight:700;">
-                            ${rate.rate}
-                        </div>
-                        <div style="font-size:12px;">
-                            ${rate.changePrice}
-                            ${rate.changeRate}
-                        </div>
-                    </div>
-                </div>
-            </div>
-        `).join('');
+        container.innerHTML = `
+            <div style="display:grid;grid-template-columns:repeat(auto-fit, minmax(260px, 1fr));gap:16px;">
+                ${rates.map(rate => {
+            const info = infoMap[rate.name] || { flagUrl: 'https://flagcdn.com/w40/un.png', country: '기타', unit: rate.currency };
+            const isRise = rate.change === 'RISE';
+            const isFall = rate.change === 'FALL';
+            const badgeColor = isRise ? 'var(--red-err)' : isFall ? '#16A34A' : 'var(--gray)';
+            const sign = isRise ? '+' : '';
 
+            return `
+                        <div class="card" style="padding:24px;">
+                            <!-- 상단: 깃발 이미지 및 국가 -->
+                            <div style="display:flex;align-items:center;gap:10px;margin-bottom:8px;">
+                                <img src="${info.flagUrl}" alt="${info.country}" style="width:28px;height:auto;border-radius:3px;box-shadow:0 1px 3px rgba(0,0,0,0.15);">
+                                <span style="font-size:13px;font-weight:600;color:var(--gray);">${info.country}</span>
+                            </div>
+
+                            <!-- 통화 이름 및 단위 -->
+                            <div style="font-size:15px;font-weight:700;color:var(--navy);margin-bottom:12px;">
+                                ${rate.name} · ${info.unit}
+                            </div>
+
+                            <!-- 환율 (원화 표시) -->
+                            <div style="font-size:24px;font-weight:700;color:var(--dark);margin-bottom:12px;">
+                                ₩${rate.rate}
+                            </div>
+
+                            <!-- 전일 대비 정보 (++) 수정 반영 -->
+                            <div style="font-size:13px;color:${badgeColor};font-weight:600;">
+                                전일 대비 ${rate.changePrice} (${rate.changeRate})
+                            </div>
+                        </div>`;
+        }).join('')}
+            </div>`;
     } catch (e) {
         console.error('환율 조회 실패:', e);
-
         const container = document.getElementById('exchangeRateList');
-
         if (container) {
             container.innerHTML = `
                 <div class="card" style="padding:40px;text-align:center;color:var(--red-err);">
                     환율 정보를 불러오지 못했습니다.
-                </div>
-            `;
+                </div>`;
         }
     }
 }
