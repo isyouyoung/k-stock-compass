@@ -320,6 +320,7 @@ async function loadNewsSection(stockName) {
 
         const news = await res.json();
 
+        // 4. 뉴스가 비어있을 때 방어 코드
         if (!news || news.length === 0) {
             newsEl.innerHTML = `
             <div class="section-title mb12">📰 관련 뉴스</div>
@@ -327,6 +328,7 @@ async function loadNewsSection(stockName) {
             return;
         }
 
+        // 5. 받아온 뉴스 리스트(최대 5개)를 HTML 태그로 조립해서 화면에 꽂아넣기!
         newsEl.innerHTML = `
         <div class="section-title mb12">📰 관련 뉴스</div>
         ${news.slice(0,5).map(n => `

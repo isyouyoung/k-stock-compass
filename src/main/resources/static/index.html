@@ -718,12 +718,15 @@
     state.tradeLogs = state.tradeLogs || [];
     state.goal = state.goal || null;
     try {
+      // 1. 등록된 매매일지 목록을 달라고 GET 요청!
       const logRes = await authFetch('/api/trade-log');
       state.tradeLogs = logRes.ok ? await logRes.json() : [];
 
+      // 2. 설정된 목표 수익률을 달라고 GET 요청!
       const goalRes = await authFetch('/api/trade-log/goal');
       state.goal = goalRes.ok ? await goalRes.json() : null;
 
+      // 3. 목표와 매매일지가 둘 다 있다면 필요 상승률 계산 API도 찌름!
       if (state.goal && state.tradeLogs.length > 0) {
         const rateRes = await authFetch('/api/trade-log/required-rate');
         state.requiredRate = rateRes.ok ? await rateRes.json() : null;
@@ -733,6 +736,7 @@
     } catch (e) {
       console.error('매매일지 데이터 로드 실패', e);
     }
+    // 4. 데이터가 state에 싹 담기면 HTML 템플릿(pgTradeLog)을 호출해서 화면에 렌더링!
     document.getElementById('mainContent').innerHTML = pgTradeLog();
   }
 

@@ -26,8 +26,10 @@ public class BoardService implements IBoardService {
     @Transactional
     public PostResponseDto createPost(PostRequestDto requestDto, String userEmail) throws Exception {
         // JWT의 평문 이메일을 AES128로 암호화하여 DB PK 조회
+        // // JWT를 통해 복호화되어 넘어온 평문 이메일(userEmail)을
         String encEmail = EncryptUtil.encAES128CBC(userEmail);
 
+        // DB에 암호화되어 저장된 PK와 비교하기 위해 조회하는 바로 이 순간!
         UserInfoEntity user = userInfoRepository.findById(encEmail)
                 .orElseThrow(() -> new IllegalArgumentException("존재하지 않는 사용자입니다."));
 

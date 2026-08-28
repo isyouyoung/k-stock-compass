@@ -44,17 +44,24 @@ public class TradeLogService implements ITradeLogService {
         }
     }
 
+    /**
+     * 사용자가 입력한 매매일지 정보(종목코드, 종목명, 매수단가, 수량)를 받아
+     * 암호화된 사용자 정보를 매핑한 뒤 DB에 저장하고, 그 결과를 DTO로 변환해 반환합니다.
+     */
     @Override
     @Transactional
     public TradeLogResponseDto registerTradeLog(
             String userEmail,
             TradeLogRequestDto dto
     ) {
+        // 1. 이메일 암호화 변환
         String encEmail = getEncEmail(userEmail);
 
+        // 2. DB에서 회원 엔티티 조회 (존재하지 않으면 예외 발생)
         UserInfoEntity user = userInfoRepository.findById(encEmail)
                 .orElseThrow(() -> new RuntimeException("사용자를 찾을 수 없습니다."));
 
+        // 3. 매매일지 엔티티 빌더 생성
         TradeLogEntity entity = TradeLogEntity.builder()
                 .user(user)
                 .stockCode(dto.stockCode())
@@ -63,11 +70,16 @@ public class TradeLogService implements ITradeLogService {
                 .quantity(dto.quantity())
                 .build();
 
+        // 4. DB에 저장 후 DTO로 변환 반환
         TradeLogEntity saved = tradeLogRepository.save(entity);
 
         return TradeLogResponseDto.from(saved);
     }
 
+    /**
+     * 로그인된 사용자의 이메일을 기반으로
+     * 등록된 모든 매매일지 목록을 최신 등록순으로 조회하여 DTO 리스트로 반환합니다.
+     */
     @Override
     public List<TradeLogResponseDto> getTradeLogList(String userEmail) {
         String encEmail = getEncEmail(userEmail);
@@ -79,11 +91,16 @@ public class TradeLogService implements ITradeLogService {
                 .toList();
     }
 
+    /**
+     * 사용자가 요청한 특정 매매일지 ID와 본인 이메일이 일치하는지 확인하고,
+     * 데이터가 존재할 경우에만 안전하게 삭제 처리를 수행합니다.
+     */
     @Override
     @Transactional
     public void deleteTradeLog(String userEmail, Long tradeLogId) {
         String encEmail = getEncEmail(userEmail);
 
+        // 본인 소유의 매매일지인지 검증하며 조회
         TradeLogEntity entity =
                 tradeLogRepository.findByIdAndUser_UserEmail(
                                 tradeLogId,
@@ -98,6 +115,9 @@ public class TradeLogService implements ITradeLogService {
         tradeLogRepository.delete(entity);
     }
 
+    /**
+     * 사용자의 목표 수익률을 등록하거나, 이미 존재할 경우 수정(Upsert) 처리합니다.
+     */
     @Override
     @Transactional
     public InvestmentGoalResponseDto saveOrUpdateGoal(
@@ -106,6 +126,7 @@ public class TradeLogService implements ITradeLogService {
     ) {
         String encEmail = getEncEmail(userEmail);
 
+        // 기존에 설정된 목표가 있다면 수정하고, 없다면 새로 생성하여 저장
         UserInvestmentGoalEntity entity =
                 goalRepository.findByUser_UserEmail(encEmail)
                         .map(existing -> {
@@ -137,6 +158,10 @@ public class TradeLogService implements ITradeLogService {
         return InvestmentGoalResponseDto.from(entity);
     }
 
+    /**
+     * 사용자의 설정된 목표 수익률을 조회합니다.
+     * 설정된 값이 없다면 기본값으로 0%와 빈 문자열을 담은 DTO를 반환합니다.
+     */
     @Override
     public InvestmentGoalResponseDto getGoal(String userEmail) {
         String encEmail = getEncEmail(userEmail);
@@ -194,6 +219,7 @@ public class TradeLogService implements ITradeLogService {
         // --------------------------------------------------
         for (TradeLogEntity logEntity : logs) {
 
+            // 외부 KIS 증권 API를 통해 현재가 조회
             long currentPriceLong =
                     kisStockService.getCurrentPrice(
                             logEntity.getStockCode()
