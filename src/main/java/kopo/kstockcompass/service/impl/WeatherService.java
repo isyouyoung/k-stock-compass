@@ -31,31 +31,20 @@ public class WeatherService implements IWeatherService {
     @Override
     public WeatherResponseDto getRealtimeWeatherAndMarketComment() {
         try {
-            String[] baseDateTime = getBaseDateTime();
-            String baseDate = baseDateTime[0];
-            String baseTime = baseDateTime[1];
-
-            URI uri = UriComponentsBuilder.fromHttpUrl(weatherApiUrl)
-                    .queryParam("serviceKey", serviceKey)
-                    .queryParam("pageNo", "1")
-                    .queryParam("numOfRows", "10")
-                    .queryParam("dataType", "JSON")
-                    .queryParam("base_date", baseDate)
-                    .queryParam("base_time", baseTime)
-                    .queryParam("nx", "60")
-                    .queryParam("ny", "127")
-                    .build()
-                    .encode()
-                    .toUri();
-
-            JsonNode response = webClient.get()
-                    .uri(uri)
-                    .retrieve()
-                    .bodyToMono(JsonNode.class)
-                    .timeout(Duration.ofSeconds(3))
-                    .block();
+            // 1. 초단기실황 기준시간 계산 (40분 기준)
+            String[] baseDateTime = getBaseDateTime(LocalDateTime.now());
+            JsonNode response = fetchWeatherData(baseDateTime[0], baseDateTime[1]);
 
             String resultCode = response.path("response").path("header").path("resultCode").asText();
+
+            // 2. 기상청 업로드 지연 등으로 NO_DATA(03) 발생 시 1시간 전 데이터로 1회 재요청 (Fallback)
+            if ("03".equals(resultCode)) {
+                log.warn("기상청 API NO_DATA(03) 발생 - 1시간 전 데이터로 재요청합니다. (baseDate: {}, baseTime: {})", baseDateTime[0], baseDateTime[1]);
+                String[] fallbackDateTime = getBaseDateTime(LocalDateTime.now().minusHours(1));
+                response = fetchWeatherData(fallbackDateTime[0], fallbackDateTime[1]);
+                resultCode = response.path("response").path("header").path("resultCode").asText();
+            }
+
             if (!"00".equals(resultCode)) {
                 String resultMsg = response.path("response").path("header").path("resultMsg").asText();
                 log.warn("기상청 API 응답 이상 - resultCode: {}, resultMsg: {}", resultCode, resultMsg);
@@ -100,15 +89,36 @@ public class WeatherService implements IWeatherService {
         }
     }
 
-    private String[] getBaseDateTime() {
-        LocalDateTime now = LocalDateTime.now();
+    private JsonNode fetchWeatherData(String baseDate, String baseTime) {
+        URI uri = UriComponentsBuilder.fromHttpUrl(weatherApiUrl)
+                .queryParam("serviceKey", serviceKey)
+                .queryParam("pageNo", "1")
+                .queryParam("numOfRows", "10")
+                .queryParam("dataType", "JSON")
+                .queryParam("base_date", baseDate)
+                .queryParam("base_time", baseTime)
+                .queryParam("nx", "60")
+                .queryParam("ny", "127")
+                .build()
+                .encode()
+                .toUri();
 
-        if (now.getMinute() < 40) {
-            now = now.minusHours(1);
+        return webClient.get()
+                .uri(uri)
+                .retrieve()
+                .bodyToMono(JsonNode.class)
+                .timeout(Duration.ofSeconds(3))
+                .block();
+    }
+
+    private String[] getBaseDateTime(LocalDateTime targetTime) {
+        // 초단기실황은 매시 40분 이후 해당 시각 데이터가 제공됨
+        if (targetTime.getMinute() < 40) {
+            targetTime = targetTime.minusHours(1);
         }
 
-        String baseDate = now.format(DateTimeFormatter.ofPattern("yyyyMMdd"));
-        String baseTime = now.format(DateTimeFormatter.ofPattern("HH00"));
+        String baseDate = targetTime.format(DateTimeFormatter.ofPattern("yyyyMMdd"));
+        String baseTime = targetTime.format(DateTimeFormatter.ofPattern("HH00"));
 
         return new String[]{baseDate, baseTime};
     }
